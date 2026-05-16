@@ -4,7 +4,7 @@ import { TransactionPayload, RiskScoreResult } from '../../models/transaction_pa
  * 규제 리스크 기반의 트랜잭션 위험 평가 서비스를 제공합니다.
  * 이 서비스는 단순히 데이터를 조회하는 것을 넘어, 데이터 간의 연관성(위험-규정)을 분석하여 점수를 산출합니다.
  */
-export class RiskAssessmentService {
+export export class RiskAssessmentService {
     // Private: 실제 DB 연결 로직과 복잡한 규제 룰셋이 여기에 들어갑니다.
     private static readonly REGULATORY_RULES = [
         { id: "GDPR_001", area: "Privacy", riskFactor: 35, description: "동의 없는 민감 정보 처리 시 벌금 위험" },
