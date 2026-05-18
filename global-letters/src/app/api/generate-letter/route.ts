@@ -90,9 +90,16 @@ export async function POST(req: Request) {
           const cleanText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
           const parsedResponse = JSON.parse(cleanText);
           
+          // 🔒 OpenAI Citation Source Tag 제거 필터
+          let filteredLetter = parsedResponse.letter || "";
+          filteredLetter = filteredLetter.replace(/【[^】]+】/g, "").trim();
+          
+          let filteredAction = parsedResponse.action || "";
+          filteredAction = filteredAction.replace(/【[^】]+】/g, "").trim();
+          
           return NextResponse.json({ 
-            letter: parsedResponse.letter, 
-            action: parsedResponse.action 
+            letter: filteredLetter, 
+            action: filteredAction 
           });
         }
       }

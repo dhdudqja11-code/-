@@ -1,305 +1,503 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Wisdom - Warm Letters for Your Heart</title>
+    <title>마음을 묻다</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@latest/dist/html2canvas-pro.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
     <script src="https://www.paypal.com/sdk/js?client-id=sb&currency=USD"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background: #fdfbf7; color: #334155; }
-        .font-serif { font-family: 'Playfair Display', serif; }
-        .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08); border: 1px solid rgba(255, 255, 255, 1); }
-        .letter-paper { background-color: #fffdf7; background-image: linear-gradient(90deg, rgba(200,0,0,.03) 50%, transparent 0), linear-gradient(rgba(200,0,0,.03) 50%, transparent 0); background-size: 2px 2px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); border: 1px solid #f1f5f9; }
-        .btn-primary { background: #1e293b; color: #ffffff; transition: all 0.3s ease; }
-        .btn-primary:hover { background: #334155; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        .typewriter-text { border-right: 2px solid #cbd5e1; white-space: pre-wrap; animation: blink-caret .75s step-end infinite; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fdfbf7;
+            color: #334155;
+            transition: background-color 0.5s ease;
+        }
+        .font-serif { font-family: 'Noto Serif KR', serif; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 1);
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+        }
+        
+        .letter-paper {
+            background-color: #fffdf7;
+            color: #334155;
+            background-image: linear-gradient(90deg, rgba(200,0,0,.03) 50%, transparent 0), linear-gradient(rgba(200,0,0,.03) 50%, transparent 0);
+            background-size: 2px 2px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+        }
+        
+        .tier-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .tier-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(148, 163, 184, 0.4);
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.1);
+        }
+
+        .typewriter-text {
+            border-right: 2px solid #cbd5e1;
+            white-space: pre-wrap;
+            animation: blink-caret .75s step-end infinite;
+        }
         @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: #cbd5e1; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.8s ease-out forwards; }
-        .blur-text { color: transparent; text-shadow: 0 0 8px rgba(51,65,85,0.5); user-select: none; }
         
-        @media print {
-            body * { visibility: hidden; }
-            #printable-letter, #printable-letter * { visibility: visible; }
-            #printable-letter { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; border: none; }
-            .no-print { display: none !important; }
+        /* Star Rating */
+        .star-rating input { display: none; }
+        .star-rating label { font-size: 2rem; color: #cbd5e1; cursor: pointer; transition: color 0.2s; }
+        .star-rating input:checked ~ label, .star-rating label:hover, .star-rating label:hover ~ label { color: #f59e0b; }
+
+        /* 🔒 [모든 브라우저 규격 절대 고정] 어떤 브라우저에서도 크기가 작아지지 않게 방어 */
+        #user-story {
+            height: 450px !important;
+            min-height: 450px !important;
         }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
-    <header class="text-center mb-10 w-full max-w-3xl animate-fade-in no-print">
-        <h1 class="font-serif text-4xl md:text-5xl font-bold text-slate-800 mb-4">Daily Wisdom</h1>
-        <p class="text-slate-500 text-lg md:text-xl">Share your heavy heart. Receive a warm letter to guide you.</p>
+    
+    <!-- Header -->
+    <header id="main-header" class="text-center mb-10 w-full max-w-3xl animate-fade-in transition-opacity duration-700">
+        <h1 id="brand-title" class="font-serif text-4xl md:text-5xl font-bold text-slate-800 mb-4 tracking-tight">마음을 묻다</h1>
+        <p class="text-slate-500 text-lg font-serif">당신의 짐을 잠시 내려놓으세요. 따뜻한 편지로 답해드립니다.</p>
     </header>
 
-    <main class="w-full max-w-3xl relative">
-        <!-- Input Form Area -->
-        <div id="input-section" class="glass-panel rounded-2xl p-6 md:p-10 transition-all duration-500 no-print">
-            <label for="user-story" class="block text-sm font-medium text-slate-700 mb-3">
-                What's on your mind? Tell us your story, worries, or pain...
-            </label>
-            <div class="relative">
-                <textarea id="user-story" rows="8" maxlength="2000" 
-                    class="block w-full rounded-xl border-slate-200 bg-white/50 p-4 text-slate-800 shadow-sm focus:border-slate-400 focus:ring-slate-400 sm:text-lg transition-colors placeholder:text-slate-400"
-                    placeholder="I have been feeling exhausted lately because..."></textarea>
-                <div class="absolute bottom-3 right-4 text-xs text-slate-400">
-                    <span id="char-count">0</span> / 2000
-                </div>
-            </div>
-            <div class="mt-8 text-center">
-                <button onclick="submitStory()" class="btn-primary px-8 py-3.5 rounded-full font-medium text-lg w-full sm:w-auto flex items-center justify-center mx-auto">
-                    <span>Send My Story</span>
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+    <main class="w-full max-w-4xl relative flex flex-col items-center">
+        
+        <!-- 1. 사연 입력창 -->
+        <div id="input-section" class="glass-panel rounded-2xl p-8 md:p-12 w-full max-w-4xl transition-all duration-500 animate-fade-in">
+            <textarea id="user-story" maxlength="2000" 
+                class="block w-full rounded-xl border border-slate-200 bg-white/60 p-6 text-slate-800 shadow-sm focus:ring-2 focus:ring-slate-300 sm:text-lg transition-colors placeholder:text-slate-400 font-serif leading-relaxed"
+                style="min-height: 450px; height: 450px;"
+                placeholder="요즘 마음이 어떠신가요? 편안하게 당신의 이야기를 들려주세요..."></textarea>
+            <div class="flex justify-between items-center mt-6">
+                <span class="text-xs text-slate-400"><span id="char-count">0</span> / 2000</span>
+                <button onclick="submitStory()" class="px-8 py-3.5 bg-slate-800 text-white rounded-full font-serif text-lg hover:bg-slate-700 transition-colors flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 duration-200">
+                    사연 보내기
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </button>
             </div>
         </div>
 
-        <!-- Initial Free Response & Premium Unlock -->
-        <div id="freemium-section" class="hidden flex-col items-center w-full mt-8 animate-fade-in no-print">
-            <div class="letter-paper rounded-lg p-8 w-full mb-6 relative overflow-hidden">
-                <p class="font-serif text-xl leading-relaxed text-slate-700 italic">
-                    "I hear the weight in your words. Please know that you are not alone in this feeling. We have carefully analyzed your story..."
-                </p>
-                <!-- Teaser Blur Effect -->
-                <div class="mt-4 blur-text text-lg font-serif italic opacity-70">
-                    Based on your input, it seems you are carrying a lot of invisible burdens. You've been trying so hard to keep everything together while silently struggling. There is a deep psychological reason why you feel this way right now. According to cognitive behavioral patterns, when we face these specific triggers... (Unlock to read the full 500+ word personalized analysis and your specific action step).
+        <!-- 2. 처방 티어 선택 (5 Tiers) -->
+        <div id="tier-section" class="hidden flex-col items-center w-full mt-4 animate-fade-in">
+            <h2 class="font-serif text-2xl text-slate-700 mb-8 text-center">어떤 처방을 원하시나요?</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
+                <!-- Random -->
+                <div class="tier-card glass-panel rounded-2xl p-6 text-center" onclick="selectTier('random', 0)">
+                    <h3 class="font-serif text-lg font-bold text-slate-800 mb-2">Random</h3>
+                    <p class="text-slate-500 text-sm mb-4">오늘의 문장 (랜덤 뽑기)</p>
+                    <span class="text-emerald-600 text-sm border border-emerald-200 px-3 py-1.5 rounded-full bg-emerald-50 font-medium">무료</span>
                 </div>
-                <div class="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-[#fffdf7] to-transparent"></div>
-            </div>
-
-            <!-- Premium Lock -->
-            <div id="premium-lock" class="glass-panel rounded-2xl p-8 text-center w-full max-w-lg mt-4 border-2 border-amber-100">
-                <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                <!-- Free -->
+                <div class="tier-card glass-panel rounded-2xl p-6 text-center" onclick="selectTier('free', 0)">
+                    <h3 class="font-serif text-lg font-bold text-slate-800 mb-2">Free</h3>
+                    <p class="text-slate-500 text-sm mb-4">사연 기반 짧은 안부 편지</p>
+                    <span class="text-emerald-600 text-sm border border-emerald-200 px-3 py-1.5 rounded-full bg-emerald-50 font-medium">무료 (일 1회)</span>
                 </div>
-                <h3 class="font-serif text-2xl text-slate-800 mb-2">Unlock Your Full Letter</h3>
-                <p class="text-slate-500 text-sm mb-6 leading-relaxed px-4">
-                    Read your complete, personalized psychological analysis and get concrete action steps tailored just for you. Unlock it now for less than a cup of coffee ($2.99).
-                </p>
-                <div id="paypal-button-container" class="w-full flex flex-col justify-center items-center relative z-10"></div>
-                
-                <button onclick="mockPaymentSuccess()" class="mt-4 px-6 py-2 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full text-xs font-medium hover:bg-emerald-100 transition-colors">
-                    ✨ [테스트용] 결제 우회 (개발자 전용)
-                </button>
+                <!-- Beta -->
+                <div class="tier-card glass-panel rounded-2xl p-6 text-center border-2 border-amber-200 relative" onclick="selectTier('beta', 3.99)">
+                    <div class="absolute top-0 right-0 bg-amber-100 text-amber-700 text-xs px-3 py-1 rounded-bl-lg rounded-tr-xl font-bold">인기</div>
+                    <h3 class="font-serif text-lg font-bold text-slate-800 mb-2">Beta</h3>
+                    <p class="text-slate-500 text-sm mb-4">표준 처방전 및 심리 분석</p>
+                    <span class="text-amber-600 text-sm font-bold">5,000원 ($3.99)</span>
+                </div>
+                <!-- Deep -->
+                <div class="tier-card glass-panel rounded-2xl p-6 text-center" onclick="selectTier('deep', 6.99)">
+                    <h3 class="font-serif text-lg font-bold text-slate-800 mb-2">Deep</h3>
+                    <p class="text-slate-500 text-sm mb-4">심층 심리 분석 및 행동 지침</p>
+                    <span class="text-amber-600 text-sm font-bold">9,000원 ($6.99)</span>
+                </div>
+                <!-- Recovery -->
+                <div class="tier-card glass-panel rounded-2xl p-6 text-center lg:col-span-2" onclick="selectTier('recovery', 21.99)">
+                    <h3 class="font-serif text-lg font-bold text-slate-800 mb-2">Recovery</h3>
+                    <p class="text-slate-500 text-sm mb-4">7일 집중 회복 여정 (연속 처방)</p>
+                    <span class="text-amber-600 text-sm font-bold">29,000원 ($21.99)</span>
+                </div>
             </div>
         </div>
 
-        <!-- Loading State for Full Letter -->
-        <div id="loading-section" class="hidden flex-col items-center justify-center py-20 no-print">
-            <div class="animate-spin mb-6 text-slate-400">
-                <svg class="w-10 h-10" fill="none" viewBox="0 0 24 24">
+        <!-- 3. 결제 모듈 -->
+        <div id="payment-section" class="hidden flex-col items-center w-full max-w-md mt-10 animate-fade-in glass-panel rounded-2xl p-8 text-center border border-amber-100">
+            <h3 id="payment-title" class="font-serif text-xl text-slate-800 mb-2 font-bold"></h3>
+            <p class="text-slate-500 text-sm mb-8">결제를 완료하시면 처방전 작성이 시작됩니다.</p>
+            <div id="paypal-button-container" class="w-full relative z-10"></div>
+            <button onclick="mockPaymentSuccess()" class="mt-6 px-4 py-2 bg-slate-100 text-slate-600 rounded-full text-xs font-medium hover:bg-slate-200 transition-colors">✨ [테스트용] 결제 우회 (개발자 전용)</button>
+            <button onclick="cancelPayment()" class="mt-6 text-sm text-slate-400 hover:text-slate-600 underline underline-offset-4">뒤로 가기</button>
+        </div>
+
+        <!-- 4. 로딩 -->
+        <div id="loading-section" class="hidden flex-col items-center justify-center py-20 w-full animate-fade-in">
+            <div class="animate-spin mb-6 text-slate-300">
+                <svg class="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
             </div>
-            <p class="text-slate-500 font-serif italic text-lg animate-pulse">Deeply analyzing your story...</p>
+            <p class="text-slate-500 font-serif italic text-lg animate-pulse text-center">당신의 이야기를 깊이 들여다보고 있습니다...</p>
         </div>
 
-        <!-- Full Premium Letter Area -->
-        <div id="full-letter-section" class="hidden flex-col items-center w-full mt-8">
-            <div id="printable-letter" class="letter-paper rounded-lg p-8 md:p-14 w-full mb-8 relative cursor-pointer" onclick="skipTyping()" title="Click to skip animation">
-                <p class="text-xs font-bold tracking-widest uppercase text-slate-400 mb-8 border-b pb-3">Dear Friend,</p>
-                <div id="letter-text" class="font-serif text-xl md:text-2xl leading-relaxed text-slate-700 italic min-h-[200px]"></div>
+        <!-- 5. 결과 (편지 & 리뷰) -->
+        <div id="result-section" class="hidden flex-col items-center w-full max-w-2xl mt-4">
+            
+            <button id="download-btn" onclick="downloadPDF()" class="mb-6 px-6 py-3 bg-slate-800 text-white rounded-full font-serif text-sm tracking-wide hover:bg-slate-700 transition shadow-lg flex items-center gap-2 animate-fade-in hidden">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                나만의 엽서 간직하기 (PDF)
+            </button>
+
+            <div id="letter-container" class="letter-paper rounded-lg p-10 md:p-16 w-full mb-8 relative transition-all duration-1000" onclick="skipTyping()">
+                <p id="result-brand" class="text-xs font-bold tracking-widest text-slate-400 mb-10 border-b border-slate-200 pb-4 text-center uppercase">마음을 묻다</p>
+                <div id="letter-text" class="font-serif text-lg md:text-xl leading-loose text-slate-700 min-h-[300px]"></div>
                 
-                <div class="mt-12 pt-6 border-t border-slate-100">
-                    <h4 class="text-sm font-bold text-slate-800 mb-2 uppercase tracking-wide">Psychological Action Step</h4>
-                    <p id="action-step" class="text-slate-600 leading-relaxed"></p>
-                </div>
             </div>
             
-            <div class="flex flex-wrap gap-4 justify-center w-full no-print mb-8">
-                <button onclick="copyToClipboard()" class="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-full text-sm font-medium hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm flex items-center">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-                    Copy Text
-                </button>
-                <button onclick="window.print()" class="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-full text-sm font-medium hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm flex items-center">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                    Save as PDF
-                </button>
+            <!-- 별점 및 리뷰 UI -->
+            <div class="w-full glass-panel rounded-2xl p-8 mt-4 text-center animate-fade-in">
+                <h4 class="font-serif text-xl text-slate-800 mb-2 font-semibold">오늘의 편지가 위로가 되었나요?</h4>
+                <p class="text-slate-500 text-sm mb-6">소중한 피드백을 남겨주시면 큰 힘이 됩니다.</p>
+                
+                <form id="review-form" onsubmit="submitReview(event)" class="flex flex-col items-center">
+                    <div class="star-rating flex flex-row-reverse justify-center mb-6">
+                        <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="5 stars">★</label>
+                        <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 stars">★</label>
+                        <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="3 stars">★</label>
+                        <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="2 stars">★</label>
+                        <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 star">★</label>
+                    </div>
+                    <textarea id="review-text" rows="3" class="w-full rounded-xl bg-white border border-slate-200 shadow-sm p-4 text-sm text-slate-700 mb-6 focus:ring-2 focus:ring-slate-300 outline-none placeholder:text-slate-400" placeholder="당신의 마음에 어떤 변화가 있었나요? 짧은 감상평을 남겨주세요..."></textarea>
+                    <button type="submit" class="px-8 py-3 bg-slate-800 text-white rounded-full text-sm font-medium hover:bg-slate-700 transition-colors shadow-md">리뷰 보내기</button>
+                </form>
+                <div id="review-success" class="hidden text-emerald-600 text-sm mt-4 font-medium bg-emerald-50 px-4 py-2 rounded-lg inline-block">리뷰가 성공적으로 전송되었습니다. 감사합니다!</div>
             </div>
 
-            <button onclick="resetForm()" class="text-sm text-slate-400 hover:text-slate-600 underline decoration-slate-300 underline-offset-4 transition-colors no-print">
-                Write another story
+            <button onclick="resetForm()" class="mt-12 text-sm text-slate-400 hover:text-slate-600 transition-colors mb-20 animate-fade-in underline underline-offset-4 font-medium">
+                처음으로 돌아가기
             </button>
         </div>
 
     </main>
 
-    <footer class="mt-auto py-8 text-center text-slate-400 text-xs no-print">
-        &copy; 2026 Daily Wisdom Global Letters Project.
+    <footer id="main-footer" class="mt-auto py-8 text-center text-slate-400 text-xs transition-opacity duration-700">
+        &copy; <span id="footer-brand">2026 마음을 묻다</span> Project.
     </footer>
 
     <script>
+        // 백엔드 트래픽 추적 신호
+        window.addEventListener('load', () => {
+            fetch('http://localhost:5000/api/track/visit', { method: 'POST' })
+                .catch(err => console.log('Traffic tracking dev mode'));
+        });
+
         const textarea = document.getElementById('user-story');
         const charCount = document.getElementById('char-count');
         textarea.addEventListener('input', () => charCount.textContent = textarea.value.length);
 
-        const mockResponses = [
-            { keywords: ["tired", "exhausted", "hard", "difficult", "work"], letter: "I hear the weight in your words. It must have been a long time since you had a peaceful day or a place to comfortably share your heart. Swallowing the words you wanted to say... you've worked so hard enduring all of that. You've survived days that didn't even feel like your own life. Please remember, just standing where you are right now is a testament to your strength. It's okay to let it out now. You've done more than enough. I am rooting for your happiness, hoping that the difficult days will soon give way to gentle, warm moments.", action: "Based on Self-Compassion theory, try this today: Place your hand over your heart, take a deep breath, and say out loud, 'I am doing the best I can, and that is enough.' Acknowledge your effort without judgment." },
-            { keywords: ["anxious", "future", "fear", "lost", "behind"], letter: "I hear the weight in your words. It's okay, you don't have to be so afraid. You just need to get better little by little. Don't rush. It's natural to feel anxious when you think you're walking in circles while others are moving forward. But they live their lives, and you live yours. Let's focus on becoming better than yesterday, rather than comparing ourselves to others. You are stronger than your fears. You'll soon find yourself shining brighter than you imagined.", action: "Using Cognitive Behavioral therapy principles, when an anxious thought arises today, ask yourself: 'Is this a fact, or just a fear?' Bring your focus back to the present moment by grounding yourself—notice 3 things you can see and 2 things you can touch right now." },
-            { keywords: ["lonely", "alone", "friend", "relationship", "hurt"], letter: "I hear the weight in your words. Relationships where only you put in the effort are so exhausting, aren't they? Feeling lonely even when you're together. I hope you no longer hold onto relationships that only make you ache. Let go of the things that hurt you, and start surrounding yourself with people who truly cherish and love you. Remember, you are worthy of being loved just as you are. I am one of those people rooting for you.", action: "From an Interpersonal theory perspective, it's important to set healthy boundaries. Today, practice saying 'no' to one small thing that drains your energy, and spend that extra 10 minutes doing something solely for yourself." },
-            { keywords: ["sad", "cry", "pain", "hurt", "depressed"], letter: "I hear the weight in your words. You just want to stop hurting. I know the pain hidden behind every forced smile, every time you pretended to be brave when you weren't. If I could, I would wrap my heart around yours to comfort you. Rather than days repeating with pain, I hope your life becomes filled with warmth and moments of love. You don't have to pretend to be okay all the time. Let your tears flow if they must; it's the soul's way of healing.", action: "Based on Emotion-Focused theory, your sadness needs to be felt, not fixed. Find a safe, quiet space today and allow yourself 15 minutes to just feel your emotions without trying to suppress them. Crying is a healthy release." }
-        ];
-
-        const defaultResponse = {
-            letter: "I hear the weight in your words. Life can be overwhelmingly heavy, and it takes immense courage just to endure the days when nothing seems to go right. But please remember, just standing where you are right now is a testament to your strength. You are not alone in this feeling. I am rooting for your happiness, hoping that the difficult days will soon give way to gentle, warm moments.",
-            action: "In Positive Psychology, gratitude can shift our perspective. Before you sleep tonight, write down just one tiny thing that didn't go wrong today. It doesn't have to be big—even a warm cup of coffee counts."
-        };
-
+        let selectedTier = '';
+        let selectedPrice = 0;
         let isTyping = false;
         let currentFullText = "";
         let typingTimeout;
-        const letterEl = document.getElementById('letter-text');
-        const actionEl = document.getElementById('action-step');
 
-        function getResponse(text) {
-            const lowerText = text.toLowerCase();
-            for (let response of mockResponses) {
-                if (response.keywords.some(kw => lowerText.includes(kw))) return response;
+        const masterResponse = "참 많이 애썼구나.\n\n남들에게 기대지 못하고 속으로 삭여야만 했던 그 무거운 감정들, 이제는 조금 내려놓아도 괜찮다. 네가 지금 느끼는 그 감정은 결코 네가 약해서가 아니라, 그동안 너무 오랫동안 혼자 강해지려 버텨왔기 때문이야.\n\n일상의 작은 사물들을 봐. 책상 위 조그만 화분도 제 속도대로 물을 마시며 살아간다. 너도 남들의 속도에 맞추느라 숨 가쁘게 뛰지 말고, 오늘 하루쯤은 네 마음의 소리에 귀 기울이며 온전히 쉬었으면 좋겠다.\n\n충분히 잘해왔어. 그리고 앞으로도 잘 해낼 거야.";
+
+        const randomSentences = [
+            "괜찮아, 너무 두려워하지 않아도 돼. 조금씩 나아지면 되니까.",
+            "지나가는 것에 휩쓸리지 말고, 찰나의 어둠에 행복을 빼앗기지 말아.",
+            "매일이 버거워도 살아낸 너에게 더 웃음 짓게 하는 일들이 오래 내렸으면 좋겠다.",
+            "너는 정말 잘 살아왔고 실패한 게 아니야. 눈물겹게 고생 많았어.",
+            "수없이 흔들려도 포기하지 않은 너는 반드시 아름답게 피어날 거야.",
+            "스스로에게 친절해져도 괜찮아. 그동안 참 많이 애썼잖아.",
+            "그동안 잘 버텨왔구나. 찰나의 순간이라도 온전히 너를 위해 쉬었으면 해."
+        ];
+
+        const aestheticBackgrounds = [
+            "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1436891620584-47fd0e565afb?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1470770903672-71aa615dd6f4?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1445905595283-21f8ae8a33d2?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1532274402911-5a369e4c48f2?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1483728642387-6c3ba6c6af81?q=80&w=1000&auto=format&fit=crop"
+        ];
+
+        function submitStory() {
+            const userText = textarea.value.trim();
+            if (userText.length < 5) {
+                alert("당신의 마음을 조금만 더 들려주세요.");
+                return;
             }
-            return defaultResponse;
+            document.getElementById('input-section').classList.add('hidden');
+            document.getElementById('tier-section').classList.remove('hidden');
+            document.getElementById('tier-section').classList.add('flex');
         }
 
-        function typeWriter(text, speed, callback) {
+        function selectTier(tier, price) {
+            selectedTier = tier;
+            selectedPrice = price;
+            
+            document.getElementById('tier-section').classList.add('hidden');
+            document.getElementById('tier-section').classList.remove('flex');
+
+            if (price === 0) {
+                generateFullLetter();
+            } else {
+                document.getElementById('payment-section').classList.remove('hidden');
+                document.getElementById('payment-section').classList.add('flex');
+                document.getElementById('payment-title').textContent = `${tier.toUpperCase()} 처방전 결제`;
+                
+                document.getElementById('paypal-button-container').innerHTML = '';
+                paypal.Buttons({
+                    createOrder: function(data, actions) {
+                        return actions.order.create({ purchase_units: [{ amount: { value: price.toString() } }] });
+                    },
+                    onApprove: function(data, actions) {
+                        return actions.order.capture().then(function(details) { generateFullLetter(); });
+                    }
+                }).render('#paypal-button-container');
+            }
+        }
+
+        function cancelPayment() {
+            document.getElementById('payment-section').classList.add('hidden');
+            document.getElementById('payment-section').classList.remove('flex');
+            document.getElementById('tier-section').classList.remove('hidden');
+            document.getElementById('tier-section').classList.add('flex');
+        }
+
+        function mockPaymentSuccess() {
+            generateFullLetter();
+        }
+
+        function generateFullLetter() {
+            document.getElementById('payment-section').classList.add('hidden');
+            document.getElementById('payment-section').classList.remove('flex');
+            
+            // 헤더, 푸터 숨기기 (몰입형 UI)
+            document.getElementById('main-header').style.opacity = '0';
+            document.getElementById('main-footer').style.opacity = '0';
+            
+            document.getElementById('loading-section').classList.remove('hidden');
+            document.getElementById('loading-section').classList.add('flex');
+
+            setTimeout(() => {
+                document.getElementById('main-header').style.display = 'none';
+                
+                document.getElementById('loading-section').classList.add('hidden');
+                document.getElementById('loading-section').classList.remove('flex');
+                
+                const resultSection = document.getElementById('result-section');
+                resultSection.classList.remove('hidden');
+                resultSection.classList.add('flex', 'animate-fade-in');
+
+                // 적용: 배경화면 랜덤 설정 (텍스트 가독성을 위해 흰색 반투명 오버레이 적용)
+                const letterContainer = document.getElementById('letter-container');
+                const randomBg = aestheticBackgrounds[Math.floor(Math.random() * aestheticBackgrounds.length)];
+                letterContainer.style.backgroundImage = `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.95)), url('${randomBg}')`;
+                letterContainer.style.backgroundSize = 'cover';
+                letterContainer.style.backgroundPosition = 'center';
+
+                if (selectedTier === 'random') {
+                    let seenIndexes = JSON.parse(localStorage.getItem('seenRandomIndexes') || '[]');
+                    
+                    // 모든 문장을 다 봤다면 초기화
+                    if (seenIndexes.length >= randomSentences.length) {
+                        seenIndexes = [];
+                    }
+                    
+                    let availableIndexes = [];
+                    for (let i = 0; i < randomSentences.length; i++) {
+                        if (!seenIndexes.includes(i)) {
+                            availableIndexes.push(i);
+                        }
+                    }
+                    
+                    const randomAvailableIndex = availableIndexes[Math.floor(Math.random() * availableIndexes.length)];
+                    currentFullText = randomSentences[randomAvailableIndex];
+                    
+                    // 본 문장 저장
+                    seenIndexes.push(randomAvailableIndex);
+                    localStorage.setItem('seenRandomIndexes', JSON.stringify(seenIndexes));
+                } else {
+                    currentFullText = masterResponse;
+                }
+                
+                typeWriter(currentFullText, 30);
+            }, 2500);
+        }
+
+        function typeWriter(text, speed) {
             isTyping = true;
+            const letterEl = document.getElementById('letter-text');
             letterEl.innerHTML = '';
             letterEl.classList.add('typewriter-text');
             let i = 0;
             
             function type() {
-                if (!isTyping) return; // Aborted due to skip
+                if (!isTyping) return;
                 if (i < text.length) {
-                    letterEl.innerHTML += text.charAt(i);
+                    if(text.charAt(i) === '\n') {
+                        letterEl.innerHTML += '<br>';
+                    } else {
+                        letterEl.innerHTML += text.charAt(i);
+                    }
                     i++;
                     typingTimeout = setTimeout(type, speed);
                 } else {
-                    finishTyping(callback);
+                    finishTyping();
                 }
             }
             type();
         }
 
-        function finishTyping(callback) {
+        function finishTyping() {
             isTyping = false;
             clearTimeout(typingTimeout);
-            letterEl.innerHTML = currentFullText; // ensure full text is rendered
+            const letterEl = document.getElementById('letter-text');
+            letterEl.innerHTML = currentFullText.replace(/\n/g, '<br>');
             letterEl.classList.remove('typewriter-text');
-            if (callback) callback();
+            
+            // 타이핑이 끝나면 PDF 다운로드 버튼 표시
+            const downloadBtn = document.getElementById('download-btn');
+            downloadBtn.classList.remove('hidden');
         }
 
         function skipTyping() {
-            if (isTyping) {
-                finishTyping(() => {
-                    actionEl.style.transition = "opacity 0.3s ease-in";
-                    actionEl.style.opacity = 1;
-                });
-            }
+            if (isTyping) finishTyping();
         }
 
-        function checkRateLimit() {
-            const lastUsed = localStorage.getItem('last_letter_time');
-            if (lastUsed) {
-                const hoursSince = (Date.now() - parseInt(lastUsed)) / (1000 * 60 * 60);
-                if (hoursSince < 24) {
-                    return false;
+        function downloadPDF() {
+            const element = document.getElementById('letter-container');
+            if (!element) return;
+
+            const downloadBtn = document.getElementById('download-btn');
+            const originalText = downloadBtn ? downloadBtn.innerHTML : "나만의 엽서 간직하기 (PDF)";
+            if (downloadBtn) {
+                downloadBtn.innerHTML = "💌 PDF 저장 중...";
+                downloadBtn.disabled = true;
+            }
+
+            // 🔒 CORS 캐싱 충돌 원천 방어 (Cache-busting URL 재작성)
+            const originalBg = element.style.backgroundImage;
+            let hasRewrittenBg = false;
+            if (originalBg && originalBg.includes("url(")) {
+                const match = originalBg.match(/url\(['"]?(.*?)['"]?\)/);
+                if (match && match[1]) {
+                    const imgUrl = match[1];
+                    const separator = imgUrl.includes("?") ? "&" : "?";
+                    const newImgUrl = imgUrl + separator + "pdf_nocache=" + Date.now();
+                    const newBg = originalBg.replace(imgUrl, newImgUrl);
+                    element.style.backgroundImage = newBg;
+                    hasRewrittenBg = true;
                 }
             }
-            return true;
-        }
 
-        function submitStory() {
-            const userText = textarea.value.trim();
-            if (userText.length < 10) {
-                alert("Please share a little more of your story so we can write a meaningful letter for you.");
-                return;
-            }
+            // 🔒 캐시 및 네임스페이스 오염 방지를 위한 html2canvas-pro 동적 강제 주입 함수
+            const forceLoadProEngine = () => {
+                return new Promise((resolve, reject) => {
+                    if (window.html2canvasProInstance) {
+                        resolve(window.html2canvasProInstance);
+                        return;
+                    }
 
-            // NOTE: Rate limit check is moved here, but we DO NOT setItem yet.
-            /* 임시 테스트를 위해 꺼둡니다.
-            if (!checkRateLimit()) {
-                alert("You have already received a letter today. Please come back tomorrow for more daily wisdom.");
-                return;
-            }
-            */
+                    const script = document.createElement("script");
+                    script.src = "https://cdn.jsdelivr.net/npm/html2canvas-pro@latest/dist/html2canvas-pro.min.js";
+                    script.crossOrigin = "anonymous";
+                    script.onload = () => {
+                        window.html2canvasProInstance = window.html2canvas;
+                        resolve(window.html2canvas);
+                    };
+                    script.onerror = (e) => reject(new Error("PDF 인쇄 라이브러리(Pro) 로드 실패: " + e));
+                    document.head.appendChild(script);
+                });
+            };
 
-            document.getElementById('input-section').classList.add('hidden');
-            document.getElementById('freemium-section').classList.remove('hidden');
-            document.getElementById('freemium-section').classList.add('flex');
+            forceLoadProEngine()
+                .then((proEngine) => {
+                    const jsPDFLib = window.jsPDF || (window.jspdf ? window.jspdf.jsPDF : null);
+                    if (!jsPDFLib) {
+                        throw new Error("PDF 구성 파일(jsPDF)이 아직 로드되지 않았습니다.");
+                    }
+
+                    return proEngine(element, {
+                        scale: 3, // 초고화질 보정
+                        useCORS: true,
+                        logging: false,
+                        backgroundColor: "#ffffff",
+                        allowTaint: false
+                    }).then((canvas) => {
+                        // 복원
+                        if (hasRewrittenBg) element.style.backgroundImage = originalBg;
+
+                        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                        const pdf = new jsPDFLib('p', 'mm', 'a4');
+                        const pdfWidth = pdf.internal.pageSize.getWidth();
+                        const pdfHeight = pdf.internal.pageSize.getHeight();
+                        
+                        // 엽서 가로세로 비율 계산하여 A4에 맞추기
+                        const imgWidth = pdfWidth - 20; // 10mm 여백
+                        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                        
+                        // 수직 가운데 정렬 위치 계산
+                        const yPos = (pdfHeight - imgHeight) / 2;
+
+                        pdf.addImage(imgData, 'JPEG', 10, yPos > 10 ? yPos : 10, imgWidth, imgHeight);
+                        pdf.save('마음을_묻다_위로엽서.pdf');
+
+                        if (downloadBtn) {
+                            downloadBtn.innerHTML = originalText;
+                            downloadBtn.disabled = false;
+                        }
+                    });
+                })
+                .catch((err) => {
+                    if (hasRewrittenBg) element.style.backgroundImage = originalBg;
+                    console.error("PDF generation error:", err);
+                    alert("PDF 생성 중 오류가 발생했습니다.\n\n오류 내용: " + err.message + "\n\n디버그 상세 정보:\n" + (err.stack || "스택 트레이스 없음"));
+                    if (downloadBtn) {
+                        downloadBtn.innerHTML = originalText;
+                        downloadBtn.disabled = false;
+                    }
+                });
+
+        function submitReview(e) {
+            e.preventDefault();
+            const ratingInput = document.querySelector('input[name="rating"]:checked');
+            const reviewText = document.getElementById('review-text').value;
             
-            if (!document.getElementById('paypal-button-container').hasChildNodes()) {
-                renderPayPal(userText);
-            }
-        }
+            const payload = {
+                rating: ratingInput ? ratingInput.value : 5,
+                text: reviewText,
+                tier: selectedTier
+            };
 
-        function renderPayPal(userText) {
-            paypal.Buttons({
-                createOrder: function(data, actions) {
-                    return actions.order.create({
-                        purchase_units: [{ amount: { value: '2.99' } }]
-                    });
-                },
-                onApprove: function(data, actions) {
-                    return actions.order.capture().then(function(details) {
-                        // Rate limit is counted ONLY AFTER payment succeeds.
-                        localStorage.setItem('last_letter_time', Date.now().toString());
-                        generateFullLetter(userText);
-                    });
-                }
-            }).render('#paypal-button-container');
-        }
+            fetch('http://localhost:5000/api/track/review', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(err => console.log('Review tracking dev mode', payload));
 
-        function mockPaymentSuccess() {
-            const userText = textarea.value.trim();
-            localStorage.setItem('last_letter_time', Date.now().toString());
-            generateFullLetter(userText);
-        }
-
-        function generateFullLetter(userText) {
-            document.getElementById('freemium-section').classList.add('hidden');
-            document.getElementById('freemium-section').classList.remove('flex');
-            document.getElementById('loading-section').classList.remove('hidden');
-            document.getElementById('loading-section').classList.add('flex');
-
-            setTimeout(() => {
-                document.getElementById('loading-section').classList.add('hidden');
-                document.getElementById('loading-section').classList.remove('flex');
-                
-                const resultSection = document.getElementById('full-letter-section');
-                resultSection.classList.remove('hidden');
-                resultSection.classList.add('flex', 'animate-fade-in');
-
-                const responseData = getResponse(userText);
-                currentFullText = responseData.letter;
-                
-                actionEl.style.opacity = 0;
-                actionEl.textContent = responseData.action;
-                
-                // Starts typing effect
-                typeWriter(currentFullText, 25, () => {
-                    actionEl.style.transition = "opacity 1s ease-in";
-                    actionEl.style.opacity = 1;
-                });
-            }, 2500);
-        }
-
-        function copyToClipboard() {
-            const textToCopy = `[Daily Wisdom]\n\nDear Friend,\n\n${currentFullText}\n\n[Action Step]\n${actionEl.textContent}`;
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                alert("Letter copied to clipboard! You can now paste it anywhere.");
-            });
+            document.getElementById('review-form').style.display = 'none';
+            document.getElementById('review-success').classList.remove('hidden');
         }
 
         function resetForm() {
-            textarea.value = '';
-            charCount.textContent = '0';
-            document.getElementById('full-letter-section').classList.add('hidden');
-            document.getElementById('full-letter-section').classList.remove('flex');
-            document.getElementById('freemium-section').classList.add('hidden');
-            document.getElementById('freemium-section').classList.remove('flex');
-            document.getElementById('input-section').classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.location.reload();
         }
     </script>
 </body>

@@ -28,8 +28,8 @@ const axios = require('axios');
 
 // ───────────────────────── Config (env-overridable) ─────────────────────────
 const BRAIN_DIR = (process.env.BRAIN_DIR || path.join(os.homedir(), '.connect-ai-brain')).replace(/^~/, os.homedir());
-const OLLAMA_URL = process.env.OLLAMA_URL || 'http://127.0.0.1:11434';
-const LMSTUDIO_URL = process.env.LMSTUDIO_URL || 'http://127.0.0.1:1234';
+const OLLAMA_URL = (process.env.OLLAMA_URL || 'http://127.0.0.1:11434').replace(/\/+$/, '');
+const LMSTUDIO_URL = (process.env.LMSTUDIO_URL || 'http://127.0.0.1:1234').replace(/\/v1\/?$/, '').replace(/\/+$/, '');
 const MODEL = process.env.MODEL || 'gemma4:e2b';
 const TIMEOUT_MS = parseInt(process.env.TIMEOUT_MS || '180000', 10);
 

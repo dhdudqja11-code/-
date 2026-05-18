@@ -11,6 +11,15 @@
     color: #334155;
     font-family: var(--font-sans);
   }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.03;
+    z-index: 9999;
+    background-image: url("https://www.transparenttextures.com/patterns/pinstripe-dark.png");
+  }
 }
 
 @layer components {
@@ -99,4 +108,37 @@
   .no-print {
     display: none !important;
   }
+  body {
+    background: white;
+  }
+}
+
+@layer components {
+  .shadow-layered { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.02), 0 4px 6px -4px rgba(0, 0, 0, 0.01), 0 25px 50px -12px rgba(0, 0, 0, 0.03); }
+  .shadow-layered-hover { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.02), 0 35px 60px -15px rgba(0, 0, 0, 0.05); }
+  .shadow-layered-deep { box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.08), 0 18px 36px -18px rgba(0, 0, 0, 0.05); }
+  
+  .grain-texture { background-image: url("https://www.transparenttextures.com/patterns/pinstripe-dark.png"); }
+  .paper-texture { background-image: url("https://www.transparenttextures.com/patterns/notebook.png"); }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(2deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+.animate-float {
+  animation: float 8s ease-in-out infinite;
+}
+
+.font-serif {
+  font-family: 'Noto Serif KR', serif;
+  font-weight: 700;
+}
+
+/* 🔒 [모든 브라우저 규격 절대 고정] 어떤 브라우저/모바일에서도 텍스트 상자 크기가 작아지지 않게 방어 */
+#user-story {
+  height: 450px !important;
+  min-height: 450px !important;
 }

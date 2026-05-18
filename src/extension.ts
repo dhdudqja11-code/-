@@ -2004,7 +2004,8 @@ function readToolAutonomyLevel(agentId: string): number {
 async function _quickLLMCall(systemPrompt: string, userMsg: string, maxTokens = 64): Promise<string> {
     const { ollamaBase, defaultModel, timeout } = getConfig();
     const isLMStudio = _isLMStudioEngine(ollamaBase);
-    const apiUrl = isLMStudio ? `${ollamaBase}/v1/chat/completions` : `${ollamaBase}/api/chat`;
+    const cleanBase = ollamaBase.replace(/\/v1\/?$/, '');
+    const apiUrl = isLMStudio ? `${cleanBase}/v1/chat/completions` : `${ollamaBase}/api/chat`;
     const messages = [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMsg }

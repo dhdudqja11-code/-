@@ -1,4 +1,6 @@
 {
     "connectAiLab.defaultModel": "google/gemma-4-e4b",
-    "connectAiLab.localBrainPath": "c:\\Users\\user\\AI 기업 두뇌\\내 작업들"
+    "connectAiLab.localBrainPath": "c:\\Users\\user\\AI 기업 두뇌\\내 작업들",
+    "connectAiLab.ollamaUrl": "http://127.0.0.1:1234",
+    "connectAiLab.requestTimeout": 600
 }
