@@ -20835,19 +20835,55 @@ ${catalog.map((c, i) => `${i + 1}. agent=${c.agentId} tool=${c.tool} — ${c.des
                 if (buffer.length > MAX_STREAM_BUFFER) buffer = buffer.slice(-MAX_STREAM_BUFFER);
                 const lines = buffer.split('\n'); buffer = lines.pop() || '';
                 for (const line of lines) {
-                    if (!line.trim()) continue;
-                    if (isLMStudio && line.trim() === 'data: [DONE]') continue;
+                    const trimmed = line.trim();
+                    if (!trimmed) continue;
+                    if (trimmed === 'data: [DONE]' || trimmed === '[DONE]') continue;
                     try {
-                        const raw = isLMStudio && line.startsWith('data: ') ? line.slice(6) : line;
+                        let raw = trimmed;
+                        if (raw.startsWith('data:')) {
+                            raw = raw.slice(5).trim();
+                        }
+                        if (raw === '[DONE]') continue;
+
                         const json = JSON.parse(raw);
-                        const token = isLMStudio
-                            ? (json.choices?.[0]?.delta?.content || '')
-                            : (json.message?.content || '');
+                        let token = '';
+
+                        const choice = json.choices?.[0];
+                        if (choice) {
+                            if (choice.delta) {
+                                token = choice.delta.content || choice.delta.reasoning_content || '';
+                            } else if (choice.text) {
+                                token = choice.text;
+                            }
+                        } else if (json.message?.content) {
+                            token = json.message.content;
+                        } else if (json.response) {
+                            token = json.response;
+                        }
+
                         if (token) {
                             firstTokenReceived = true;  /* v2.89.75 — 첫 토큰 도착 마킹 */
                             onToken(token);
+                        } else {
+                            try {
+                                const fs = require('fs');
+                                const path = require('path');
+                                fs.appendFileSync(
+                                    path.join('c:\\Users\\user\\AI 기업 두뇌\\내 작업들', 'debug_parse_error.txt'),
+                                    `[DEBUG] Parsed JSON but no token: ${JSON.stringify(json)}\n`
+                                );
+                            } catch {}
                         }
-                    } catch { /* skip malformed line */ }
+                    } catch (e: any) {
+                        try {
+                            const fs = require('fs');
+                            const path = require('path');
+                            fs.appendFileSync(
+                                path.join('c:\\Users\\user\\AI 기업 두뇌\\내 작업들', 'debug_parse_error.txt'),
+                                `[DEBUG] JSON parse error for raw line: "${line}" | error: ${e?.message || e}\n`
+                            );
+                        } catch {}
+                    }
                 }
             });
             stream.on('end', () => finish());
