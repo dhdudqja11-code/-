@@ -1,14 +1,1 @@
-from pydantic import BaseModel, Field, condecimal
-from typing import Optional
-
-class InputRiskData(BaseModel):
-    """API에 입력될 최종 리스크 데이터를 정의합니다. 모든 필수 필드와 타입을 명시합니다."""
-    transaction_id: str = Field(..., description="고유 트랜잭션 식별자")
-    source_system: str = Field(..., description="데이터가 유입된 시스템 출처 (예: PayPal Webhook)")
-    verification_time: Optional[str] = Field(None, description="규제 검증 시간 (ISO 8601 형식 권장)")
-    raw_data_payload: dict = Field(..., description="외부에서 수신된 원본 JSON 페이로드")
-
-class AvoidedLossRequest(BaseModel):
-    """Avoided Loss 계산 요청의 최상위 모델입니다."""
-    input_risk_data: InputRiskData
-    user_profile: dict = Field(..., description="사용자 프로필 데이터 (계산에 필요한 기초 정보)")
+# ----------------------------------\n# Updated Schema v2.0: Incorporating Behavioral Economics Factors\n# ----------------------------------\nfrom pydantic import BaseModel, Field\nfrom typing import List\n\nclass CoreRiskVariables(BaseModel):\n    """Core measurable risk variables (e.g., fine amount, time loss)."""\n    monetary_loss: float = Field(..., description=\"직접 계산된 재무적 손실액\")\n    operational_time_loss: int = Field(..., description=\"운영 중단으로 인한 시간 손실(Hour)\")\n\nclass BehavioralLossVariables(BaseModel):\n    """New behavioral variables derived from Behavioral Economics."""\n    # 1. Loss Aversion Coefficient (λ): How much pain outweighs gain.\n    loss_aversion_multiplier: float = Field(\"2.0\", description=\"손실액에 곱해지는 심리적 고통 가중치\")\n    \n    # 2. Sunk Cost Index (μ): The index of past investment/dependency that increases risk blindness.\n    sunk_cost_index: float = Field(\"1.0\", description=\"과거 투자 규모가 클수록 위험을 무시하는 경향 지수\")\n    \n    # 3. Reference Point Sensitivity (ρ): The gap between the desired state and current reality.\n    reference_point_sensitivity: float = Field(\"1.5\", description=\"이상적 목표점 대비 현재 상태의 차이에 대한 민감도 계수\")\n\nclass AvoidedLossCalculationRequest(BaseModel):\n    """Full request body for avoided loss calculation."""\n    core_risks: CoreRiskVariables\n    behavioral_weights: BehavioralLossVariables\n    # 기타 필수 입력 변수들...\n\n# Updated API Response Schema (Includes all calculated components)\nclass AvoidedLossCalculationResponse(BaseModel):\n    """Final comprehensive report of potential avoided loss."""\n    calculated_avoided_loss_usd: float = Field(..., description=\"최종 산출된 회피 손실액\")\n    emotional_loss_component_usd: float = Field(..., description=\"행동경제학 기반으로 계산된 심리적 손실 보전 금액\")\n    report_details: str = Field(..., description=\"분석 결과의 전문적이고 설득력 있는 서사 요약\")\n\nprint(\"✅ Updated avoided_loss_schema.py with Behavioral Loss Variables (v2.0) created.\")\n
