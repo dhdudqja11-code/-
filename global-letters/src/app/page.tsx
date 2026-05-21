@@ -40,6 +40,7 @@ export default function Home() {
   const [bgUrl, setBgUrl] = useState("");
   const [mounted, setMounted] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<typeof TIERS[0] | null>(null);
+  const [isKorean, setIsKorean] = useState(true);
 
   // 통계 및 리뷰용 상태 추가
   const [rating, setRating] = useState(5);
@@ -53,6 +54,9 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== "undefined" && navigator.language) {
+      setIsKorean(navigator.language.toLowerCase().includes('ko'));
+    }
     const today = new Date().toDateString();
     try {
       const saved = localStorage.getItem("sentence_draw_data");
@@ -528,6 +532,14 @@ export default function Home() {
                       {typedText}
                       {isTyping && <span className="inline-block w-1.5 h-6 bg-slate-400 ml-2 animate-pulse" />}
                     </div>
+
+                    {/* Instagram UGC Logo & Global Text */}
+                    {(!isTyping || view === "full") && (
+                      <div className="mt-12 flex items-center justify-end gap-1.5 text-slate-500 opacity-60 text-sm font-serif pt-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                        <span>@young_beom_oh</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
