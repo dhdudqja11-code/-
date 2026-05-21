@@ -54,7 +54,7 @@ async def run_risk_assessment(request: AssessmentRequest):
     사용자 행동 시뮬레이션 데이터를 기반으로 실시간 규제 리스크를 평가합니다.
     입력 검증 -> 내부 엔진 실행 -> 구조화된 JSON 응답 반환 과정을 수행합니다.
     """
-    try:
+    try:  # 모든 예외 상황을 포착하여 구조화된 응답으로 반환합니다.
         # 1. 입력 데이터 유효성 검사 (Validation)는 Pydantic이 담당하지만, 추가적인 비즈니스 로직 검사를 합니다.
         if not request.user_actions:
             raise ValueError("AssessmentRequest에는 반드시 평가할 사용자 행동 목록(user_actions)이 포함되어야 합니다.")
