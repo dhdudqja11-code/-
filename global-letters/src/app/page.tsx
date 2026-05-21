@@ -36,6 +36,7 @@ export default function Home() {
   const [actionStep, setActionStep] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showAction, setShowAction] = useState(false);
+  const [letterData, setLetterData] = useState<any>(null);
   const [drawCount, setDrawCount] = useState(0);
   const [bgUrl, setBgUrl] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -80,6 +81,26 @@ export default function Home() {
   }, []);
 
   const typingRef = useRef<NodeJS.Timeout | null>(null);
+
+  const makeLegacyLetter = (data: any) => {
+    if (!data) return "";
+    if (typeof data.letter === "string" && data.letter.trim() !== "") {
+      return data.letter;
+    }
+    const paragraphs = Array.isArray(data.page_letter_paragraphs)
+      ? data.page_letter_paragraphs
+      : [];
+    const sentences = Array.isArray(data.page_sentences)
+      ? data.page_sentences.map((s: string) => `"${s}"`)
+      : [];
+    const questions = Array.isArray(data.page_questions)
+      ? data.page_questions.map((q: string) => `Q. ${q}`)
+      : [];
+
+    return [...paragraphs, sentences.join("\n"), questions.join("\n")]
+      .filter(Boolean)
+      .join("\n\n");
+  };
 
   const handleStorySubmit = () => {
     const trimmed = userStory.trim();
@@ -131,14 +152,15 @@ export default function Home() {
         return;
       }
       setBgUrl(aestheticBackgrounds[Math.floor(Math.random() * aestheticBackgrounds.length)]);
+      setLetterData(data);
       
-      // 🔒 Ref에 원본 텍스트 즉시 안전 동기화
-      fullLetterRef.current = data.letter || "";
-      actionStepRef.current = data.action || "";
+      const legacyText = makeLegacyLetter(data);
+      fullLetterRef.current = data.letter || legacyText;
+      actionStepRef.current = data.action || data.page_action || "";
       
-      setFullLetterText(data.letter);
+      setFullLetterText(data.letter || legacyText);
       setView("full");
-      startTyping(data.letter, data.action);
+      startTyping(data.letter || legacyText, data.action || data.page_action || "");
     } catch (error) {
       alert("편지 생성 중 오류가 발생했습니다.");
       setView("tier");
@@ -225,38 +247,23 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleDownloadPDF = () => {
-    const element = document.getElementById("letter-container");
-    if (!element) return;
+  const handleDownloadPDF = async () => {
+    const hiddenPages = Array.from(document.querySelectorAll('.pdf-page')) as HTMLElement[];
+    const pageElements = hiddenPages.length > 0
+      ? hiddenPages
+      : [document.getElementById("letter-container")].filter(Boolean) as HTMLElement[];
+    if (pageElements.length === 0) return;
 
     const downloadBtn = document.querySelector("#download-pdf-btn");
     const originalText = downloadBtn?.innerHTML;
 
-    // 🔒 PDF 변환 시작 알림
     if (downloadBtn) {
       downloadBtn.innerHTML = "💌 PDF 저장 중...";
       (downloadBtn as any).disabled = true;
     }
 
-    // 🔒 CORS 캐싱 충돌 원천 방어 (Cache-busting URL 재작성)
-    const originalBg = element.style.backgroundImage;
-    let hasRewrittenBg = false;
-    if (originalBg && originalBg.includes("url(")) {
-      const match = originalBg.match(/url\(['"]?(.*?)['"]?\)/);
-      if (match && match[1]) {
-        const imgUrl = match[1];
-        const separator = imgUrl.includes("?") ? "&" : "?";
-        const newImgUrl = imgUrl + separator + "pdf_nocache=" + Date.now();
-        const newBg = originalBg.replace(imgUrl, newImgUrl);
-        element.style.backgroundImage = newBg;
-        hasRewrittenBg = true;
-      }
-    }
-
-    // 🔒 HMR/캐시 네임스페이스 오염 방지를 위한 html2canvas-pro 동적 강제 주입 함수
     const forceLoadProEngine = (): Promise<any> => {
       return new Promise((resolve, reject) => {
-        // 이미 주입된 고유 변수가 있다면 즉시 반환
         if ((window as any).html2canvasProInstance) {
           resolve((window as any).html2canvasProInstance);
           return;
@@ -266,7 +273,6 @@ export default function Home() {
         script.src = "https://cdn.jsdelivr.net/npm/html2canvas-pro@latest/dist/html2canvas-pro.min.js";
         script.crossOrigin = "anonymous";
         script.onload = () => {
-          // 로드 완료 즉시 고유 격리 네임스페이스에 백업 고정!
           (window as any).html2canvasProInstance = (window as any).html2canvas;
           resolve((window as any).html2canvas);
         };
@@ -275,53 +281,46 @@ export default function Home() {
       });
     };
 
-    forceLoadProEngine()
-      .then((proEngine) => {
-        const jsPDF = (window as any).jsPDF || ((window as any).jspdf ? (window as any).jspdf.jsPDF : null);
-        if (!jsPDF) {
-          throw new Error("PDF 구성 파일(jsPDF)이 아직 로드되지 않았습니다.");
-        }
+    try {
+      const proEngine = await forceLoadProEngine();
+      const jsPDF = (window as any).jsPDF || ((window as any).jspdf ? (window as any).jspdf.jsPDF : null);
+      if (!jsPDF) {
+        throw new Error("PDF 구성 파일(jsPDF)이 아직 로드되지 않았습니다.");
+      }
 
-        return proEngine(element, {
-          scale: 3, // 초고화질 보정
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      for (let pageIndex = 0; pageIndex < pageElements.length; pageIndex += 1) {
+        const pageElement = pageElements[pageIndex];
+        const canvas = await proEngine(pageElement, {
+          scale: 3,
           useCORS: true,
           logging: false,
           backgroundColor: "#ffffff",
-          allowTaint: false
-        }).then((canvas: any) => {
-          // 복원
-          if (hasRewrittenBg) element.style.backgroundImage = originalBg;
-
-          const imgData = canvas.toDataURL('image/jpeg', 1.0);
-          const pdf = new jsPDF('p', 'mm', 'a4');
-          const pdfWidth = pdf.internal.pageSize.getWidth();
-          const pdfHeight = pdf.internal.pageSize.getHeight();
-          
-          // 엽서 가로세로 비율 계산하여 A4에 맞추기
-          const imgWidth = pdfWidth - 20; // 10mm 여백
-          const imgHeight = (canvas.height * imgWidth) / canvas.width;
-          
-          // 수직 가운데 정렬 위치 계산
-          const yPos = (pdfHeight - imgHeight) / 2;
-
-          pdf.addImage(imgData, 'JPEG', 10, yPos > 10 ? yPos : 10, imgWidth, imgHeight);
-          pdf.save('마음을_묻다_위로엽서.pdf');
-
-          if (downloadBtn) {
-            downloadBtn.innerHTML = originalText || "나만의 엽서 간직하기 (PDF)";
-            (downloadBtn as any).disabled = false;
-          }
+          allowTaint: false,
         });
-      })
-      .catch((err: any) => {
-        if (hasRewrittenBg) element.style.backgroundImage = originalBg;
-        console.error("PDF generation error:", err);
-        alert("PDF 생성 중 오류가 발생했습니다.\n\n오류 내용: " + err.message + "\n\n디버그 상세 정보:\n" + (err.stack || "스택 트레이스 없음"));
-        if (downloadBtn) {
-          downloadBtn.innerHTML = originalText || "나만의 엽서 간직하기 (PDF)";
-          (downloadBtn as any).disabled = false;
-        }
-      });
+
+        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+        const imgWidth = pdfWidth - 20;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const yPos = (pdfHeight - imgHeight) / 2;
+
+        if (pageIndex > 0) pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 10, yPos > 10 ? yPos : 10, imgWidth, imgHeight);
+      }
+
+      pdf.save('마음을_묻다_위로엽서.pdf');
+    } catch (err: any) {
+      console.error("PDF generation error:", err);
+      alert("PDF 생성 중 오류가 발생했습니다.\n\n오류 내용: " + (err?.message || err));
+    } finally {
+      if (downloadBtn) {
+        downloadBtn.innerHTML = originalText || "나만의 엽서 간직하기 (PDF)";
+        (downloadBtn as any).disabled = false;
+      }
+    }
   };
 
   return (
@@ -497,6 +496,71 @@ export default function Home() {
                   </svg>
                   나만의 엽서 간직하기 (PDF)
                 </button>
+
+                {/* 다중 페이지 PDF 생성을 위한 숨겨진 페이지 렌더링 */}
+                {letterData && (
+                  <div
+                    id="pdf-page-root"
+                    className="fixed top-0 left-[-9999px] opacity-0 pointer-events-none"
+                    aria-hidden="true"
+                  >
+                    <div className="pdf-page w-[210mm] h-[297mm] p-20 bg-[#FDFBF7] text-slate-800">
+                      <div className="flex flex-col items-center justify-center h-full">
+                        <h1 className="text-3xl font-serif font-bold mb-6 text-center">
+                          {letterData.cover?.title || "당신을 위한 문장 처방전"}
+                        </h1>
+                        <h2 className="text-xl text-slate-500 text-center">
+                          {letterData.cover?.heart_name || "괜찮은 척하느라 지친 마음에게"}
+                        </h2>
+                      </div>
+                    </div>
+
+                    <div className="pdf-page w-[210mm] h-[297mm] p-20 bg-[#FDFBF7] text-slate-800">
+                      <div className="space-y-6 text-lg leading-relaxed font-serif">
+                        {(Array.isArray(letterData.page_letter_paragraphs) ? letterData.page_letter_paragraphs : [letterData.letter || ""]).map((paragraph: string, idx: number) => (
+                          <p key={`page-paragraph-${idx}`} className="mb-6">
+                            {paragraph}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pdf-page w-[210mm] h-[297mm] p-20 bg-[#FDFBF7] text-slate-800">
+                      <div className="space-y-8 font-serif">
+                        {Array.isArray(letterData.page_sentences) && letterData.page_sentences.length > 0 && (
+                          <div>
+                            <h3 className="text-2xl font-semibold mb-6">오래 간직할 문장</h3>
+                            {letterData.page_sentences.map((sentence: string, idx: number) => (
+                              <p key={`sentence-${idx}`} className="mb-4 text-lg">
+                                "{sentence}"
+                              </p>
+                            ))}
+                          </div>
+                        )}
+
+                        {Array.isArray(letterData.page_questions) && letterData.page_questions.length > 0 && (
+                          <div>
+                            <h3 className="text-2xl font-semibold mb-6">나에게 묻는 질문</h3>
+                            {letterData.page_questions.map((question: string, idx: number) => (
+                              <p key={`question-${idx}`} className="mb-4 text-lg">
+                                Q. {question}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {letterData.page_action && (
+                      <div className="pdf-page w-[210mm] h-[297mm] p-20 bg-[#FDFBF7] text-slate-800">
+                        <div className="h-full flex flex-col justify-center">
+                          <h3 className="text-2xl font-semibold mb-8">오늘의 작은 행동</h3>
+                          <p className="text-lg leading-relaxed">{letterData.page_action}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* 격자 모눈 편지지 텍스처 엽서 */}
                 <div

@@ -91,15 +91,24 @@ export async function POST(req: Request) {
           const parsedResponse = JSON.parse(cleanText);
           
           // 🔒 OpenAI Citation Source Tag 제거 필터
-          let filteredLetter = parsedResponse.letter || "";
-          filteredLetter = filteredLetter.replace(/【[^】]+】/g, "").trim();
-          
-          let filteredAction = parsedResponse.action || "";
-          filteredAction = filteredAction.replace(/【[^】]+】/g, "").trim();
-          
-          return NextResponse.json({ 
-            letter: filteredLetter, 
-            action: filteredAction 
+          if (parsedResponse.letter && typeof parsedResponse.letter === 'string') {
+            parsedResponse.letter = parsedResponse.letter.replace(/【[^】]+】/g, "").trim();
+          }
+          if (parsedResponse.action && typeof parsedResponse.action === 'string') {
+            parsedResponse.action = parsedResponse.action.replace(/【[^】]+】/g, "").trim();
+          }
+          if (parsedResponse.page_action && typeof parsedResponse.page_action === 'string') {
+            parsedResponse.page_action = parsedResponse.page_action.replace(/【[^】]+】/g, "").trim();
+          }
+
+          const fallbackLetter = Array.isArray(parsedResponse.page_letter_paragraphs)
+            ? parsedResponse.page_letter_paragraphs.join("\n\n")
+            : "";
+
+          return NextResponse.json({
+            ...parsedResponse,
+            letter: parsedResponse.letter || fallbackLetter,
+            action: parsedResponse.action || parsedResponse.page_action || ""
           });
         }
       }
