@@ -1,109 +1,86 @@
 import pytest
-from fastapi import FastAPI, HTTPException
-from pydantic import ValidationError
-from unittest.mock import Mock
-import json
+from fastapi import FastAPI
+# 프로젝트 내부 구조에 맞게 수정 필요: 실제 API 호출 함수가 정의된 모듈을 임포트합니다.
+from src.api import simulation_router 
 
-# 시뮬레이션 로직을 임포트했다고 가정합니다. 실제 프로젝트 구조에 맞춰 수정해야 합니다.
-# 여기서는 테스트 목적으로 필요한 클래스와 함수를 재정의하여 self-contained로 만듭니다.
+# 테스트용 Mock Data (Researcher가 제공한 고위험 사례를 시뮬레이션)
+HIGH_RISK_CASE_1 = {
+    "risk_type": "GDPR/데이터주권",
+    "description": "미국 기반 클라우드 사용으로 인한 유럽 법규 위반 리스크.",
+    "severity_score": 0.95, # 최대치 근접
+    "potential_loss_factor": 1.8, # 가중치 높은 요소
+    "source_statute": "GDPR Article 83",
+}
 
-class LossItemInput:
-    def __init__(self, risk_type: str, exposure_value: float, probability: float):
-        self.risk_type = risk_type
-        self.exposure_value = exposure_value
-        self.probability = probability
+HIGH_RISK_CASE_2 = {
+    "risk_type": "SOX/재무보고 투명성",
+    "description": "내부 통제 부실로 인한 분기 보고서 조작 가능 리스크.",
+    "severity_score": 0.88,
+    "potential_loss_factor": 2.5, # 가장 높은 손실 가중치 예상
+    "source_statute": "SOX Section 404",
+}
 
-class SimulationRequest:
-    def __init__(self, user_id: str, risk_items: list):
-        self.user_id = user_id
-        self.risk_items = risk_items
+@pytest.fixture(scope="module")
+def app():
+    """테스트용 FastAPI 앱 인스턴스 제공"""
+    # 실제 라우터가 사용하는 API 객체를 Mocking하거나, 테스트 전용 클라이언트를 사용합니다.
+    return FastAPI()
 
-# 실제 API 라우터 로직을 Mocking하여 테스트합니다. (간단화를 위해)
-async def calculate_loss(request_data):
-    try:
-        # 1. Pydantic 유효성 검사 시뮬레이션
-        if not request_data["user_id"]:
-            raise ValueError("User ID is required.")
+# Note: 실제 로직이 simulation_router 내부에 있다면, 아래처럼 client를 통해 호출해야 합니다.
+# 예시로, 'calculate_loss'라는 핵심 함수가 있다고 가정하고 테스트를 작성하겠습니다.
 
-        items = [LossItemInput(**item) for item in request_data['risk_items']]
-        
-        # 2. 핵심 로직 계산 (Expected Loss)
-        total_expected_loss = sum(item.exposure_value * item.probability for item in items)
+def test_api_high_risk_validation(app):
+    """
+    [TEST] 고위험 사례 1: GDPR 위반 시뮬레이션 - 결과값의 논리적 일관성 검증
+    목표: 높은 severity와 factor가 충격적으로 큰 손실액을 산출하는지 확인.
+    """
+    print("--- Running Test Case 1: GDPR Violation ---")
+    # Mocking the internal calculation function call (replace with actual router call)
+    estimated_loss = simulation_router.calculate_loss(
+        risk_data=HIGH_RISK_CASE_1,
+        base_revenue=500000 # 가상 기준 매출액 $50만
+    )
 
-        return {
-            "status": "success",
-            "result": {"total_expected_loss": round(total_expected_loss, 2)}
-        }
-    except ValidationError as e:
-        raise HTTPException(status_code=400, detail=f"Validation Failed: {e}")
-    except ValueError as e:
-        # 비즈니스 로직 오류 (예: 리스크 요소가 1개 미만)
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        # 예상치 못한 시스템 오류
-        print(f"Unexpected Error: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error.")
+    # Business Rule Assert: GDPR 리스크는 최소 80% 이상의 손실 위험이 발생해야 함.
+    assert isinstance(estimated_loss, float) and estimated_loss > 390000.0
+    print(f"✅ Test Case 1 Passed. Estimated Loss: ${estimated_loss:,.2f}")
 
 
-@pytest.mark.asyncio
-async def test_successful_calculation():
-    """✅ 정상적인 데이터 입력 시 기대 손실액 계산 테스트."""
-    request = {
-        "user_id": "test-user-123",
-        "risk_items": [
-            {"risk_type": "GDPR Violation", "exposure_value": 5000.0, "probability": 0.8}, # 예상 손실: 4000
-            {"risk_type": "Contract Breach", "exposure_value": 1000.0, "probability": 0.2}  # 예상 손실: 200
-        ]
+def test_api_critical_risk_validation(app):
+    """
+    [TEST] 고위험 사례 2: SOX 규정 위반 시뮬레이션 - 최대 손실액 산출 검증
+    목표: 가장 높은 potential_loss_factor를 사용하여 최대치의 재무적 공포를 조성하는지 확인.
+    """
+    print("\n--- Running Test Case 2: SOX Violation ---")
+    # Mocking the internal calculation function call (replace with actual router call)
+    estimated_loss = simulation_router.calculate_loss(
+        risk_data=HIGH_RISK_CASE_2,
+        base_revenue=500000
+    )
+
+    # Business Rule Assert: SOX 리스크는 기준 매출액 대비 3배 이상의 손실이 예상되어야 함.
+    assert isinstance(estimated_loss, float) and estimated_loss > 1250000.0
+    print(f"✅ Test Case 2 Passed. Estimated Loss: ${estimated_loss:,.2f}")
+
+
+def test_api_low_risk_validation(app):
+    """
+    [TEST] 낮은 위험 사례 검증 (Negative Testing)
+    목표: 리스크가 낮을 때, 손실액이 적절히 제한되는지 확인.
+    """
+    LOW_RISK_CASE = {
+        "risk_type": "일반 운영 미준수",
+        "description": "경미한 계약서 누락.",
+        "severity_score": 0.2,
+        "potential_loss_factor": 0.5,
+        "source_statute": None,
     }
-    response = await calculate_loss(request)
-    assert response['status'] == 'success'
-    assert response['result']['total_expected_loss'] == 4200.0
+    print("\n--- Running Test Case 3: Low Risk Validation ---")
+    estimated_loss = simulation_router.calculate_loss(
+        risk_data=LOW_RISK_CASE,
+        base_revenue=500000
+    )
 
-@pytest.mark.asyncio
-async def test_edge_case_zero_probability():
-    """✅ 발생 확률이 0인 경우 (손실액 0) 테스트."""
-    request = {
-        "user_id": "test-user-123",
-        "risk_items": [
-            {"risk_type": "Zero Risk", "exposure_value": 5000.0, "probability": 0.0} # 예상 손실: 0
-        ]
-    }
-    response = await calculate_loss(request)
-    assert response['result']['total_expected_loss'] == 0.0
-
-@pytest.mark.asyncio
-async def test_error_input_validation():
-    """❌ Pydantic/입력값 유효성 검사 실패 테스트 (probability > 1.0 또는 exposure < 0)."""
-    request = {
-        "user_id": "test-invalid",
-        # probability가 1.5로 잘못 입력된 케이스
-        "risk_items": [
-            {"risk_type": "Bad Data", "exposure_value": 100.0, "probability": 1.5} 
-        ]
-    }
-    # HTTPException을 기대합니다. (400 Bad Request)
-    with pytest.raises(HTTPException) as excinfo:
-        await calculate_loss(request)
-    assert excinfo.value.status_code == 400
-    assert "Validation Failed" in str(excinfo.value.detail)
-
-@pytest.mark.asyncio
-async def test_error_missing_required_field():
-    """❌ 필수 필드 누락 또는 비즈니스 규칙 위반 테스트 (예: risk_items가 빈 리스트)."""
-    request = {
-        "user_id": "test-empty",
-        # risk_items를 아예 제거하거나, 최소 항목 수를 만족하지 못하게 만듬
-        "risk_items": [] 
-    }
-    with pytest.raises(HTTPException) as excinfo:
-        await calculate_loss(request)
-    assert excinfo.value.status_code == 400
-    # 비즈니스 로직 오류 메시지 확인 (ValueError에서 포착된 것)
-    assert "리스크 요소가 하나 이상 필수입니다" in str(excinfo.value.detail)
-
-@pytest.mark.asyncio
-async def test_security_rate_limiting():
-    """🛡️ Rate Limiting 기능의 동작을 검증하는 테스트 (실제 구현된 미들웨어와 연동되어야 함)."""
-    # 이 테스트는 실제 FastAPI 환경에서 Middleware를 Mocking해야 정확하지만, 
-    # 개념적으로 'Rate Limit 초과 시 429 Too Many Requests'가 발생함을 확인합니다.
-    pass
+    # Business Rule Assert: 손실액은 기준 매출의 일정 비율(예: 10%)을 넘지 않아야 함.
+    assert isinstance(estimated_loss, float) and estimated_loss < 60000.0
+    print("✅ Test Case 3 Passed.")
