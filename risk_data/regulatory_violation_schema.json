@@ -1,0 +1,61 @@
+{
+  "description": "Mini ROI 시뮬레이터를 위한 법률 및 규제 위반 데이터 세트. 각 항목은 개발자가 즉시 로직에 적용할 수 있도록 정량화되어야 함.",
+  "schema_version": "1.0",
+  "risk_scenarios": [
+    {
+      "id": "AI_BIAS_001",
+      "violation_type": "인공지능 편향성 및 차별적 알고리즘 운영 (Bias & Discrimination)",
+      "regulatory_basis": "GDPR Art. 22, 국내 개인정보보호법 제37조 (자동화된 결정에 대한 거부권 명시 필요)",
+      "description": "채용 과정 등 중요한 의사결정에서 성별/인종 등의 민감 정보를 간접적으로 차별하여 사용했을 때 발생하는 리스크.",
+      "estimated_loss_range_M": {
+        "min": 1.5,
+        "max": 8.0
+      },
+      "key_pain_point": "차별 증명 및 소송 비용 (Litigation & Proof)"
+    },
+    {
+      "id": "DATA_SOV_002",
+      "violation_type": "데이터 주권 침해 및 국외 전송 위반 (Data Sovereignty Violation)",
+      "regulatory_basis": "GDPR Article 44, 국내 정보통신망법 제49조의8 등 (국가별 데이터 저장/처리 요구사항 미준수).",
+      "description": "고객 데이터를 본국의 동의나 적절한 법적 근거 없이 해외 서버로 이전하거나 처리했을 때 발생하는 심각한 위반.",
+      "estimated_loss_range_M": {
+        "min": 5.0,
+        "max": 30.0
+      },
+      "key_pain_point": "데이터 이동 경로 추적 실패 및 법규 미준수 (Non-compliance)"
+    },
+    {
+      "id": "PII_SECURITY_003",
+      "violation_type": "개인 식별 정보 유출 및 보안 조치 미흡 (Sensitive PII Leakage)",
+      "regulatory_basis": "CCPA/CPRA, 국내 개인정보보호법 제29조(안전성 확보 조치 의무) 위반.",
+      "description": "암호화되지 않은 상태로 고객의 주민등록번호, 금융 정보 등 핵심 PII를 유출하거나 관리 소홀을 일으킨 경우.",
+      "estimated_loss_range_M": {
+        "min": 2.0,
+        "max": 15.0
+      },
+      "key_pain_point": "정보 노출 규모 및 신용도 하락 (Breach Scope & Reputation Damage)"
+    },
+    {
+      "id": "FINANCE_TRX_004",
+      "violation_type": "금융 거래 데이터 무결성 손상 및 감사 추적 실패 (Audit Trail Failure)",
+      "regulatory_basis": "SOX Act (사베인스-옥슬리 법) 등 회계/재무 관련 규정 위반.",
+      "description": "회사의 중요한 재무 트랜잭션 데이터의 출처(Source)나 변동 과정이 기록되지 않아 회계 감사를 통과하지 못할 경우.",
+      "estimated_loss_range_M": {
+        "min": 3.5,
+        "max": 12.0
+      },
+      "key_pain_point": "재무 보고의 투명성 결여 및 법적 책임 (Financial Accountability)"
+    },
+    {
+      "id": "CONTENT_IP_005",
+      "violation_type": "지식 재산권(IP) 침해 및 저작권 무단 사용 (Copyright & IP Infringement)",
+      "regulatory_basis": "국가별 지적재산권법, 산업 디자인 보호 규정 위반.",
+      "description": "경쟁사 또는 제3자의 독점적인 콘텐츠, 기술 아키텍처를 허락 없이 사용하여 시장에서 법적 분쟁을 일으킨 경우.",
+      "estimated_loss_range_M": {
+        "min": 1.0,
+        "max": 6.5
+      },
+      "key_pain_point": "시장 독점권 침해 및 배상금 지급 (Damages & Market Exclusion)"
+    }
+  ]
+}
