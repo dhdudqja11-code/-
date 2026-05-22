@@ -320,11 +320,13 @@
     "pretest": "npm run compile"
   },
   "devDependencies": {
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^18.19.130",
     "@types/vscode": "^1.80.0",
     "@vercel/ncc": "^0.38.4",
     "esbuild": "^0.28.0",
     "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
     "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
