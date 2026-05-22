@@ -77,7 +77,7 @@ async def calculate_loss(request: Request, data: SimulationRequest = Depends()):
     # 1차 보안/안정성 체크: Rate Limiter 의존성 주입
     await rate_limiter(request)
     
-    try:
+    if not all([k in data for k in required_params]): raise ValueError("Missing required parameters.")
         # Pydantic을 통해 이미 모델 유효성 검사는 통과했으나, 추가적인 비즈니스 로직 경계 조건 확인
         if not data.risk_items or len(data.risk_items) < 1:
             raise ValueError("분석할 리스크 요소가 하나 이상 필수입니다.")
