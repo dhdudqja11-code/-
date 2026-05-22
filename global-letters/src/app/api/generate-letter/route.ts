@@ -13,7 +13,7 @@ const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export async function POST(req: Request) {
   try {
-    const { story, productType } = await req.json();
+    const { story, productType, language = "ko" } = await req.json();
 
     // 1. Get user IP for rate limiting
     const forwardedFor = req.headers.get("x-forwarded-for");
@@ -72,6 +72,9 @@ export async function POST(req: Request) {
           modePrompt = `[MODE: FREE_GREETING] Story: ${story}`;
       }
 
+      // 글로벌 다국어 번역 시스템 주입 (사용자의 브라우저 언어 감지 적용)
+      modePrompt += `\n\n[CRITICAL: MULTI-LANGUAGE TRANSLATION]\nThe user's browser language code is '${language}'. You MUST translate and write the ENTIRE JSON response (including cover title, paragraphs, sentences, questions, action, and recovery_days) in this requested language. Do NOT use Korean unless the language code is 'ko'.`;
+
       await openai.beta.threads.messages.create(thread.id, {
         role: "user",
         content: modePrompt,
@@ -90,11 +93,19 @@ export async function POST(req: Request) {
           const cleanText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
           const parsedResponse = JSON.parse(cleanText);
           
-          return NextResponse.json({
-            ...parsedResponse,
-            letter: parsedResponse.letter || fallbackLetter,
-            action: parsedResponse.action || parsedResponse.page_action || ""
-          });
+          // 🔒 OpenAI Citation Source Tag 제거 필터 (객체 내 모든 문자열 재귀 필터링)
+          const filterCitations = (obj: any) => {
+            for (const key in obj) {
+              if (typeof obj[key] === 'string') {
+                obj[key] = obj[key].replace(/【[^】]+】/g, "").trim();
+              } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                filterCitations(obj[key]);
+              }
+            }
+          };
+          filterCitations(parsedResponse);
+          
+          return NextResponse.json(parsedResponse);
         }
       }
     }

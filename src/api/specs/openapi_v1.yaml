@@ -1,0 +1,111 @@
+openapi: 3.0.0
+info:
+  title: Risk Simulation Core Logic API
+  version: v1.0.0
+  description: Processes minimal user inputs to calculate and visualize quantified regulatory and financial loss, providing a shocking yet authoritative result for conversion funnel optimization.
+servers:
+  - url: https://api.yourcompany.com/v1
+    description: Main production API Gateway Endpoint
+
+paths:
+  /simulation/calculate-loss:
+    post:
+      summary: Calculates the projected financial loss based on provided risk variables.
+      operationId: calculateLossSimulation
+      tags:
+        - Simulation
+      requestBody:
+        description: Minimal inputs required for simulation (e.g., data scope, time frame).
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimulationInput'
+      responses:
+        '200':
+          description: Successfully calculated the projected loss and provided detailed breakdown.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LossCalculationResult'
+        '400':
+          description: Invalid input validation failed (Missing or malformed required fields).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error_code:
+                    type: string
+                    example: INVALID_INPUT_SCHEMA
+                  message:
+                    type: string
+                    example: The 'system_scope' is mandatory and must be a defined enum value.
+        '500':
+          description: Internal server error during loss calculation or service communication failure.
+
+components:
+  schemas:
+    SimulationInput:
+      type: object
+      required:
+        - timeframe
+        - systemScope
+      properties:
+        timeframe:
+          type: string
+          description: The time period for the risk analysis (e.g., 'last 12 months', 'next quarter').
+          example: "Last 3 years"
+        systemScope:
+          type: string
+          description: The scope of systems or data being analyzed (e.g., 'AI model governance', 'Cross-border PII transfer'). MUST be one of the predefined regulatory categories.
+          enum: [AI_BLACKBOX, DATA_SOVEREIGNTY, GDPR_COMPLIANCE]
+          example: "DATA_SOVEREIGNTY"
+        rawInputDataPoints:
+          type: array
+          description: Optional array of raw data points (e.g., number of records processed, failed audit counts). Should not be empty if systemScope is active.
+          items:
+            type: number
+
+    LossCalculationResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates successful calculation.
+        projected_loss_amount:
+          type: number
+          format: float
+          description: The total estimated loss amount (The core, shocking result).
+          example: 7890123.45
+        currency:
+          type: string
+          enum: [USD, EUR, JPY]
+          default: USD
+        risk_level:
+          type: string
+          description: The severity classification (Critical/High/Medium).
+          example: CRITICAL
+        action_required:
+          type: boolean
+          description: Flag indicating immediate action is necessary.
+          example: true
+        breakdown:
+          type: object
+          description: Detailed mathematical justification for the calculated loss amount, improving transparency and authority.
+          properties:
+            base_risk_score:
+              type: number
+              description: The raw score derived from input data points (e.g., 0 to 100).
+            loss_multiplier_applied:
+              type: number
+              description: Multiplier used in the formula (e.g., Legal fine factor * Operational downtime factor).
+            expected_loss_formula:
+              type: string
+              description: The specific mathematical formula used for this calculation instance.
+              example: "(Base Risk Score / 10) * Loss Multiplier * Timeframe Factor"
+        mitigation_steps:
+          type: array
+          items:
+            type: string
+          description: Concise, authoritative steps to mitigate the identified risk.
