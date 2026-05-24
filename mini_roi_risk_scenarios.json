@@ -1,0 +1,40 @@
+{
+  "scenarios": [
+    {
+      "id": "PII_LEAK",
+      "name": "개인정보 유출 (PII Leak)",
+      "risk_level": 0.8,
+      "trigger_keywords": ["user_data", "pci"],
+      "loss_components": {
+        "initial_fine_rate": 0.05,
+        "regulatory_penalty_factor": 1.2,
+        "remediation_cost_base": 1000000
+      },
+      "description": "민감 개인정보가 유출된 경우 발생하는 초기 법적 책임 및 복구 비용."
+    },
+    {
+      "id": "REGULATION_VIOLATION",
+      "name": "규제 위반 (Regulatory Violation)",
+      "risk_level": 0.95,
+      "trigger_keywords": ["compliance", "gdpr"],
+      "loss_components": {
+        "initial_fine_rate": 0.15,
+        "regulatory_penalty_factor": 2.0,
+        "remediation_cost_base": 3000000
+      },
+      "description": "산업별 최신 법규(GDPR 등)를 위반하여 시장에서 퇴출될 위험이 있는 경우."
+    },
+    {
+      "id": "SYSTEM_DOWNTIME",
+      "name": "시스템 다운타임 (System Downtime)",
+      "risk_level": 0.7,
+      "trigger_keywords": ["uptime", "sustainability"],
+      "loss_components": {
+        "initial_fine_rate": 0.02,
+        "regulatory_penalty_factor": 1.1,
+        "remediation_cost_base": 500000
+      },
+      "description": "핵심 서비스의 장기간 중단으로 인한 운영 손실 및 신뢰도 하락."
+    }
+  ]
+}
