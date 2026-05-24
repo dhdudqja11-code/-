@@ -1,5 +1,21 @@
 import json
 import os
+
+def load_env_local():
+    for path in ['.env.local', '../.env.local', '../../.env.local', os.path.join(os.path.dirname(__file__), '../.env.local')]:
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        key, val = line.split('=', 1)
+                        key = key.strip()
+                        val = val.strip().strip('"').strip("'")
+                        os.environ[key] = val
+            break
+
+load_env_local()
+
 from openai import OpenAI
 
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", "YOUR_API_KEY_HERE"))

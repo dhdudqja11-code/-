@@ -1,0 +1,17 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/admin/page": "/admin",
+  "/api/cleanup/route": "/api/cleanup",
+  "/api/generate-letter/route": "/api/generate-letter",
+  "/api/send-gift/route": "/api/send-gift",
+  "/api/setup-assistant/route": "/api/setup-assistant",
+  "/api/setup-master/route": "/api/setup-master",
+  "/api/track/review/route": "/api/track/review",
+  "/api/track/visit/route": "/api/track/visit",
+  "/api/upload-knowledge/route": "/api/upload-knowledge",
+  "/api/verify-payment/route": "/api/verify-payment",
+  "/api/webhook/paypal/route": "/api/webhook/paypal",
+  "/favicon.ico/route": "/favicon.ico",
+  "/page": "/"
+}

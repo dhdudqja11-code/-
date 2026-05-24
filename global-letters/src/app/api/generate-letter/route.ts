@@ -104,6 +104,57 @@ export async function POST(req: Request) {
             }
           };
           filterCitations(parsedResponse);
+
+          // 🛡️ API Level defensive post-processing to guarantee 100% strict compliance
+          if (!parsedResponse.cover || typeof parsedResponse.cover !== 'object') {
+            parsedResponse.cover = {};
+          }
+          if (typeof parsedResponse.cover.title !== 'string') {
+            parsedResponse.cover.title = "당신을 위한 문장 처방전";
+          }
+          if (typeof parsedResponse.cover.heart_name !== 'string') {
+            parsedResponse.cover.heart_name = "소중한 마음에게";
+          }
+
+          if (!Array.isArray(parsedResponse.page_letter_paragraphs)) {
+            parsedResponse.page_letter_paragraphs = typeof parsedResponse.letter === 'string' && parsedResponse.letter.trim() !== ''
+              ? [parsedResponse.letter]
+              : ["따뜻한 위로의 편지가 작성 중입니다."];
+          }
+
+          if (!Array.isArray(parsedResponse.page_sentences)) {
+            parsedResponse.page_sentences = [];
+          }
+          if (!Array.isArray(parsedResponse.page_questions)) {
+            parsedResponse.page_questions = [];
+          }
+          if (typeof parsedResponse.page_action !== 'string') {
+            parsedResponse.page_action = "";
+          }
+          if (!Array.isArray(parsedResponse.recovery_days)) {
+            parsedResponse.recovery_days = [];
+          }
+
+          const targetSentences = productType === "beta" ? 3 : (productType === "deep" ? 5 : 0);
+          const targetQuestions = productType === "beta" ? 2 : (productType === "deep" ? 3 : 0);
+
+          if (targetSentences > 0) {
+            while (parsedResponse.page_sentences.length < targetSentences) {
+              parsedResponse.page_sentences.push("가장 당신다운 호흡으로, 오늘 하루를 조용히 채워나가길 바랄게요.");
+            }
+            if (parsedResponse.page_sentences.length > targetSentences) {
+              parsedResponse.page_sentences = parsedResponse.page_sentences.slice(0, targetSentences);
+            }
+          }
+
+          if (targetQuestions > 0) {
+            while (parsedResponse.page_questions.length < targetQuestions) {
+              parsedResponse.page_questions.push("오늘 밤 침대에 눕기 전, 내 마음의 날씨는 어떤 단어로 표현할 수 있을까요?");
+            }
+            if (parsedResponse.page_questions.length > targetQuestions) {
+              parsedResponse.page_questions = parsedResponse.page_questions.slice(0, targetQuestions);
+            }
+          }
           
           return NextResponse.json(parsedResponse);
         }

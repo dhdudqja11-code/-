@@ -1,0 +1,17 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/api/cleanup/route": "app/api/cleanup/route.js",
+  "/api/generate-letter/route": "app/api/generate-letter/route.js",
+  "/api/send-gift/route": "app/api/send-gift/route.js",
+  "/api/setup-assistant/route": "app/api/setup-assistant/route.js",
+  "/api/setup-master/route": "app/api/setup-master/route.js",
+  "/api/track/review/route": "app/api/track/review/route.js",
+  "/api/track/visit/route": "app/api/track/visit/route.js",
+  "/api/upload-knowledge/route": "app/api/upload-knowledge/route.js",
+  "/api/verify-payment/route": "app/api/verify-payment/route.js",
+  "/api/webhook/paypal/route": "app/api/webhook/paypal/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js"
+}

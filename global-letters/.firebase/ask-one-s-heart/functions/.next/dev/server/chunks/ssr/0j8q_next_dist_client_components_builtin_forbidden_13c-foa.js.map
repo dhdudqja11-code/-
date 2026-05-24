@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/user/AI%20%EA%B8%B0%EC%97%85%20%EB%91%90%EB%87%8C/%EB%82%B4%20%EC%9E%91%EC%97%85%EB%93%A4/global-letters/node_modules/next/src/client/components/builtin/forbidden.tsx"],"sourcesContent":["import { HTTPAccessErrorFallback } from '../http-access-fallback/error-fallback'\n\nexport default function Forbidden() {\n  return (\n    <HTTPAccessErrorFallback\n      status={403}\n      message=\"This page could not be accessed.\"\n    />\n  )\n}\n"],"names":["Forbidden","HTTPAccessErrorFallback","status","message"],"mappings":";;;+BAEA,WAAA;;;eAAwBA;;;;+BAFgB;AAEzB,SAASA;IACtB,OAAA,WAAA,GACE,CAAA,GAAA,YAAA,GAAA,EAACC,eAAAA,uBAAuB,EAAA;QACtBC,QAAQ;QACRC,SAAQ;;AAGd","ignoreList":[0]}}]
+}

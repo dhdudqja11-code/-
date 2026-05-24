@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 10, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/user/AI%20%EA%B8%B0%EC%97%85%20%EB%91%90%EB%87%8C/%EB%82%B4%20%EC%9E%91%EC%97%85%EB%93%A4/global-letters/src/app/providers.tsx"],"sourcesContent":["\"use client\";\n\nimport { PayPalScriptProvider } from \"@paypal/react-paypal-js\";\n\nexport function Providers({ children }: { children: React.ReactNode }) {\n  return (\n    <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || \"test\", currency: \"USD\" }}>\n      {children}\n    </PayPalScriptProvider>\n  );\n}\n"],"names":["Providers","children","options","clientId","currency"],"mappings":";;;;;AAEA;AAFA;;;AAIO,SAASA,UAAU,EAAEC,QAAQ,EAAiC;IACnE,qBACE,mQAAC,sOAAoB;QAACC,SAAS;YAAEC,UAAU,wHAA4C;YAAQC,UAAU;QAAM;kBAC5GH;;;;;;AAGP"}}]
+}

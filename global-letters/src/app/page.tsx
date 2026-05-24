@@ -36,7 +36,12 @@ const aestheticBackgrounds = [
   "https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?q=80&w=1000&auto=format&fit=crop",
   "https://images.unsplash.com/photo-1445905595283-21f8ae8a33d2?q=80&w=1000&auto=format&fit=crop",
   "https://images.unsplash.com/photo-1532274402911-5a369e4c48f2?q=80&w=1000&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1483728642387-6c3ba6c6af81?q=80&w=1000&auto=format&fit=crop"
+  "https://images.unsplash.com/photo-1483728642387-6c3ba6c6af81?q=80&w=1000&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?q=80&w=1000&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?q=80&w=1000&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=1000&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1422405153578-4bd676b19036?q=80&w=1000&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?q=80&w=1000&auto=format&fit=crop"
 ];
 
 const translations = {
@@ -100,8 +105,11 @@ const translations = {
     paymentDesc: "결제를 완료하시면 마스터 오영범의 따뜻한 편지가 즉시 작성됩니다.",
     giftRecipientLabel: "선물 받을 분의 성함(또는 애칭)을 적어주세요.",
     giftRecipientPlaceholder: "예: 사랑하는 지우님",
+    giftRecipientEmailLabel: "선물 받을 분의 이메일 주소를 적어주세요.",
+    giftRecipientEmailPlaceholder: "예: email@example.com",
     testPaymentBypass: "✨ [테스트용] 결제 우회 (개발자 전용)",
     loadingText: "당신의 이야기를 깊이 들여다보고 있습니다...",
+    randomLoadingText: "오늘의 문장을 뽑고 있습니다...",
     pdfLoadingText: "💌 PDF 저장 중...",
     pdfDownloadLabel: "나만의 엽서 간직하기 (PDF)",
     pdfPermanentLabel: "이 처방전 영구 소장하기 (PDF 다운로드)",
@@ -122,7 +130,7 @@ const translations = {
     footerCopyright: "© 2026 Master O.Y.B ALL RIGHTS RESERVED.",
     alertSelectTier: "먼저 원하는 처방전을 선택해주세요.",
     alertFillMore: "질문을 조금 더 작성해 주세요. 진짜 당신의 마음을 담아주세요.",
-    alertDrawLimit: "오늘의 문장 뽑기는 하루에 999번까지만 가능합니다. 내일 다시 새로운 문장을 만나보세요! ✨",
+    alertDrawLimit: "오늘의 문장 뽑기는 하루에 3번까지만 가능합니다. 내일 다시 새로운 문장을 만나보세요! ✨",
     alertLetterError: "편지 생성 중 오류가 발생했습니다.",
     alertPdfError: "PDF 생성 중 오류가 발생했습니다.",
     pdfErrorDetail: "PDF 생성 중 오류가 발생했습니다.\n\n오류 내용: ",
@@ -190,8 +198,11 @@ const translations = {
     paymentDesc: "After payment, a warm letter from Master O.Y.B will be created immediately.",
     giftRecipientLabel: "Enter the recipient's name or nickname.",
     giftRecipientPlaceholder: "e.g. Jiwon, my dear",
+    giftRecipientEmailLabel: "Enter the recipient's email address.",
+    giftRecipientEmailPlaceholder: "e.g. email@example.com",
     testPaymentBypass: "✨ [Test only] Payment bypass (dev only)",
     loadingText: "We are looking deeply into your story...",
+    randomLoadingText: "Picking today's sentence...",
     pdfLoadingText: "💌 Saving PDF...",
     pdfDownloadLabel: "Save my postcard (PDF)",
     pdfPermanentLabel: "Keep this prescription forever (PDF download)",
@@ -212,7 +223,7 @@ const translations = {
     footerCopyright: "© 2026 Master O.Y.B ALL RIGHTS RESERVED.",
     alertSelectTier: "Please select a prescription first.",
     alertFillMore: "Please write a bit more. Put your true feelings into the questions.",
-    alertDrawLimit: "Daily sentence draw is limited to 999 times per day. Please return tomorrow for a new sentence! ✨",
+    alertDrawLimit: "Daily sentence draw is limited to 3 times per day. Please return tomorrow for a new sentence! ✨",
     alertLetterError: "An error occurred while creating the letter.",
     alertPdfError: "An error occurred while generating the PDF.",
     pdfErrorDetail: "An error occurred while generating the PDF.\n\nError: ",
@@ -222,8 +233,57 @@ const translations = {
   }
 };
 
+const paginateParagraphs = (paragraphs: string[], maxPageHeightPx: number = 720) => {
+  if (typeof window === "undefined") return [paragraphs];
+  const pages: string[][] = [[]];
+  let currentPageIndex = 0;
+  
+  // Create a temporary hidden container to measure paragraph heights
+  const tempContainer = document.createElement("div");
+  tempContainer.style.width = "210mm";
+  tempContainer.style.padding = "20mm";
+  tempContainer.style.boxSizing = "border-box";
+  tempContainer.style.fontFamily = "'Apple SD Gothic Neo', 'Malgun Gothic', 'Playfair Display', serif";
+  tempContainer.style.fontSize = "1.125rem"; // text-lg equivalent
+  tempContainer.style.lineHeight = "2.25"; // leading-loose equivalent
+  tempContainer.style.position = "fixed";
+  tempContainer.style.top = "-9999px";
+  tempContainer.style.left = "-9999px";
+  document.body.appendChild(tempContainer);
+
+  for (const para of paragraphs) {
+    // Append the paragraph to the current temp container to test size
+    const pElement = document.createElement("p");
+    pElement.style.marginBottom = "1.5rem"; // mb-6 equivalent
+    pElement.innerText = para;
+    tempContainer.appendChild(pElement);
+
+    // Measure height
+    if (tempContainer.scrollHeight > maxPageHeightPx && pages[currentPageIndex].length > 0) {
+      // If it overflows the max height, move this paragraph to a new page
+      currentPageIndex += 1;
+      pages[currentPageIndex] = [para];
+      
+      // Reset the temp container and put only the new paragraph in it
+      tempContainer.innerHTML = "";
+      const newPElement = document.createElement("p");
+      newPElement.style.marginBottom = "1.5rem";
+      newPElement.innerText = para;
+      tempContainer.appendChild(newPElement);
+    } else {
+      // Otherwise, add it to the current page list
+      pages[currentPageIndex].push(para);
+    }
+  }
+
+  // Clean up
+  document.body.removeChild(tempContainer);
+  return pages;
+};
+
 export default function Home() {
   const [view, setView] = useState<ViewState>("tier");
+  const [envelopeOpen, setEnvelopeOpen] = useState(false);
   const [userStory, setUserStory] = useState("");
   const [productType, setProductType] = useState<ProductType>("free");
   const [typedText, setTypedText] = useState("");
@@ -237,6 +297,7 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<typeof TIERS[0] | null>(null);
   const [giftRecipient, setGiftRecipient] = useState("");
+  const [giftRecipientEmail, setGiftRecipientEmail] = useState("");
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [isKorean, setIsKorean] = useState(true);
   const t = isKorean ? translations.ko : translations.en;
@@ -251,11 +312,25 @@ export default function Home() {
   const actionStepRef = useRef("");
   const isTypingRef = useRef(false);
 
+  const getPaginatedParagraphs = () => {
+    if (!letterData) return [[]];
+    const paras = letterData.page_letter_paragraphs?.length 
+      ? letterData.page_letter_paragraphs 
+      : [letterData.letter || ""];
+    
+    return paginateParagraphs(paras, 750);
+  };
+
   useEffect(() => {
     setMounted(true);
     if (typeof window !== "undefined" && navigator.language) {
       setIsKorean(navigator.language.toLowerCase().includes('ko'));
     }
+    
+    // 엽서 배경을 15종 엄선 리스트에서 임의 선택하여 초기화
+    const randomBg = aestheticBackgrounds[Math.floor(Math.random() * aestheticBackgrounds.length)];
+    setBgUrl(randomBg);
+
     const today = new Date().toDateString();
     try {
       const saved = localStorage.getItem("sentence_draw_data");
@@ -273,8 +348,8 @@ export default function Home() {
       localStorage.setItem("sentence_draw_data", JSON.stringify({ date: today, count: 0 }));
     }
 
-    // [추가] 방문자 트래픽 추적 백엔드 전송
-    fetch("http://localhost:5000/api/track/visit", { method: "POST" })
+    // [추가] 방문자 트래픽 추적 백엔드 전송 (Next.js serverless relative route)
+    fetch("/api/track/visit", { method: "POST" })
       .catch((err) => console.log("Traffic tracking dev mode"));
   }, []);
 
@@ -308,13 +383,14 @@ export default function Home() {
 
   const buildStoryPayload = () => {
     const filledKeys = Object.keys(formData);
+    let payload = userStory.trim() ? `사연: ${userStory.trim()}\n\n` : "";
     if (filledKeys.length > 0) {
-      return filledKeys
+      payload += filledKeys
         .map((key) => `${key}: ${formData[key].trim()}`)
         .filter(Boolean)
         .join("\n\n");
     }
-    return userStory.trim();
+    return payload || userStory.trim();
   };
 
   const handleFormSubmit = () => {
@@ -352,7 +428,7 @@ export default function Home() {
   };
 
   const handleDrawGreeting = async () => {
-    if (drawCount >= 999) {
+    if (drawCount >= 3) {
       alert(t.alertDrawLimit);
       return;
     }
@@ -366,9 +442,9 @@ export default function Home() {
   const generateLetter = async (type: ProductType) => {
     setView("loading");
     try {
-      const healingKeywords = ["dusk", "fog", "calm+waterside", "vintage+window"];
-      const randomKeyword = healingKeywords[Math.floor(Math.random() * healingKeywords.length)];
-      setBgUrl(`https://source.unsplash.com/1600x900/?${randomKeyword}`);
+      // 엽서 배경을 15종 엄선 리스트에서 임의 선택하여 로드 (Unsplash API 에러 완전 방지)
+      const randomBg = aestheticBackgrounds[Math.floor(Math.random() * aestheticBackgrounds.length)];
+      setBgUrl(randomBg);
 
       const response = await fetch("/api/generate-letter", {
         method: "POST",
@@ -384,12 +460,45 @@ export default function Home() {
       setLetterData(data);
       
       const legacyText = makeLegacyLetter(data);
-      fullLetterRef.current = data.letter || legacyText;
+      let letterBody = data.letter || legacyText;
+      
+      // Random 모드일 경우 AI가 자체 생성한 따옴표 제거 (UI에 이미 고정 따옴표가 있으므로 중복 방지)
+      if (type === "random") {
+        letterBody = letterBody.trim().replace(/^["'“”‘’]+|["'“”‘’]+$/g, '').trim();
+      }
+      
+      fullLetterRef.current = letterBody;
       actionStepRef.current = data.action || data.page_action || "";
       
-      setFullLetterText(data.letter || legacyText);
+      setFullLetterText(letterBody);
       setView("full");
-      startTyping(data.letter || legacyText, data.action || data.page_action || "");
+      startTyping(letterBody, data.action || data.page_action || "");
+
+      // 🎁 선물 패키지 요금제 결제 시 수신자에게 이메일 자동 발송 트리거 실행
+      if (type === "gift" && giftRecipient && giftRecipientEmail) {
+        fetch("/api/send-gift", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recipientName: giftRecipient,
+            recipientEmail: giftRecipientEmail,
+            senderName: formData.q1_name || (isKorean ? "소중한 사람" : "Someone special"),
+            letterData: data
+          })
+        })
+        .then(res => res.json())
+        .then(emailRes => {
+          if (emailRes.success) {
+            console.log("💌 [선물 편지 발송] 이메일 발송 결과:", emailRes.mode);
+          } else {
+            console.error("❌ [선물 편지 발송] 발송 오류:", emailRes.error);
+          }
+        })
+        .catch(err => {
+          console.error("❌ [선물 편지 발송] API 연동 실패:", err);
+        });
+      }
+
     } catch (error) {
       alert(t.alertLetterError);
       setView("tier");
@@ -443,7 +552,7 @@ export default function Home() {
       tier: productType
     };
     try {
-      await fetch("http://localhost:5000/api/track/review", {
+      await fetch("/api/track/review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -462,7 +571,9 @@ export default function Home() {
     setReviewSubmitted(false);
     setView("tier");
     setSelectedProduct(null);
+    setEnvelopeOpen(false);
     setGiftRecipient("");
+    setGiftRecipientEmail("");
     setFormData({});
     
     // 🔒 상태값 및 Ref 초기화 추가
@@ -508,6 +619,7 @@ export default function Home() {
           resolve((window as any).html2canvas);
         };
         script.onerror = (e) => reject(new Error(t.payPalError + e));
+        document.head.appendChild(script); // Fix: Actually append the script to start loading
       });
     };
 
@@ -554,7 +666,21 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-[#fdfbf7] relative selection:bg-amber-100 overflow-x-hidden font-serif">
+    <div className={`min-h-screen flex flex-col items-center relative selection:bg-amber-100 overflow-x-hidden font-serif transition-all duration-1000 ${
+      view === "full" ? "desk-bg text-slate-100" : "bg-[#fdfbf7] text-slate-800"
+    }`}>
+      {/* Floating Glassmorphic KO | EN Language Toggle */}
+      <div className="absolute top-6 right-6 z-50">
+        <button
+          onClick={() => setIsKorean(prev => !prev)}
+          className="backdrop-blur-xl border border-slate-200/50 bg-white/40 text-slate-700 rounded-full py-1.5 px-4 text-xs font-sans font-medium hover:bg-white/60 active:scale-95 transition-all shadow-[0_4px_30px_rgba(0,0,0,0.03)] cursor-pointer flex items-center gap-1.5 hover:border-slate-300/50"
+        >
+          <svg className="w-3.5 h-3.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5c-.347 2.117-1.127 4.195-2.28 6.095M6.412 9a9.616 9.616 0 013.28-3m-3.28 3h8.218" />
+          </svg>
+          {isKorean ? "KO | EN" : "EN | KO"}
+        </button>
+      </div>
 
         <div className="w-full max-w-4xl px-4 sm:px-6 py-12 md:py-16 flex flex-col items-center">
           
@@ -591,6 +717,19 @@ export default function Home() {
                     <>
                       <div className="p-4 bg-slate-50 rounded-3xl text-sm text-slate-500 font-serif">
                         {selectedProduct.id === "recovery" ? t.inputHelpRecovery : t.inputHelpRegular}
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-serif mb-2 font-bold">
+                          {isKorean ? "당신의 이야기를 들려주세요 (자유 형식)" : "Please share your story (Free format)"}
+                        </label>
+                        <textarea
+                          rows={4}
+                          value={userStory}
+                          onChange={(e) => setUserStory(e.target.value)}
+                          placeholder={isKorean ? "마음에 담아둔 이야기를 편하게 적어주세요..." : "Feel free to write what's on your mind..."}
+                          className="w-full rounded-xl border border-slate-200 bg-white p-4 font-serif outline-none focus:ring-2 focus:ring-amber-300"
+                        />
                       </div>
 
                       <div>
@@ -806,6 +945,36 @@ export default function Home() {
                   {t.paymentDesc}
                 </p>
                 
+                {/* 🎁 선물 패키지 정보 입력 (결제창 상단 노출) */}
+                {selectedProduct.id === "gift" && (
+                  <div className="w-full text-left mb-6 space-y-4 animate-fade-in">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5 font-sans">
+                        {t.giftRecipientLabel}
+                      </label>
+                      <input
+                        type="text"
+                        value={giftRecipient}
+                        onChange={(e) => setGiftRecipient(e.target.value)}
+                        placeholder={t.giftRecipientPlaceholder}
+                        className="block w-full rounded-xl border border-slate-200 bg-white p-3.5 text-slate-800 text-sm placeholder:text-slate-400 font-serif outline-none focus:ring-2 focus:ring-amber-200 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5 font-sans">
+                        {t.giftRecipientEmailLabel}
+                      </label>
+                      <input
+                        type="email"
+                        value={giftRecipientEmail}
+                        onChange={(e) => setGiftRecipientEmail(e.target.value)}
+                        placeholder={t.giftRecipientEmailPlaceholder}
+                        className="block w-full rounded-xl border border-slate-200 bg-white p-3.5 text-slate-800 text-sm placeholder:text-slate-400 font-serif outline-none focus:ring-2 focus:ring-amber-200 transition-all"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="w-full relative z-10">
                   <PayPalButtons
                     style={{ layout: "vertical", height: 48, shape: "rect", color: "black", label: "pay" }}
@@ -823,22 +992,6 @@ export default function Home() {
                     }}
                   />
                 </div>
-                
-                {/* 테스트용 간편 모의결제 우회 버튼 */}
-                {selectedProduct?.id === "gift" && (
-                  <div className="mt-6 w-full animate-fade-in text-left">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      {t.giftRecipientLabel}
-                    </label>
-                    <input
-                      type="text"
-                      value={giftRecipient}
-                      onChange={(e) => setGiftRecipient(e.target.value)}
-                      placeholder={t.giftRecipientPlaceholder}
-                      className="block w-full rounded-xl border border-amber-200 bg-white/70 p-4 text-slate-800 shadow-inner sm:text-lg transition-colors placeholder:text-slate-400 font-serif outline-none focus:ring-2 focus:ring-amber-300"
-                    />
-                  </div>
-                )}
 
                 <button
                   onClick={() => generateLetter(selectedProduct.id as ProductType)}
@@ -866,189 +1019,304 @@ export default function Home() {
                   </svg>
                 </div>
                 <p className="text-slate-500 font-serif italic text-lg animate-pulse">
-                  {t.loadingText}
+                  {productType === "random" ? t.randomLoadingText : t.loadingText}
                 </p>
               </div>
             )}
 
             {/* 5. 결과 화면 (엽서 & 리뷰) */}
             {view === "full" && (
-              <div className="animate-fade-in w-full max-w-2xl mt-4 flex flex-col items-center">
+              <div className="animate-fade-in w-full max-w-2xl mt-4 flex flex-col items-center z-10">
                 
-                {/* 무료 엽서용 PDF 다운로드 버튼 (유료는 성공 화면 버튼으로 대체) */}
-                {["free", "random"].includes(productType) && (
-                  <button
-                    id="download-pdf-btn"
-                    onClick={handleDownloadPDF}
-                    className="mb-6 px-6 py-3 bg-slate-800 text-white rounded-full font-serif text-sm tracking-wide hover:bg-slate-700 transition shadow-lg flex items-center gap-2 animate-fade-in z-20 active:scale-95 duration-150 cursor-pointer"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    {t.pdfDownloadLabel}
-                  </button>
-                )}
-
-                {/* 다중 페이지 PDF 생성을 위한 숨겨진 페이지 렌더링 */}
-                {letterData && (
-                  <div id="multi-page-pdf-root" className="fixed top-[-9999px] left-[-9999px]" aria-hidden="true">
-                    <div className="pdf-page w-[210mm] h-[297mm] flex flex-col items-center justify-center bg-[#FDFBF7] p-20">
-                      <h1 className="text-4xl font-serif text-slate-800 text-center">
-                        {letterData.cover?.title || t.freeCardLabel}
-                      </h1>
-                      <h2 className="text-xl mt-8 text-slate-500 font-serif text-center">
-                        {letterData.cover?.heart_name}
-                      </h2>
-                    </div>
-
-                    {(!letterData.recovery_days || letterData.recovery_days.length === 0) && (
-                      <>
-                        <div className="pdf-page w-[210mm] h-[297mm] bg-[#FDFBF7] p-20 flex flex-col justify-center font-serif leading-loose text-lg text-slate-700">
-                          {(letterData.page_letter_paragraphs?.length ? letterData.page_letter_paragraphs : [letterData.letter || ""]).map((para, idx) => (
-                            <p key={`body-${idx}`} className="mb-6">
-                              {para}
-                            </p>
-                          ))}
-                        </div>
-
-                        <div className="pdf-page w-[210mm] h-[297mm] bg-[#FDFBF7] p-20 flex flex-col justify-center">
-                          <h3 className="text-2xl mb-8 font-serif text-slate-800">{t.premiumSentenceHeader}</h3>
-                          {letterData.page_sentences?.map((sentence, idx) => (
-                            <p key={`s-${idx}`} className="mb-4 text-lg font-serif text-slate-600">"{sentence}"</p>
-                          ))}
-
-                          <h3 className="text-2xl mt-16 mb-8 font-serif text-slate-800">{t.premiumQuestionHeader}</h3>
-                          {letterData.page_questions?.map((q, idx) => (
-                            <p key={`q-${idx}`} className="mb-4 text-lg font-serif text-slate-600">Q. {q}</p>
-                          ))}
-
-                          {letterData.page_action && (
-                            <>
-                              <h3 className="text-2xl mt-16 mb-8 font-serif text-slate-800">{t.premiumActionHeader}</h3>
-                              <p className="text-lg font-serif text-slate-600">{letterData.page_action}</p>
-                            </>
-                          )}
-                        </div>
-                      </>
-                    )}
-
-                    {letterData.recovery_days && letterData.recovery_days.map((dayData, idx) => (
-                      <div key={`recovery-${idx}`} className="pdf-page w-[210mm] h-[297mm] bg-[#FDFBF7] p-20 flex flex-col justify-center">
-                        <h2 className="text-3xl font-serif text-slate-800 mb-12">{dayData.day}{t.recoveryDayHeader}</h2>
-                        <p className="font-serif leading-loose text-lg text-slate-700 whitespace-pre-wrap mb-16">{dayData.letter}</p>
-                        <div className="mt-auto p-8 border border-slate-300 rounded-2xl bg-white/50">
-                          <h3 className="text-xl mb-4 font-serif text-slate-800">{t.premiumActionHeader}</h3>
-                          <p className="text-lg font-serif text-slate-600">{dayData.action}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* 결과 UI 분기 처리: 무료는 엽서, 유료는 발급 완료 화면 */}
-                {["free", "random"].includes(productType) ? (
-                  <div
-                    id="letter-container"
-                    onClick={skipTyping}
-                    className="rounded-2xl p-10 md:p-16 w-full mb-8 relative overflow-hidden shadow-layered border border-slate-100 cursor-pointer"
-                  >
-                    {/* Background Image Layer with beautiful fine grids overlay */}
-                    <div
-                      className="absolute inset-0 z-0 transition-all duration-1000"
-                      style={{
-                        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.95)), 
-                                          linear-gradient(90deg, rgba(200,0,0,0.03) 50%, transparent 0), 
-                                          linear-gradient(rgba(200,0,0,0.03) 50%, transparent 0), 
-                                          url('${bgUrl}')`,
-                        backgroundSize: 'cover, 3px 3px, 3px 3px, cover',
-                        backgroundPosition: 'center'
-                      }}
-                    />
+                {/* 1. 3D Envelope Opening Scene (Shows if envelope is closed) */}
+                {!envelopeOpen && (
+                  <div className="w-full flex flex-col items-center justify-center py-12 md:py-20 animate-fade-in">
+                    <p className="text-amber-400 font-serif text-lg mb-6 animate-pulse tracking-wide text-center">
+                      {isKorean ? "💌 당신을 위한 위로의 편지가 도착했습니다." : "💌 A comforting letter has arrived for you."}
+                    </p>
                     
-                    <div className="relative z-10">
-                      <p className="text-xs font-bold tracking-widest text-slate-400 mb-10 border-b border-slate-200/50 pb-4 text-center uppercase font-sans">
-                        {t.storyHeader}
-                      </p>
-                      
-                      <div className={`font-serif text-slate-700 min-h-[300px] whitespace-pre-wrap ${
-                        productType === "random" ? "text-xl md:text-2xl text-center py-8 leading-loose" : "text-lg md:text-xl leading-loose"
-                      }`}>
-                        {typedText}
-                        {isTyping && <span className="inline-block w-1.5 h-6 bg-slate-400 ml-2 animate-pulse" />}
-                      </div>
-
-                      {/* Instagram UGC Logo & Global Text */}
-                      {(!isTyping || view === "full") && (
-                        <div className="mt-12 flex items-center justify-end gap-1.5 text-slate-500 opacity-60 text-sm font-serif pt-4">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
-                          <span>@young_beom_oh</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full flex flex-col items-center animate-fade-in mb-8 px-4 sm:px-0">
-                    {/* 프리미엄 웹 뷰어 컨테이너 */}
-                    <div className="w-full max-w-2xl bg-gradient-to-b from-white via-slate-50 to-[#fcfbf8] rounded-[36px] p-10 md:p-16 border border-slate-200/70 shadow-[0_28px_90px_rgba(15,23,42,0.12)] mb-8 text-left overflow-hidden">
-                      <div className="text-center mb-14 border-b border-slate-200/60 pb-10">
-                        <h1 className="text-3xl md:text-5xl font-serif text-slate-900 mb-4 tracking-tight leading-tight">{letterData?.cover?.title || t.freeCardLabel}</h1>
-                        <p className="mx-auto max-w-xl text-base md:text-lg text-slate-500 font-serif leading-relaxed">{letterData?.cover?.heart_name}</p>
-                      </div>
-
-                      {(!letterData?.recovery_days || letterData.recovery_days.length === 0) ? (
-                        <div className="font-serif leading-relaxed text-[1.02rem] md:text-lg text-slate-700 space-y-8">
-                          {(letterData?.page_letter_paragraphs?.length ? letterData.page_letter_paragraphs : [letterData?.letter || ""]).map((para, idx) => (
-                            <p key={`web-para-${idx}`} className="mb-8 first:mt-0 text-justify tracking-[0.01em]">{para}</p>
-                          ))}
-                          
-                          <div className="mt-16 bg-white/90 backdrop-blur-[1px] p-8 rounded-[32px] border border-amber-100/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_25px_60px_rgba(15,23,42,0.08)]">
-                            <h3 className="text-2xl mb-6 font-serif text-slate-900 font-semibold border-b border-amber-100 pb-3 inline-block">오래 간직할 문장</h3>
-                            {letterData?.page_sentences?.map((sentence, idx) => (
-                              <p key={`web-s-${idx}`} className="mb-4 text-slate-600 text-[0.98rem] leading-8">"{sentence}"</p>
-                            ))}
-                            
-                            <h3 className="text-2xl mt-12 mb-6 font-serif text-slate-900 font-semibold border-b border-amber-100 pb-3 inline-block">나에게 묻는 질문</h3>
-                            {letterData?.page_questions?.map((q, idx) => (
-                              <p key={`web-q-${idx}`} className="mb-4 text-slate-600 text-[0.98rem] leading-8">Q. {q}</p>
-                            ))}
-
-                            {letterData?.page_action && (
-                              <>
-                                <h3 className="text-2xl mt-12 mb-6 font-serif text-slate-900 font-semibold border-b border-amber-100 pb-3 inline-block">{t.premiumActionHeader}</h3>
-                                <p className="text-slate-600 text-[0.99rem] leading-7">{letterData.page_action}</p>
-                              </>
-                            )}
+                    <div className="envelope-container w-full max-w-[480px] px-4">
+                      <div className="envelope-wrapper flex items-center justify-center relative">
+                        {/* Top Flap */}
+                        <div className="envelope-flap" />
+                        
+                        {/* Front pocket with card inside */}
+                        <div className="envelope-front-pocket flex flex-col items-center justify-end pb-8 p-8">
+                          <div className="text-center font-serif text-slate-700 select-none">
+                            <p className="text-[10px] tracking-widest uppercase opacity-50 mb-1">Ask Your Heart</p>
+                            <h3 className="text-xl md:text-2xl font-bold tracking-tight font-serif text-slate-800">
+                              {formData.q1_name || (isKorean ? "소중한 마음" : "Someone Special")} {isKorean ? "님" : ""}
+                            </h3>
+                            <p className="text-[9px] opacity-40 mt-3 tracking-wider">
+                              {isKorean ? "보낸 이: 오영범 마스터" : "Sender: Master O.Y.B"}
+                            </p>
                           </div>
                         </div>
-                      ) : (
-                        <div className="font-serif text-slate-700 space-y-16">
-                          {letterData.recovery_days.map((dayData, idx) => (
-                            <div key={`web-recovery-${idx}`} className="mb-16 last:mb-0 rounded-[32px] border border-slate-200/70 bg-white/90 p-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)]">
-                              <h2 className="text-2xl md:text-3xl font-serif text-slate-900 mb-6 border-b border-slate-200/60 pb-3 inline-block">{dayData.day}일차 회복 편지</h2>
-                              <p className="leading-relaxed text-[1.01rem] md:text-lg whitespace-pre-wrap mb-10 text-slate-700">{dayData.letter}</p>
-                              <div className="bg-slate-50/95 p-6 rounded-[28px] border border-slate-200 shadow-[0_10px_40px_rgba(15,23,42,0.06)]">
-                                <h3 className="text-lg md:text-xl font-serif text-slate-900 mb-3 font-semibold">{t.premiumActionHeader}</h3>
-                                <p className="text-slate-600 text-[0.98rem] leading-7">{dayData.action}</p>
-                              </div>
-                            </div>
-                          ))}
+
+                        {/* Wax Seal Button at the Center */}
+                        <div className="absolute top-[50%] left-[50%] -translate-x-[50%] -translate-y-[50%] z-10 flex flex-col items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const wrapper = document.querySelector(".envelope-wrapper");
+                              if (wrapper) {
+                                wrapper.classList.add("open");
+                                setTimeout(() => {
+                                  setEnvelopeOpen(true);
+                                }, 1400); // Transitions to letter sheet after slide up
+                              }
+                            }}
+                            className="wax-seal"
+                            aria-label="Open envelope"
+                          >
+                            <div className="wax-seal-inner">心</div>
+                          </button>
+                          <span className="text-[10px] font-sans font-bold text-amber-500 tracking-wider animate-bounce select-none uppercase mt-1">
+                            {isKorean ? "왁스 실을 클릭하여 열기" : "Click seal to open"}
+                          </span>
                         </div>
-                      )}
+                      </div>
                     </div>
-                    
-                    {/* PDF 영구 소장 다운로드 버튼 */}
-                    <button
-                      id="download-pdf-btn"
-                      onClick={handleDownloadPDF}
-                      className="px-12 py-4 bg-slate-950 text-white rounded-full font-serif text-base md:text-lg tracking-[0.02em] hover:bg-slate-800 transition duration-200 shadow-2xl flex items-center gap-3 animate-fade-in z-20 active:scale-95 cursor-pointer"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      {t.pdfPermanentLabel}
-                    </button>
                   </div>
                 )}
+
+                {/* 2. Letter Content & Action Step & Review UI (Shows after envelope is opened) */}
+                {envelopeOpen && (
+                  <div className="w-full flex flex-col items-center animate-fade-in">
+                    
+                    {/* 무료 및 유료 전체 엽서용 PDF 다운로드 버튼 */}
+                    {letterData && (
+                      <button
+                        id="download-pdf-btn"
+                        onClick={handleDownloadPDF}
+                        className="mb-6 px-6 py-3 bg-slate-800 text-white rounded-full font-serif text-sm tracking-wide hover:bg-slate-700 transition shadow-lg flex items-center gap-2 animate-fade-in z-20 active:scale-95 duration-150 cursor-pointer"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        {t.pdfDownloadLabel}
+                      </button>
+                    )}
+
+                    {/* 다중 페이지 PDF 생성을 위한 숨겨진 페이지 렌더링 */}
+                    {letterData && (
+                      <div id="multi-page-pdf-root" className="fixed top-[-9999px] left-[-9999px]" aria-hidden="true">
+                        <div className="pdf-page w-[210mm] h-[297mm] flex flex-col items-center justify-center bg-[#FDFBF7] p-20">
+                          <h1 className="text-4xl font-serif text-slate-800 text-center">
+                            {letterData.cover?.title || t.freeCardLabel}
+                          </h1>
+                          <h2 className="text-xl mt-8 text-slate-500 font-serif text-center">
+                            {letterData.cover?.heart_name}
+                          </h2>
+                        </div>
+
+                        {(!letterData.recovery_days || letterData.recovery_days.length === 0) && (
+                          <>
+                            {getPaginatedParagraphs().map((pageParas, pageIdx) => (
+                              <div key={`pdf-body-page-${pageIdx}`} className="pdf-page w-[210mm] h-[297mm] bg-[#FDFBF7] p-24 flex flex-col justify-center font-serif leading-loose text-lg text-slate-700">
+                                {pageParas.map((para, idx) => (
+                                  <p key={`body-${idx}`} className="mb-6 text-justify">
+                                    {para}
+                                  </p>
+                                ))}
+                              </div>
+                            ))}
+
+                            <div className="pdf-page w-[210mm] h-[297mm] bg-[#FDFBF7] p-24 flex flex-col justify-center">
+                              <h3 className="text-xl mb-6 font-serif text-slate-800 font-bold border-b border-amber-200 pb-2">{t.premiumSentenceHeader}</h3>
+                              {letterData.page_sentences?.map((sentence, idx) => (
+                                <p key={`s-${idx}`} className="mb-3 text-base font-serif text-slate-600 italic">“ {sentence} ”</p>
+                              ))}
+
+                              <h3 className="text-xl mt-8 mb-6 font-serif text-slate-800 font-bold border-b border-amber-200 pb-2">{t.premiumQuestionHeader}</h3>
+                              {letterData.page_questions?.map((q, idx) => (
+                                <p key={`q-${idx}`} className="mb-3 text-base font-serif text-slate-600">Q. {q}</p>
+                              ))}
+
+                              {letterData.page_action && (
+                                <>
+                                  <h3 className="text-xl mt-8 mb-4 font-serif text-slate-800 font-bold border-b border-amber-200 pb-2">{t.premiumActionHeader}</h3>
+                                  <p className="text-base font-serif text-slate-600 bg-amber-50/50 p-4 rounded-xl border border-amber-100">{letterData.page_action}</p>
+                                </>
+                              )}
+                            </div>
+                          </>
+                        )}
+
+                        {letterData.recovery_days && letterData.recovery_days.map((dayData, idx) => (
+                          <div key={`recovery-${idx}`} className="pdf-page w-[210mm] h-[297mm] bg-[#FDFBF7] p-20 flex flex-col justify-center">
+                            <h2 className="text-3xl font-serif text-slate-800 mb-12">{dayData.day}{t.recoveryDayHeader}</h2>
+                            <p className="font-serif leading-loose text-lg text-slate-700 whitespace-pre-wrap mb-16">{dayData.letter}</p>
+                            <div className="mt-auto p-8 border border-slate-300 rounded-2xl bg-white/50">
+                              <h3 className="text-xl mb-4 font-serif text-slate-800">{t.premiumActionHeader}</h3>
+                              <p className="text-lg font-serif text-slate-600">{dayData.action}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {["free", "random"].includes(productType) ? (
+                      <div
+                        id="letter-container"
+                        onClick={skipTyping}
+                        className="deckled-letter-paper rounded-xl p-10 md:p-16 w-full mb-8 relative overflow-hidden cursor-pointer"
+                      >
+                        {/* 1. Static Unsplash Image Layer with GPU acceleration */}
+                        <div
+                          className="absolute inset-0 z-0 transition-all duration-1000 will-change-transform transform-gpu translate-z-0 bg-cover bg-center"
+                          style={{
+                            backgroundImage: `url('${bgUrl}')`,
+                          }}
+                        />
+                        {/* 2. Glassmorphic Gradient Overlay Layer */}
+                        <div className="absolute inset-0 z-0 bg-gradient-to-b from-white/85 to-white/95" />
+                        {/* 3. Pure CSS 아날로그 red grid paper micro-texture Layer */}
+                        <div 
+                          className="absolute inset-0 z-0 pointer-events-none opacity-40 mix-blend-multiply" 
+                          style={{
+                            backgroundImage: `linear-gradient(90deg, rgba(220,50,50,0.03) 50%, transparent 50%), 
+                                              linear-gradient(rgba(220,50,50,0.03) 50%, transparent 50%)`,
+                            backgroundSize: '4px 4px'
+                          }}
+                        />
+                        
+                        {/* 4. Vintage Postage Stamp (Top-Right Decor) */}
+                        <div className="absolute top-6 right-6 z-20 pointer-events-none no-print">
+                          <div className="vintage-stamp">
+                            <span className="text-[7px] font-sans font-bold text-[#b91c1c] tracking-widest uppercase">KOREA</span>
+                            <div className="text-sm my-1 text-slate-600 font-serif">心</div>
+                            <span className="text-[6px] font-sans text-slate-400">2026</span>
+                          </div>
+                        </div>
+
+                        <div className="relative z-10">
+                          <p className="text-xs font-bold tracking-widest text-slate-400 mb-10 border-b border-slate-200/50 pb-4 text-center uppercase font-sans">
+                            {t.storyHeader}
+                          </p>
+                          
+                          <div className={`font-serif min-h-[300px] whitespace-pre-wrap flex flex-col ${
+                            productType === "random" 
+                              ? "justify-center text-2xl md:text-[26px] text-center py-12 leading-relaxed break-keep font-semibold text-slate-800" 
+                              : "text-lg md:text-xl leading-loose text-slate-700"
+                          }`}>
+                            {productType === "random" ? (
+                              <div className="relative inline-block mx-auto max-w-2xl px-8 py-6">
+                                <span className="absolute top-0 left-0 text-6xl text-slate-300/50 font-serif leading-none select-none pointer-events-none">“</span>
+                                <span className="relative z-10">{typedText}</span>
+                                {(!isTyping) && <span className="absolute -bottom-4 right-0 text-6xl text-slate-300/50 font-serif leading-none select-none pointer-events-none">”</span>}
+                                {isTyping && <span className="inline-block w-1.5 h-6 md:h-8 bg-slate-400 ml-2 animate-pulse align-middle relative z-10" />}
+                              </div>
+                            ) : (
+                              <div>
+                                {typedText}
+                                {isTyping && <span className="inline-block w-1.5 h-6 bg-slate-400 ml-2 animate-pulse align-middle" />}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Master's Vintage Signature Signoff */}
+                          {(!isTyping || view === "full") && (
+                            <div className="mt-12 border-t border-slate-200/50 pt-6 flex flex-col items-end gap-1 select-none">
+                              <p className="text-[11px] text-slate-400 font-sans italic">Warm regards,</p>
+                              <h4 className="text-xl md:text-2xl font-serif text-slate-800 font-bold" style={{ fontFamily: "var(--font-serif), serif" }}>
+                                Master 오영범
+                              </h4>
+                              {/* Instagram UGC Logo & Global Text */}
+                              <div className="mt-2 flex items-center gap-1.5 text-slate-400 hover:text-slate-500 transition-colors text-xs font-sans">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                                <span>@young_beom_oh</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-full flex flex-col items-center animate-fade-in mb-8 px-4 sm:px-0">
+                        {/* 프리미엄 웹 뷰어 컨테이너 (Premium Handcrafted Letter Sheet) */}
+                        <div className="w-full max-w-2xl deckled-letter-paper rounded-[32px] p-10 md:p-16 mb-8 text-left overflow-hidden relative">
+                          
+                          {/* Vintage Postage Stamp (Top-Right Decor) */}
+                          <div className="absolute top-6 right-6 z-20 pointer-events-none no-print">
+                            <div className="vintage-stamp">
+                              <span className="text-[7px] font-sans font-bold text-[#b91c1c] tracking-widest uppercase">KOREA</span>
+                              <div className="text-sm my-1 text-slate-600 font-serif">心</div>
+                              <span className="text-[6px] font-sans text-slate-400">2026</span>
+                            </div>
+                          </div>
+
+                          <div className="text-center mb-14 border-b border-slate-200/60 pb-10">
+                            <h1 className="text-3xl md:text-5xl font-serif text-slate-900 mb-4 tracking-tight leading-tight">{letterData?.cover?.title || t.freeCardLabel}</h1>
+                            <p className="mx-auto max-w-xl text-base md:text-lg text-slate-500 font-serif leading-relaxed">{letterData?.cover?.heart_name}</p>
+                          </div>
+
+                          {(!letterData?.recovery_days || letterData.recovery_days.length === 0) ? (
+                            <div className="font-serif leading-relaxed text-[1.02rem] md:text-lg text-slate-700 space-y-8">
+                              {(letterData?.page_letter_paragraphs?.length ? letterData.page_letter_paragraphs : [letterData?.letter || ""]).map((para, idx) => (
+                                <p key={`web-para-${idx}`} className="mb-8 first:mt-0 text-justify tracking-[0.01em]">{para}</p>
+                              ))}
+                              
+                              <div className="mt-16 bg-white/90 backdrop-blur-[1px] p-8 rounded-[32px] border border-amber-100/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_25px_60px_rgba(15,23,42,0.08)]">
+                                <h3 className="text-2xl mb-6 font-serif text-slate-900 font-semibold border-b border-amber-100 pb-3 inline-block">오래 간직할 문장</h3>
+                                {letterData?.page_sentences?.map((sentence, idx) => (
+                                  <p key={`web-s-${idx}`} className="mb-4 text-slate-600 text-[0.98rem] leading-8">"{sentence}"</p>
+                                ))}
+                                
+                                <h3 className="text-2xl mt-12 mb-6 font-serif text-slate-900 font-semibold border-b border-amber-100 pb-3 inline-block">나에게 묻는 질문</h3>
+                                {letterData?.page_questions?.map((q, idx) => (
+                                  <p key={`web-q-${idx}`} className="mb-4 text-slate-600 text-[0.98rem] leading-8">Q. {q}</p>
+                                ))}
+
+                                {letterData?.page_action && (
+                                  <>
+                                    <h3 className="text-2xl mt-12 mb-6 font-serif text-slate-900 font-semibold border-b border-amber-100 pb-3 inline-block">{t.premiumActionHeader}</h3>
+                                    <p className="text-slate-600 text-[0.99rem] leading-7">{letterData.page_action}</p>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="font-serif text-slate-700 space-y-16">
+                              {letterData.recovery_days.map((dayData, idx) => (
+                                <div key={`web-recovery-${idx}`} className="mb-16 last:mb-0 rounded-[32px] border border-slate-200/70 bg-white/90 p-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)]">
+                                  <h2 className="text-2xl md:text-3xl font-serif text-slate-900 mb-6 border-b border-slate-200/60 pb-3 inline-block">{dayData.day}일차 회복 편지</h2>
+                                  <p className="leading-relaxed text-[1.01rem] md:text-lg whitespace-pre-wrap mb-10 text-slate-700">{dayData.letter}</p>
+                                  <div className="bg-slate-50/95 p-6 rounded-[28px] border border-slate-200 shadow-[0_10px_40px_rgba(15,23,42,0.06)]">
+                                    <h3 className="text-lg md:text-xl font-serif text-slate-900 mb-3 font-semibold">{t.premiumActionHeader}</h3>
+                                    <p className="text-slate-600 text-[0.98rem] leading-7">{dayData.action}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Master's Premium Vintage Signature Signoff */}
+                          <div className="mt-16 border-t border-slate-200/60 pt-8 flex flex-col items-end gap-1 select-none">
+                            <p className="text-sm text-slate-400 font-sans italic">Warm regards,</p>
+                            <h4 className="text-2xl font-serif text-slate-800 font-bold" style={{ fontFamily: "var(--font-serif), serif" }}>
+                              Master 오영범
+                            </h4>
+                            <div className="mt-2 flex items-center gap-1.5 text-slate-400 text-xs font-sans">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                              <span>@young_beom_oh</span>
+                            </div>
+                          </div>
+
+                        </div>
+                        
+                        {/* PDF 영구 소장 다운로드 버튼 */}
+                        <button
+                          id="download-pdf-btn"
+                          onClick={handleDownloadPDF}
+                          className="px-12 py-4 bg-slate-950 text-slate-200 rounded-full font-serif text-base md:text-lg tracking-[0.02em] hover:bg-slate-800 hover:text-white transition duration-200 shadow-2xl flex items-center gap-3 animate-fade-in z-20 active:scale-95 cursor-pointer border border-slate-800"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          {t.pdfPermanentLabel}
+                        </button>
+                      </div>
+                    )}
 
                 {/* [추가] 별점 및 리뷰 남기기 UI (하이엔드 미니멀리즘 디자인) */}
                 <div className="w-full bg-white rounded-[32px] p-8 md:p-10 border border-slate-50 shadow-layered text-center animate-fade-in mb-8 no-print z-10">
@@ -1108,6 +1376,8 @@ export default function Home() {
                     {t.reset}
                   </button>
                 </footer>
+                  </div>
+                )}
               </div>
             )}
 

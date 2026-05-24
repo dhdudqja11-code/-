@@ -1,0 +1,4 @@
+{
+  "/api/generate-letter/route": "app/api/generate-letter/route.js",
+  "/api/setup-master/route": "app/api/setup-master/route.js"
+}

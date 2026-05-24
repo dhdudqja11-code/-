@@ -1,6 +1,22 @@
 import json
 import re
 import os
+
+def load_env_local():
+    for path in ['.env.local', '../.env.local', '../../.env.local', os.path.join(os.path.dirname(__file__), '../.env.local')]:
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        key, val = line.split('=', 1)
+                        key = key.strip()
+                        val = val.strip().strip('"').strip("'")
+                        os.environ[key] = val
+            break
+
+load_env_local()
+
 from openai import OpenAI
 
 # 백엔드 스케줄러(Cron) 환경에서 주기적으로 실행될 SEO 에이전트 봇
@@ -27,8 +43,18 @@ def auto_update_seo():
     print(f"🎯 [SEO Agent] 이번 주 핵심 키워드 발견: {keywords}")
 
     # Next.js 프론트엔드 layout.tsx 자동 업데이트
-    layout_path = "../src/app/layout.tsx"
-    if os.path.exists(layout_path):
+    possible_paths = [
+        "src/app/layout.tsx",
+        "../src/app/layout.tsx",
+        os.path.join(os.path.dirname(__file__), "../src/app/layout.tsx")
+    ]
+    layout_path = None
+    for p in possible_paths:
+        if os.path.exists(p):
+            layout_path = p
+            break
+
+    if layout_path:
         with open(layout_path, 'r', encoding='utf-8') as file:
             content = file.read()
         
