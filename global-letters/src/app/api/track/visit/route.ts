@@ -7,7 +7,7 @@ export async function POST() {
     const statRef = db.collection('traffic_logs').doc(today);
 
     // Increment visit count transactionally
-    await db.runTransaction(async (transaction) => {
+    await db.runTransaction(async (transaction: any) => {
       const doc = await transaction.get(statRef);
       if (!doc.exists) {
         transaction.set(statRef, { visits: 1 });

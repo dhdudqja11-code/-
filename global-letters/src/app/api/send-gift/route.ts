@@ -256,19 +256,36 @@ export async function POST(req: Request) {
 }
 
 // 📤 GET: 그날 쌓인 모든 선물 예약 엽서들을 일괄 한꺼번에 전송 (Batch Sender Trigger)
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const viewOnly = searchParams.get("view") === "true";
     const { queuePath, historyPath } = getQueuePaths();
 
-    if (!fs.existsSync(queuePath)) {
-      return NextResponse.json({ success: true, count: 0, message: "보낼 선물 예약 내역이 없습니다." });
+    let queue: any[] = [];
+    if (fs.existsSync(queuePath)) {
+      try {
+        queue = JSON.parse(fs.readFileSync(queuePath, 'utf8'));
+      } catch {
+        queue = [];
+      }
     }
 
-    let queue: any[] = [];
-    try {
-      queue = JSON.parse(fs.readFileSync(queuePath, 'utf8'));
-    } catch {
-      return NextResponse.json({ success: false, error: "Failed to read queue data" }, { status: 500 });
+    let history: any[] = [];
+    if (fs.existsSync(historyPath)) {
+      try {
+        history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
+      } catch {
+        history = [];
+      }
+    }
+
+    if (viewOnly) {
+      return NextResponse.json({
+        success: true,
+        queue,
+        history
+      });
     }
 
     if (queue.length === 0) {
@@ -347,7 +364,6 @@ export async function GET() {
     }
 
     // Append to history
-    let history: any[] = [];
     if (fs.existsSync(historyPath)) {
       try {
         history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
