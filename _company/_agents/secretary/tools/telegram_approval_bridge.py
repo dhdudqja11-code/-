@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-📱 텔레그램 양방향 승인 브릿지 (telegram_approval_bridge.py)
+📱 텔레그램 양방향 승인 브릿지 (telegram_approval_bridge.py) - 하이브리드 파일 모니터링 에디션
 
-비서 에이전트(영숙이)가 사장님 모바일로 결재 요청 카드를 발송하고,
-getUpdates 롱 폴링을 통해 승인/반려Callback Query를 실시간 수집 및 위임 전파합니다.
+100% 409 Conflict 오류를 원천 차단하기 위해, getUpdates 롱 폴링 대신
+VSCode 익스텐션과 로컬 파일 IPC 핸드셰이크 방식으로 연동합니다.
 """
 import os
 import sys
@@ -21,13 +21,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 COMPANY_DIR = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 CONFIG_MD = os.path.join(HERE, "..", "config.md")
 SETUP_JSON = os.path.join(HERE, "telegram_setup.json")
-APPROVALS_DIR = os.path.join(COMPANY_DIR, "approvals")
+PENDING_DIR = os.path.join(COMPANY_DIR, "approvals", "pending")
+HISTORY_DIR = os.path.join(COMPANY_DIR, "approvals", "history")
 
 def load_credentials():
     """config.md 또는 telegram_setup.json에서 봇 토큰과 chat_id 로드"""
     token, chat_id = "", ""
-    
-    # 1단계: config.md 파싱 시도
     if os.path.exists(CONFIG_MD):
         try:
             with open(CONFIG_MD, "r", encoding="utf-8") as f:
@@ -40,7 +39,6 @@ def load_credentials():
         except Exception as e:
             print(f"⚠️ [Bridge] config.md 읽기 중 경고: {e}", file=sys.stderr)
 
-    # 2단계: 파싱 실패 시 telegram_setup.json 시도
     if (not token or not chat_id) and os.path.exists(SETUP_JSON):
         try:
             with open(SETUP_JSON, "r", encoding="utf-8") as f:
@@ -52,202 +50,122 @@ def load_credentials():
             
     return token, chat_id
 
-def send_api_request(token, method, payload=None):
-    """requests 라이브러리 사용하되, 없을 경우 내장 urllib.request로 안전하게 폴백"""
-    url = f"https://api.telegram.org/bot{token}/{method}"
-    headers = {"Content-Type": "application/json"}
-    data_bytes = json.dumps(payload).encode("utf-8") if payload else None
-
-    # requests 사용 시도
-    try:
-        import requests
-        if payload is not None:
-            r = requests.post(url, json=payload, timeout=20)
-        else:
-            r = requests.get(url, timeout=20)
-        r.raise_for_status()
-        return r.json()
-    except ImportError:
-        # urllib 폴백
-        import urllib.request
-        import urllib.error
-        req = urllib.request.Request(url, data=data_bytes, headers=headers, method="POST" if payload else "GET")
-        try:
-            with urllib.request.urlopen(req, timeout=20) as response:
-                return json.loads(response.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            err_body = e.read().decode("utf-8")
-            raise Exception(f"HTTPError: {e.code} - {err_body}")
-        except Exception as e:
-            raise Exception(f"urllib Connection Error: {e}")
-
-def send_approval_request(token, chat_id, action_id, title, description):
-    """Inline Keyboard가 달린 승인 메시지를 송신하고 message_id 리턴"""
-    message_text = (
-        f"🔔 *[결재 대기 승인 요청]*\n\n"
-        f"📌 *업무 ID*: `{action_id}`\n"
-        f"📋 *제목*: {title}\n"
-        f"📄 *상세*: {description}\n\n"
-        f"⚠️ 아래 버튼을 눌러 승인 혹은 반려를 최종 결정해 주십시오."
-    )
-    
-    keyboard = {
-        "inline_keyboard": [
-            [
-                {"text": "승인 👍", "callback_data": f"approve:{action_id}"},
-                {"text": "반려 ❌", "callback_data": f"reject:{action_id}"}
-            ]
-        ]
-    }
-    
+def send_telegram_message(token, chat_id, text):
+    """표준 라이브러리 urllib 또는 requests를 활용해 결재 메시지 송신"""
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {
         "chat_id": chat_id,
-        "text": message_text,
-        "parse_mode": "Markdown",
-        "reply_markup": keyboard
-    }
-    
-    res = send_api_request(token, "sendMessage", payload)
-    if res.get("ok"):
-        msg_id = res["result"]["message_id"]
-        print(f"✅ [Bridge] 승인 요청 송신 성공! (메시지 ID: {msg_id})")
-        return msg_id
-    else:
-        raise Exception(f"메시지 송신 실패: {res}")
-
-def answer_callback(token, callback_query_id, text):
-    """모바일 로딩 스피너 종료를 위한 callback 응답"""
-    payload = {
-        "callback_query_id": callback_query_id,
-        "text": text
-    }
-    try:
-        send_api_request(token, "answerCallbackQuery", payload)
-    except Exception as e:
-        print(f"⚠️ [Bridge] answerCallbackQuery 경고: {e}", file=sys.stderr)
-
-def edit_message(token, chat_id, message_id, text):
-    """메시지 상태 업데이트 (Inline Keyboard 제거)"""
-    payload = {
-        "chat_id": chat_id,
-        "message_id": message_id,
         "text": text,
         "parse_mode": "Markdown"
     }
-    try:
-        send_api_request(token, "editMessageText", payload)
-    except Exception as e:
-        print(f"⚠️ [Bridge] editMessageText 경고: {e}", file=sys.stderr)
+    headers = {"Content-Type": "application/json"}
+    data_bytes = json.dumps(payload).encode("utf-8")
 
-def record_approval_result(action_id, status, details=""):
-    """승인/반려 결과를 _company/approvals/ 내 파일로 보관"""
-    if not os.path.exists(APPROVALS_DIR):
-        os.makedirs(APPROVALS_DIR, exist_ok=True)
-        
-    result_path = os.path.join(APPROVALS_DIR, f"{action_id}.json")
-    result_data = {
-        "action_id": action_id,
-        "status": status,
-        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "details": details
+    try:
+        import requests
+        r = requests.post(url, json=payload, timeout=20)
+        r.raise_for_status()
+        return r.json()
+    except ImportError:
+        import urllib.request
+        req = urllib.request.Request(url, data=data_bytes, headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=20) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except Exception as e:
+            raise Exception(f"Urllib 전송 실패: {e}")
+
+def create_pending_approval_files(action_id, title, description, agent_id="developer", kind="deploy"):
+    """VSCode 익스텐션과 호환되는 pending 파일 (.json + .md) 생성"""
+    os.makedirs(PENDING_DIR, exist_ok=True)
+    
+    json_path = os.path.join(PENDING_DIR, f"{action_id}.json")
+    md_path = os.path.join(PENDING_DIR, f"{action_id}.md")
+    
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%S") + ".000Z"
+    
+    # 1. JSON 파일 작성
+    pending_json = {
+        "id": action_id,
+        "agentId": agent_id,
+        "kind": kind,
+        "title": title,
+        "description": description,
+        "createdAt": now_iso,
+        "payload": {
+            "action_id": action_id,
+            "title": title
+        }
     }
     
-    with open(result_path, "w", encoding="utf-8") as f:
-        json.dump(result_data, f, ensure_ascii=False, indent=4)
-    print(f"💾 [Bridge] 결재 결과 저장 완료: {result_path}")
-
-def wait_for_approval(token, chat_id, action_id, message_id, title, description, timeout_seconds=300):
-    """getUpdates를 롱 폴링하면서 버튼 피드백 대기"""
-    print(f"⏳ [Bridge] 사장님의 결재를 기다리는 중... (제한시간 {timeout_seconds}초)")
-    start_time = time.time()
-    offset = None
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(pending_json, f, ensure_ascii=False, indent=4)
+        
+    # 2. MD 파일 작성
+    pending_md = (
+        f"# ⏳ 승인 대기 — {title}\n\n"
+        f"- **에이전트:** {agent_id}\n"
+        f"- **종류:** `{kind}`\n"
+        f"- **요청 시각:** {now_iso}\n"
+        f"- **id:** `{action_id}`\n\n"
+        f"### 상세 업무 설명\n"
+        f"{description}\n"
+    )
     
-    # 중복 업데이트 수집을 방지하기 위해, 우선 최근 offset 세팅
-    try:
-        updates = send_api_request(token, "getUpdates", {"limit": 10})
-        if updates.get("ok") and updates["result"]:
-            offset = updates["result"][-1]["update_id"] + 1
-    except Exception as e:
-        print(f"⚠️ [Bridge] 초기 offset 조회 경고: {e}", file=sys.stderr)
+    with open(md_path, "w", encoding="utf-8") as f:
+        f.write(pending_md)
+        
+    print(f"💾 [Bridge] 익스텐션 호환용 결재 파일 생성 완료: {action_id} (.json / .md)")
 
+def monitor_approvals_history(action_id, timeout_seconds=300):
+    """getUpdates 롱 폴링 대신 approvals/history 디렉터리의 처리를 감시 (0% 충돌)"""
+    print(f"⏳ [Bridge] 사장님의 결재 처리를 대기하는 중... (로컬 파일 모니터링: 제한시간 {timeout_seconds}초)")
+    start_time = time.time()
+    
+    os.makedirs(HISTORY_DIR, exist_ok=True)
+    
+    # 마지막 4글자 Suffix 계산 (텔레그램 /approve 커맨드 단축 대응)
+    short_id = action_id[-9:] if len(action_id) >= 9 else action_id
+    
     while time.time() - start_time < timeout_seconds:
         try:
-            payload = {"timeout": 10, "limit": 10}
-            if offset is not None:
-                payload["offset"] = offset
-                
-            res = send_api_request(token, "getUpdates", payload)
-            if not res.get("ok"):
-                time.sleep(3)
-                continue
-                
-            for update in res["result"]:
-                offset = update["update_id"] + 1
-                
-                # Callback Query(인라인 버튼 클릭) 감시
-                if "callback_query" in update:
-                    cb = update["callback_query"]
-                    cb_data = cb.get("data", "")
-                    cb_msg = cb.get("message", {})
-                    cb_msg_id = cb_msg.get("message_id")
-                    cb_id = cb.get("id")
+            # history 디렉터리 스캔
+            history_files = os.listdir(HISTORY_DIR)
+            for f in history_files:
+                if not f.endswith(".json"):
+                    continue
                     
-                    # 내가 보낸 메시지 카드이고, 액션 ID가 부합하는지 체크
-                    if cb_msg_id == message_id:
-                        if cb_data == f"approve:{action_id}":
-                            print("🎉 [Bridge] 사장님 결재 승인 수신 완료! 👍")
-                            answer_callback(token, cb_id, "결재가 정상 승인되었습니다.")
-                            
-                            ok_text = (
-                                f"🎉 *[결재 승인 완료]*\n\n"
-                                f"📌 *업무 ID*: `{action_id}`\n"
-                                f"📋 *제목*: {title}\n"
-                                f"📄 *상세*: {description}\n\n"
-                                f"✅ *결과*: 사장님께서 승인하셨습니다. (결재일: {time.strftime('%Y-%m-%d %H:%M:%S')})"
-                            )
-                            edit_message(token, chat_id, message_id, ok_text)
-                            record_approval_result(action_id, "approved", "사장님 모바일 직접 승인")
-                            return "approved"
-                            
-                        elif cb_data == f"reject:{action_id}":
-                            print("❌ [Bridge] 사장님 결재 반려 수신 완료!")
-                            answer_callback(token, cb_id, "결재가 반려되었습니다.")
-                            
-                            fail_text = (
-                                f"❌ *[결재 최종 반려]*\n\n"
-                                f"📌 *업무 ID*: `{action_id}`\n"
-                                f"📋 *제목*: {title}\n"
-                                f"📄 *상세*: {description}\n\n"
-                                f"⚠️ *결과*: 사장님께서 반려하셨습니다. (반려일: {time.strftime('%Y-%m-%d %H:%M:%S')})"
-                            )
-                            edit_message(token, chat_id, message_id, fail_text)
-                            record_approval_result(action_id, "rejected", "사장님 모바일 직접 반려")
-                            return "rejected"
-                            
-            time.sleep(3)
+                # 승인 처리 완료 파일 유형: *__OK_test_xxxxx.json 또는 *__OK_apr-xxxxx.json
+                # 반려 처리 완료 파일 유형: *__NO_test_xxxxx.json
+                if f.endswith(f"_{action_id}.json") or f.endswith(f"_{short_id}.json"):
+                    if "_OK_" in f:
+                        print("🎉 [Bridge] 익스텐션으로부터 결재 승인(OK) 확인 완료! 👍")
+                        return "approved"
+                    elif "_NO_" in f:
+                        print("❌ [Bridge] 익스텐션으로부터 결재 반려(NO) 확인 완료!")
+                        return "rejected"
+                        
+            # 아직 처리가 안 되었으면 2초 대기
+            time.sleep(2)
         except Exception as e:
-            err_msg = str(e)
-            if "409" in err_msg or "Conflict" in err_msg:
-                print("⚠️ [Bridge] 409 Conflict가 감지되었습니다. 로컬 PC 또는 다른 곳에서 동일한 봇 토큰으로 getUpdates를 롱 폴링 중인 다른 터미널/파이썬 프로세스가 있는지 확인하고 종료해주세요! (5초 후 자동 재시도)", file=sys.stderr)
-            else:
-                print(f"⚠️ [Bridge] 폴링 중 오류 발생 (재시도 중): {e}", file=sys.stderr)
-            time.sleep(5)
+            print(f"⚠️ [Bridge] 파일 스캔 중 오류 발생: {e}", file=sys.stderr)
+            time.sleep(3)
             
-    # 타임아웃 발생 시 처리
-    timeout_text = (
-        f"⚠️ *[결재 시간 만료]*\n\n"
-        f"📌 *업무 ID*: `{action_id}`\n"
-        f"📋 *제목*: {title}\n"
-        f"📄 *상세*: {description}\n\n"
-        f"⏳ *결과*: 대기 시간({timeout_seconds}초) 초과로 자동 반려 처리되었습니다."
-    )
-    edit_message(token, chat_id, message_id, timeout_text)
-    record_approval_result(action_id, "timeout", "승인 대기 시간 초과")
-    print("⏳ [Bridge] 결재 승인 대기 시간이 초과되어 자동 반려 처리되었습니다.")
+    # 대기 타임아웃 발생 시 청소 및 반려
+    print("⏳ [Bridge] 결재 대기 제한 시간이 초과되었습니다. 자동 반려 청소를 개시합니다.")
+    try:
+        # pending 폴더에 남아있는 파일 제거
+        for ext in [".json", ".md"]:
+            p = os.path.join(PENDING_DIR, f"{action_id}{ext}")
+            if os.path.exists(p):
+                os.remove(p)
+    except Exception as e:
+         print(f"⚠️ [Bridge] 임시 파일 청소 중 오류: {e}", file=sys.stderr)
+         
     return "timeout"
 
 def main():
-    parser = argparse.ArgumentParser(description="Telegram 양방향 승인 브릿지 툴")
+    parser = argparse.ArgumentParser(description="Telegram 하이브리드 파일 모니터링 승인 브릿지 툴")
     parser.add_argument("--action-id", type=str, default="test_action", help="업무 식별 고유 ID")
     parser.add_argument("--title", type=str, default="테스트 결재 요청", help="승인 요청 제목")
     parser.add_argument("--description", type=str, default="이것은 양방향 승인 테스트입니다.", help="승인 요청 내용")
@@ -261,25 +179,50 @@ def main():
         print("❌ [Bridge] 봇 자격증명이 부족합니다. config.md 또는 telegram_setup.json을 기입해주세요.")
         sys.exit(1)
         
-    print(f"🚀 [Bridge] 봇 정보 확인 완료. Target Chat ID: {chat_id}")
+    print(f"🚀 [Bridge] 봇 정보 및 로컬 파일 브릿지 가동 완료. Target Chat ID: {chat_id}")
     
     if args.test:
-        print("✨ [Test Mode] 즉시 모바일 승인 요청 카드를 보내고 폴링을 대기합니다.")
-        args.action_id = f"test_{int(time.time())}"
+        print("✨ [Test Mode] 하이브리드 결재 연계 자가 테스트를 수행합니다.")
+        # VSCode 익스텐션의 _approvalNewId()가 생성하는 것과 유사한 ID 형식 세팅
+        stamp = time.strftime("%Y%m%d%H%M%S")
+        args.action_id = f"apr-{stamp}-test"
         args.title = "🔥 모바일 텔레그램 승인 장치 자가 테스트"
-        args.description = "아래의 [승인 👍] 혹은 [반려 ❌] 버튼을 직접 눌러서 수신 브릿지가 무결하게 도는지 최종 검증해주세요."
-        args.timeout = 120  # 테스트 모드는 2분 대기
+        args.description = (
+            "409 충돌을 원천 회피하는 하이브리드 결재 통신으로 업그레이드되었습니다.\n\n"
+            "아래 승인 명령어를 복사하여 채팅창에 텍스트로 즉시 보내주세요."
+        )
+        args.timeout = 120
         
+    # 마지막 9글자 슬라이싱으로 사장님의 타이핑 피로 완화
+    short_id = args.action_id[-9:] if len(args.action_id) >= 9 else args.action_id
+    
+    # 텔레그램 메시지에 인라인 버튼 대신 일반 텍스트 커맨드 가이드 탑재
+    approval_instruction = (
+        f"🔔 *[결재 대기 승인 요청]*\n\n"
+        f"📌 *업무 ID*: `{args.action_id}`\n"
+        f"📋 *제목*: {args.title}\n"
+        f"📄 *상세*: {args.description}\n\n"
+        f"💬 *결재 방법*: 아래 명령어를 그대로 복사해서 채팅창에 텍스트로 보낸 뒤 엔터를 쳐 주십시오.\n"
+        f"👉 승인 시: `/approve {short_id}`\n"
+        f"👉 반려 시: `/reject {short_id}`"
+    )
+    
     try:
-        msg_id = send_approval_request(token, chat_id, args.action_id, args.title, args.description)
-        result = wait_for_approval(token, chat_id, args.action_id, msg_id, args.title, args.description, args.timeout)
+        # 1단계: 익스텐션과 연동될 pending 파일 (.json + .md) 디스크에 작성
+        create_pending_approval_files(args.action_id, args.title, args.description)
+        
+        # 2단계: 텔레그램으로 텍스트 커맨드 가이드라인 송신
+        send_telegram_message(token, chat_id, approval_instruction)
+        print("✅ [Bridge] 모바일 텔레그램 결재 가이드라인 발송 완료!")
+        
+        # 3단계: getUpdates 롱 폴링 대신 로컬 파일 이동 모니터링 돌입 (충돌 방지 100%)
+        result = monitor_approvals_history(args.action_id, args.timeout)
         print(f"📊 [Bridge] 결재 최종 흐름 처리 결과: {result.upper()}")
         
-        # 쉘 리턴코드 관리
         if result == "approved":
             sys.exit(0)
         else:
-            sys.exit(2) # 반려/타임아웃은 리턴코드 2
+            sys.exit(2)
             
     except Exception as e:
         print(f"❌ [Bridge] 프로세스 실행 중 크래시: {e}", file=sys.stderr)
