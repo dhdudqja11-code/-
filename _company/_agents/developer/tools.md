@@ -58,6 +58,13 @@ dev server 백그라운드 실행 + URL 자동 추출
 - `enabled`: true
 - `requires_credentials`: `config.md` 참조
 
+### `sandbox_executor`
+하이브리드 리눅스 격리 실행 어댑터 (WSL2 / Docker 가상 런타임 터미널 위임 구동)
+
+- `enabled`: true
+- `requires_credentials`: `config.md` 참조
+
+
 
 ---
 

@@ -97,8 +97,8 @@ def main():
     avoided_loss = estimated_loss * risk_level
     # 도입 혜택 순 이익 (Net Benefit)
     net_benefit = avoided_loss - solution_cost
-    # ROI (%)
-    roi = (net_benefit / solution_cost) * 100
+    # ROI (%) - solution_cost가 0일 때의 ZeroDivisionError를 완벽히 차단
+    roi = (net_benefit / solution_cost) * 100 if solution_cost > 0 else 0.0
 
     # 6. 마크다운 리포트 자동 작성
     report = f"""### 📊 [ROI 분석 보고서] {selected_scenario.get('name', '리스크 시나리오')}

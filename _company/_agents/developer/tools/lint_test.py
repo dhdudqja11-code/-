@@ -46,7 +46,14 @@ def _load(p):
 def _run(cmd, cwd, timeout=180):
     _log(f"$ {cmd}", "step")
     try:
-        r = subprocess.run(cmd, shell=True, cwd=cwd, capture_output=True, text=True, timeout=timeout)
+        sandbox_tool = os.path.join(HERE, "sandbox_executor.py")
+        if os.path.exists(sandbox_tool):
+            # 격리된 리눅스 가상 샌드박스로 위임 실행 (윈도우 본체 시스템 손상 완전 보호)
+            sandbox_cmd = f"python {json.dumps(sandbox_tool)} --workdir {json.dumps(cwd)} {cmd}"
+            r = subprocess.run(sandbox_cmd, shell=True, capture_output=True, text=True, timeout=timeout)
+        else:
+            # 샌드박스 툴 누락 시 호스트 로컬 폴백 구동
+            r = subprocess.run(cmd, shell=True, cwd=cwd, capture_output=True, text=True, timeout=timeout)
         return r.returncode, (r.stdout or "") + "\n" + (r.stderr or "")
     except subprocess.TimeoutExpired:
         return -1, f"⏱ Timeout ({timeout}s)"

@@ -135,9 +135,14 @@ def monitor_approvals_history(action_id, timeout_seconds=300):
                 if not f.endswith(".json"):
                     continue
                     
-                # 승인 처리 완료 파일 유형: *__OK_test_xxxxx.json 또는 *__OK_apr-xxxxx.json
-                # 반려 처리 완료 파일 유형: *__NO_test_xxxxx.json
-                if f.endswith(f"_{action_id}.json") or f.endswith(f"_{short_id}.json"):
+                # 겹침 방지 가드: 완벽한 풀 ID 매칭이거나, short_id 길이가 최소 6자 이상인 안전한 단축 매칭인 경우만 인정
+                is_match = False
+                if f.endswith(f"_{action_id}.json"):
+                    is_match = True
+                elif len(short_id) >= 6 and f.endswith(f"_{short_id}.json"):
+                    is_match = True
+                    
+                if is_match:
                     if "_OK_" in f:
                         print("🎉 [Bridge] 익스텐션으로부터 결재 승인(OK) 확인 완료! 👍")
                         return "approved"

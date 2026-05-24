@@ -22,7 +22,12 @@ AUTONOMY_LEVEL: 2
 
 ## 사용 가능한 도구
 
-_⚠️ 이 에이전트의 도구는 모두 로드맵 단계입니다. 현재 LLM 추론만 가능하고, 외부 API 호출이나 파일 생성은 아직 동작하지 않습니다._
+### `copy_ab_tester`
+마케팅 후크 자가 검증 및 가상 CTR 예측기 (정적 NLP 스코어 및 과장 광고 필터링 가드독)
+
+- `enabled`: true
+- `requires_credentials`: `config.md` 참조
+
 
 ## 로드맵 (예정)
 

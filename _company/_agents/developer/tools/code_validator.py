@@ -49,8 +49,10 @@ class PythonSyntaxValidator:
         return is_valid, self.errors, self.warnings
 
     def check_name_errors(self, tree):
-        # 1단계: 내장 함수/클래스 목록 가져오기
-        builtin_names = set(dir(builtins))
+        # 1단계: 내장 함수/클래스 목록 가져오기 + 모듈 수준 Dunder 특수 전역 변수 화이트리스트 추가
+        builtin_names = set(dir(builtins)) | {
+            "__name__", "__file__", "__doc__", "__package__", "__path__", "__loader__", "__spec__", "__annotations__"
+        }
         
         # 2단계: 코드 내에서 바인딩(정의)되는 이름들 찾기
         bound_names = set()
