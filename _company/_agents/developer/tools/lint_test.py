@@ -113,6 +113,53 @@ def main():
             else:
                 results.append((f"py_compile {len(py_files)} files", 0, "All OK"))
 
+            # 3) Pytest & 80% Coverage mandatory guard
+            # 프로젝트 내에 tests/ 폴더나 test_*.py 파일이 존재한다면 실행
+            has_tests = os.path.exists(os.path.join(project, "tests")) or \
+                        any("test_" in os.path.basename(f) for f in py_files)
+            if has_tests:
+                _log("🧪 테스트 무결성 및 80% 커버리지 의무화 가드 작동 중...", "info")
+                code, out = _run("coverage run -m pytest", cwd=project, timeout=180)
+                
+                if "No module named coverage" in out or "command not found" in out:
+                    _log("⚠️ coverage 패키지가 설치되지 않아 일반 pytest로 대체 검증합니다.", "warn")
+                    code, out = _run("pytest", cwd=project, timeout=120)
+                    if code == 0:
+                        results.append(("Pytest (테스트 성공, 단 coverage 미설치로 커버리지 수치 검증 생략)", 0, out))
+                    else:
+                        results.append(("Pytest (테스트 실패)", code, out))
+                else:
+                    if code != 0:
+                        results.append(("Pytest & Coverage (테스트 실패)", code, out))
+                    else:
+                        # coverage json 파일 추출
+                        _run("coverage json", cwd=project, timeout=20)
+                        json_path = os.path.join(project, "coverage.json")
+                        cov_ok = False
+                        cov_percent = 0.0
+                        
+                        if os.path.exists(json_path):
+                            try:
+                                with open(json_path, "r", encoding="utf-8") as f:
+                                    cov_data = json.load(f)
+                                cov_percent = float(cov_data.get("totals", {}).get("percent_covered", 0.0))
+                                if cov_percent >= 80.0:
+                                    cov_ok = True
+                            except Exception as cov_err:
+                                _log(f"coverage.json 파싱 실패: {cov_err}", "warn")
+                            
+                            # Cleanup 임시 파일
+                            try: os.remove(json_path)
+                            except: pass
+                            try: os.remove(os.path.join(project, ".coverage"))
+                            except: pass
+                        
+                        if cov_ok:
+                            results.append((f"Pytest & Coverage ({cov_percent:.1f}%)", 0, f"All tests passed with {cov_percent:.1f}% coverage! (Target: 80%+)"))
+                        else:
+                            results.append((f"Pytest & Coverage ({cov_percent:.1f}%)", 1, f"❌ 검증 반려: 테스트는 통과했으나 전체 라인 커버리지({cov_percent:.1f}%)가 최소 의무 기준인 80.0%에 미달합니다. 비즈니스 엣지 케이스 테스트 코드를 추가로 보완하십시오."))
+
+
     # 결과 리포트
     print()
     print(f"# 🧪 검증 결과 — {os.path.basename(project)}")

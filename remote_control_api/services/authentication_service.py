@@ -1,13 +1,12 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Optional
-from passlib.context import CryptContext
+import bcrypt
 from jose import JWTError, jwt
 
 # TODO: 실제 환경 변수에서 로드해야 함 (JWT Secret Key)
 SECRET_KEY = "YOUR_SUPER_SECRET_KEY" 
 ALGORITHM = "HS256"
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class AuthenticationService:
     """
@@ -19,14 +18,14 @@ class AuthenticationService:
     @staticmethod
     def get_password_hash(password: str) -> str:
         """비밀번호 해시 생성 (bcrypt 사용)."""
-        return pwd_context.hash(password)
+        return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
         """제공된 비밀번호와 저장된 해시 비교."""
         try:
-            return pwd_context.verify(plain_password, hashed_password)
-        except ValueError:
+            return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+        except Exception:
             # 잘못된 형식의 hash가 들어올 경우 방어 로직 추가
             print("Warning: Invalid hash format provided.")
             return False
@@ -68,5 +67,3 @@ class AuthenticationService:
         print(f"INFO: Performing Multi-Factor Authentication check for User {user_id}...")
         # Placeholder Logic: 실제 로직은 API Gateway 레벨에서 처리되어야 함
         return True # 일단 통과로 가정
-
-from datetime import datetime, timedelta

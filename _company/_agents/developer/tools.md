@@ -52,6 +52,12 @@ dev server 백그라운드 실행 + URL 자동 추출
 - `enabled`: true
 - `requires_credentials`: `config.md` 참조
 
+### `git_committer`
+작업 단위 Conventional Commits 자동 커밋 (의미 단위 + 오염 파일 add 금지 가드 장착)
+
+- `enabled`: true
+- `requires_credentials`: `config.md` 참조
+
 
 ---
 
@@ -59,15 +65,11 @@ dev server 백그라운드 실행 + URL 자동 추출
 
 _아래 도구들은 향후 버전에서 추가 예정. 지금은 카탈로그에만 있음._
 
-### `git_committer` _(예정)_
-작업 단위 자동 커밋 (의미 단위 + git add -A 금지)
-
-- 아직 구현되지 않은 도구입니다. 로드맵에 있으며 향후 버전에서 추가 예정.
-
 ### `deploy_cli` _(예정)_
 Vercel/Netlify/Cloudflare 배포 (deploy --prod는 항상 승인)
 
 - 아직 구현되지 않은 도구입니다. 로드맵에 있으며 향후 버전에서 추가 예정.
+
 
 
 ---

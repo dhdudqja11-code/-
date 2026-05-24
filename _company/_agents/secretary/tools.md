@@ -28,11 +28,18 @@ AUTONOMY_LEVEL: 2
 - `enabled`: true
 - `requires_credentials`: `config.md` 참조
 
+### `telegram_approval_bridge`
+모바일 양방향 텔레그램 승인 브릿지 (실시간 승인/반려 폴링 연계)
+
+- `enabled`: true
+- `requires_credentials`: `config.md` 참조
+
 ### `google_calendar_write`
 Google Calendar OAuth 읽기·쓰기
 
 - `enabled`: true
 - `requires_credentials`: `config.md` 참조
+
 
 
 ---

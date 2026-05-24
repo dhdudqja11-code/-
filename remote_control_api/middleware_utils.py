@@ -12,22 +12,27 @@ try:
 except Exception:
     # 연결 실패 시 Mock 객체 사용 (테스트 환경을 가정)
     class MockRedisClient:
-        def incr(self, *args, **kwargs): return 1
+        def __init__(self):
+            self.data = {}
+        def incr(self, key, *args, **kwargs):
+            self.data[key] = self.data.get(key, 0) + 1
+            return self.data[key]
         def expire(self, *args, **kwargs): pass
-        def get(self, *args, **kwargs): return "mock_value"
-        def delete(self, *args, **kwargs): pass
+        def get(self, key, *args, **kwargs): return self.data.get(key, "mock_value")
+        def delete(self, key, *args, **kwargs):
+            self.data.pop(key, None)
     redis_client = MockRedisClient()
 
 
 class RateLimitExceeded(HTTPException):
     """Rate Limit 초과 시 발생하는 커스텀 예외."""
-    status_code = 429
-    detail = "Rate limit exceeded. Please wait before making more requests."
+    def __init__(self):
+        super().__init__(status_code=429, detail="Rate limit exceeded. Please wait before making more requests.")
 
 class QuotaExceeded(HTTPException):
     """사용량 할당량 초과 시 발생하는 커스텀 예외."""
-    status_code = 429
-    detail = "Quota limit exceeded for this period. Upgrade your plan to increase limits."
+    def __init__(self):
+        super().__init__(status_code=429, detail="Quota limit exceeded for this period. Upgrade your plan to increase limits.")
 
 
 def check_rate_limit(redis: redis.Redis, user_id: str, endpoint: str, window_seconds: int = 60, max_requests: int = 10) -> bool:

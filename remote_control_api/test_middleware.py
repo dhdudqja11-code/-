@@ -17,7 +17,7 @@ import asyncio
 
 def test_app():
     """테스트용 Minimal FastAPI App (Middleware 적용 목적)"""
-    app = FastAPI(middleware=[Depends(api_gateway_middleware)])
+    app = FastAPI(dependencies=[Depends(api_gateway_middleware)])
     @app.get("/test")
     async def protected_endpoint():
         return {"status": "success", "data": "Protected resource accessed."}
@@ -42,7 +42,7 @@ def test_rate_limit_failure():
     ENDPOINT = "/test"
 
     # 1. 초기화 및 성공 테스트 실행 (카운터 1 증가)
-    client.get(f"/{ENDPOINT}", headers={"X-User-ID": USER_ID})
+    client.get(ENDPOINT, headers={"X-User-ID": USER_ID})
 
     # 2. 강제로 Rate Limit을 초과하게 만들기 위해, check_rate_limit 함수를 직접 호출하여 카운터를 조작합니다.
     # (테스트의 재현성을 높이기 위한 기법)
@@ -59,7 +59,7 @@ def test_rate_limit_failure():
     # Middleware를 거쳐서 실제로 API 호출 시 테스트하는 방식:
     print("--- [TEST] 🧪 Running Rate Limit Failure via Client Call ---")
     # 이 코드는 내부적으로 check_rate_limit을 호출하며, MockRedisClient가 카운터 2를 반환하도록 가정합니다.
-    response = client.get(f"/{ENDPOINT}", headers={"X-User-ID": "user_C"})
+    response = client.get(ENDPOINT, headers={"X-User-ID": "user_C"})
 
     # Rate Limit이 실패하면, Middleware에서 HTTPException을 발생시키고, TestClient는 이를 Status Code로 잡아야 함.
     # Mocking의 한계 때문에 100% 정확한 테스트는 어려우나, 구조적 검증에 초점을 맞춥니다.

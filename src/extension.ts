@@ -21160,6 +21160,76 @@ ${catalog.map((c, i) => `${i + 1}. agent=${c.agentId} tool=${c.tool} — ${c.des
                `⚠️ 이전에 만든 파일을 다시 참조할 때 이 절대 경로를 그대로 사용하세요. 추측 금지. "내 도구 폴더 기준 상대 경로"로 변환하지 마세요.\n`;
     }
 
+    private _validateFileContent(absPath: string, relPath: string, content: string): { ok: boolean; errorMessage?: string } {
+        // 1. 마크다운 혼입 검사 (모든 파일 공통, 단 .md 및 .txt 제외)
+        if (!absPath.endsWith('.md') && !absPath.endsWith('.txt') && (content.includes('```') || content.includes('`' + '`' + '`'))) {
+            return {
+                ok: false,
+                errorMessage: `❌ 생성/편집 반려: ${relPath}\n이유: 소스 코드 파일 안에 마크다운 코드 블록 기호(\`\`\`)가 혼입되었습니다. 순수 코드로만 다시 작성하세요.`
+            };
+        }
+
+        // 2. JSON 파일 검사
+        if (absPath.endsWith('.json')) {
+            try {
+                JSON.parse(content);
+            } catch (jsonErr: any) {
+                const errorJson = {
+                    status: 'error',
+                    file: relPath,
+                    error_type: 'JSONParseError',
+                    message: `올바르지 않은 JSON 형식입니다: ${jsonErr.message}`,
+                    action: 'JSON 문법(쉼표 위치, 따옴표 닫기 등)을 정정하여 다시 쓰기하세요.'
+                };
+                return {
+                    ok: false,
+                    errorMessage: `❌ 생성/편집 반려: ${relPath}\n[에러 상세]\n\`\`\`json\n${JSON.stringify(errorJson, null, 2)}\n\`\`\``
+                };
+            }
+        }
+
+        // 3. Python 파일 검사
+        if (absPath.endsWith('.py')) {
+            try {
+                const compDir = getCompanyDir();
+                const validatorScript = path.join(compDir, '_agents', 'developer', 'tools', 'code_validator.py');
+                if (fs.existsSync(validatorScript)) {
+                    const tmpFile = path.join(os.tmpdir(), 'antigravity_validate_' + Date.now() + '.py');
+                    fs.writeFileSync(tmpFile, content, 'utf-8');
+                    
+                    const pythonCmd = _pythonCmd();
+                    const cmdParts = pythonCmd.split(' ');
+                    const exe = cmdParts[0];
+                    const args = cmdParts.slice(1).concat([validatorScript, '--file', relPath, '--content-file', tmpFile]);
+                    
+                    const res = spawnSync(exe, args, { encoding: 'utf-8', timeout: 8000 });
+                    
+                    // 임시 파일 삭제
+                    try { fs.unlinkSync(tmpFile); } catch {}
+                    
+                    if (res.status !== 0) {
+                        let formattedError = '';
+                        try {
+                            const parsed = JSON.parse(res.stdout);
+                            formattedError = `❌ 생성/편집 반려: ${relPath}\n[에러 상세]\n\`\`\`json\n${JSON.stringify(parsed, null, 2)}\n\`\`\``;
+                        } catch {
+                            const rawOut = (res.stdout || '').trim() || (res.stderr || '').trim();
+                            formattedError = `❌ 생성/편집 반려: ${relPath}\n[에러 상세]\n${rawOut}`;
+                        }
+                        return {
+                            ok: false,
+                            errorMessage: formattedError
+                        };
+                    }
+                }
+            } catch (pyErr: any) {
+                console.error('[Pre-write Validation] Python validation failed system-wise:', pyErr);
+            }
+        }
+
+        return { ok: true };
+    }
+
     private async _executeActions(
         aiMessage: string,
         opts?: { rootOverride?: string; appendToOutput?: (s: string) => void; silent?: boolean; skipRunCommand?: boolean; agentId?: string }
@@ -21237,6 +21307,13 @@ ${catalog.map((c, i) => `${i + 1}. agent=${c.agentId} tool=${c.tool} — ${c.des
             }
             const absPath = resolved.abs;
             try {
+                // Validation Layer
+                const valResult = this._validateFileContent(absPath, relPath, content);
+                if (!valResult.ok) {
+                    report.push(valResult.errorMessage || `❌ 생성 반려: ${relPath}`);
+                    continue;
+                }
+
                 const dir = path.dirname(absPath);
                 if (!fs.existsSync(dir)) {
                     fs.mkdirSync(dir, { recursive: true });
@@ -21329,6 +21406,13 @@ ${catalog.map((c, i) => `${i + 1}. agent=${c.agentId} tool=${c.tool} — ${c.des
                 }
 
                 if (editCount > 0) {
+                    // Validation Layer
+                    const valResult = this._validateFileContent(absPath, relPath, fileContent);
+                    if (!valResult.ok) {
+                        report.push(valResult.errorMessage || `❌ 편집 반려: ${relPath}`);
+                        continue;
+                    }
+
                     fs.writeFileSync(absPath, fileContent, 'utf-8');
                     if (absPath.startsWith(_getBrainDir())) brainModified = true;
                     /* v2.89.104 — Claude 익스텐션 호환 unified diff 표시. 변경된 hunk만,
