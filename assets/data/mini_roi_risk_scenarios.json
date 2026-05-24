@@ -1,0 +1,62 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "creation_date": "2026-05-24",
+    "description": "미래 핵심 리스크 기반의 정량화된 손실 시나리오 데이터셋. Mini ROI 시뮬레이터에 직접 통합하여 잠재적 통제력 확보 비용(CoA Value) 계산에 사용됨.",
+    "currency_unit": "USD (Millions)",
+    "required_fields": ["risk_id", "scenario_name", "trigger_event", "quantifiable_impact_l", "mitigation_proof"]
+  },
+  "risks": [
+    {
+      "risk_id": "RISK_001",
+      "title": "합성 미디어 기반 신뢰도 붕괴 리스크",
+      "description": "진실과 허위 구분이 불가능해지면서 발생하는 사회적, 경제적 혼란.",
+      "scenarios": [
+        {
+          "scenario_name": "고액 사기 및 명예훼손",
+          "trigger_event": "Deepfake 영상 배포 (비동의) -> 개인 자격 이용 -> 금전 요구",
+          "quantifiable_impact_l": 15.0, // 예상 법적 손실액 (최소치 기준)
+          "mitigation_proof": "출처 기반 인증 시스템(Source Provenance Verification)을 통한 진위 여부 즉시 판별 가능성 확보."
+        },
+        {
+          "scenario_name": "규제 미준수 및 플랫폼 책임 추궁",
+          "trigger_event": "AI Act 등 국제 규정 강화 -> 워터마크/출처 증명 의무화 위반",
+          "quantifiable_impact_l": 25.0, // 예상 과징금 최대치 (최악의 시나리오)
+          "mitigation_proof": "모든 콘텐츠에 대한 불변적 메타데이터 및 출처 기록(Immutable Audit Trail) 제공."
+        }
+      ]
+    },
+    {
+      "risk_id": "RISK_002",
+      "title": "AI 학습 데이터 프라이버시 침해 리스크",
+      "description": "PII의 유출 및 오용으로 인한 법적/재무적 손실.",
+      "scenarios": [
+        {
+          "scenario_name": "GDPR 기반 PII 대량 누출",
+          "trigger_event": "접근 통제 실패 -> 고객 데이터베이스 전체가 외부 노출 -> 규제 위반 확정",
+          "quantifiable_impact_l": 40.0, // GDPR 기준 최대 과징금 및 복구 비용 포함 (최악의 시나리오)
+          "mitigation_proof": "데이터 사용 전 마스킹(Masking)과 접근 권한을 실시간으로 검증하고 감사 기록 유지."
+        },
+        {
+          "scenario_name": "제3자 학습 데이터 오용",
+          "trigger_event": "외부 파트너의 비인가 데이터를 활용하여 모델 재학습 -> 기밀 정보 유출 판명",
+          "quantifiable_impact_l": 8.0, // 계약 위반 및 신뢰 상실에 따른 손실액
+          "mitigation_proof": "데이터 입력 단계부터 법적 근거(Legal Basis)와 활용 목적을 명시하고, 사용 범위를 통제."
+        }
+      ]
+    },
+    {
+      "risk_id": "RISK_003",
+      "title": "Web3/탈중앙 금융 규제 불확실성 리스크",
+      "description": "기술의 발전 속도 대비 법적 규제가 미비하여 발생하는 사업 모델 붕괴 위험.",
+      "scenarios": [
+        {
+          "scenario_name": "토큰 증권 분류에 따른 거래 중단",
+          "trigger_event": "규제 당국이 특정 토큰을 '증권'으로 재분류 -> 라이선스 미비로 인한 거래소 퇴출 명령",
+          "quantifiable_impact_l": 30.0, // 예상 연간 매출액의 일정 비율 (사업 중단에 따른 손실)
+          "mitigation_proof": "규제 준수 구조(Compliance-by-Design)를 내재화하여, 어떤 법적 테두리 안에서 작동할지 사전에 시뮬레이션."
+        }
+      ]
+    }
+  ]
+}
