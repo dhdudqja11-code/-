@@ -23,7 +23,7 @@ def calculate_avoided_loss(
     try:
         # 필수 필드 체크 및 타입 강제 실행 (예시: 'transaction_value'가 숫자가 아닌 경우)
         if not isinstance(input_data.get('client_id'), str) or not input_data['client_id']:
-            raise ValueError("Client ID는 문자열이며 비어있을 수 없습니다.")
+            raise ValueError("Client ID는 필수 필드이며 비어있을 수 없습니다.")
 
         # 데이터 상충 검증 로직 (예: Source가 Webhook인데 트랜잭션 가치가 0인 경우)
         if calc_inputs.get('regulatory_risk_score') is None and input_data['data_source'] == "Webhook":

@@ -23,23 +23,27 @@ class TestTrendSniperStability(unittest.TestCase):
 
     def test_failure_and_recovery_with_retry(self):
         """연속적인 실패 후, 재시도를 통해 성공하는 경우 테스트 (가장 중요)."""
-        # 이 테스트는 실제 Mocking을 통해 2~3회 실패 -> 1회 성공 흐름을 강제해야 합니다.
         print("\n--- Test 2: Failure & Recovery Simulation ---")
-        try:
-            # 임시로 내부 로직을 수정하여, 처음 3번 호출 시 에러를 발생시킨 후 4번째에 성공하도록 Mocking한다고 가정합니다.
-            result = self.client.query_with_retry("Test prompt for recovery.") 
+        from unittest.mock import patch
+        calls = []
+        def mock_call(prompt):
+            calls.append(prompt)
+            if len(calls) < 3:
+                raise APIConnectionError("Temporary Failure")
+            return {"status": "success", "data_extracted": "mocked"}
+            
+        with patch.object(self.client, '_call_llm', side_effect=mock_call):
+            result = self.client.query_with_retry("Test prompt for recovery.", initial_delay=0.01) 
             self.assertIsNotNone(result)
-        except APIConnectionError:
-             # 만약 최대 재시도 횟수까지 실패하면 이 예외가 발생해야 합니다. (실패 테스트용)
-             pass # pass
+            self.assertEqual(len(calls), 3)
 
     def test_permanent_failure_after_max_retries(self):
         """최대 재시도 횟수를 초과하여 영구적으로 실패하는 경우 테스트."""
         print("\n--- Test 3: Permanent Failure Simulation ---")
-        # 이 테스트는 API 호출을 강제로 failure하게 Mocking하고, 최대 시도를 넘어서 예외가 발생하는지 확인해야 합니다.
-        with self.assertRaises(APIConnectionError):
-             # 실제로는 여기서 max_retries를 낮추고 강제 실패시키는 코드가 필요함
-            self.client.query_with_retry("Test prompt for permanent failure.", max_retries=2)
+        from unittest.mock import patch
+        with patch.object(self.client, '_call_llm', side_effect=APIConnectionError("Simulated LLM Failure")):
+            with self.assertRaises(APIConnectionError):
+                self.client.query_with_retry("Test prompt for permanent failure.", max_retries=2, initial_delay=0.01)
 
 if __name__ == '__main__':
     unittest.main()

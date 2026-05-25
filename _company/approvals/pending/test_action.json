@@ -1,0 +1,12 @@
+{
+    "id": "test_action",
+    "agentId": "developer",
+    "kind": "deploy",
+    "title": "테스트 결재 요청",
+    "description": "이것은 양방향 승인 테스트입니다.",
+    "createdAt": "2026-05-25T13:48:45.000Z",
+    "payload": {
+        "action_id": "test_action",
+        "title": "테스트 결재 요청"
+    }
+}

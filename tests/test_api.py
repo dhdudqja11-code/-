@@ -22,8 +22,8 @@ def test_successful_avoided_loss_calculation():
 
     response = client.post("/api/v1/avoided_loss", json={"input_data": payload, "calc_inputs": calc})
     assert response.status_code == 200
+    assert response.json()["success"] is True
     data = response.json()["data"]
-    assert data["success"] is True
     # 계산 결과가 0보다 커야 함 (최소한의 손실액)
     assert data["total_avoided_loss"] > 100
 

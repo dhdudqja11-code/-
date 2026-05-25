@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional
 from datetime import datetime
+from enum import Enum
+
 
 # =========================================
 # 🧪 INPUT SCHEMA (클라이언트가 보내는 데이터)
@@ -21,12 +23,12 @@ class AssessmentRequest(BaseModel):
 # 🚨 OUTPUT SCHEMA (시스템이 반환해야 할 구조화된 Alert)
 # =========================================
 
-class RiskLevel(str):
+class RiskLevel(str, Enum):
     """리스크 심각도 레벨."""
-    CRITICAL: str = "Critical" # 법적 위반, 즉시 중단 필요
-    HIGH: str = "High"         # 정책 위반, 수정 후 진행 필요
-    MEDIUM: str = "Medium"     # 권장 사항, 모니터링 필요
-    LOW: str = "Low"           # 정상
+    CRITICAL = "Critical" # 법적 위반, 즉시 중단 필요
+    HIGH = "High"         # 정책 위반, 수정 후 진행 필요
+    MEDIUM = "Medium"     # 권장 사항, 모니터링 필요
+    LOW = "Low"           # 정상
 
 class StructuredRiskAlert(BaseModel):
     """구조화된 리스크 경고 메시지 (메모리 기반 3단계 구조)."""

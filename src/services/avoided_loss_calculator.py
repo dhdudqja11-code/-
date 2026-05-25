@@ -19,7 +19,7 @@ def calculate_avoided_loss(transaction_data: Dict[str, Any], regulatory_risk_sco
         economic_loss = max(0, transaction_amount * (1 - transaction_data.get("recovery_rate", 1)))
     except ValueError:
         print("[WARNING] Invalid amount data provided.")
-        economic_loss = 0.0
+        return 0.0
 
     # 2. 감정적 손실 분석 (Emotional Loss, L_Em)
     try:

@@ -1,7 +1,8 @@
 import json
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 import os
 
+# --- Legacy classes preserved for backward compatibility ---
 class LossCalculatorError(Exception):
     """손실 계산 로직에서 발생하는 사용자 정의 예외."""
     pass
@@ -23,7 +24,6 @@ class MiniROI_LossCalculator:
         try:
             with open(file_path, 'r') as f:
                 data = json.load(f)
-                # Dictionary 형태로 빠르게 조회할 수 있도록 가공
                 scenarios = {}
                 for scenario in data.get("scenarios", []):
                     scenarios[scenario['id']] = scenario
@@ -32,85 +32,50 @@ class MiniROI_LossCalculator:
             raise LossCalculatorError(f"JSON 파일 디코딩 오류 발생: {e}")
 
     def calculate_loss(self, 
-                        industry: str, 
-                        company_size_korea: int, 
-                        input_data: Dict[str, Any]) -> Tuple[Dict[str, float], List[str]]:
-        """
-        핵심 손실 계산 로직. 주어진 조건과 데이터를 기반으로 단계별 손실액을 산출합니다.
-
-        Args:
-            industry (str): 기업 산업군 (예: 'Healthcare', 'Fintech').
-            company_size_korea (int): 회사 규모 (만 단위).
-            input_data (Dict[str, Any]): Webhook으로 들어오는 트랜잭션/리스크 데이터.
-
-        Returns:
-            Tuple[Dict[str, float], List[str]]: {단계별 손실액}, [경고 메시지 리스트]
-        """
+                       industry: str, 
+                       company_size_korea: int, 
+                       input_data: Dict[str, Any]) -> Tuple[Dict[str, float], List[str]]:
         total_loss = {}
-        triggered_scenarios = []
-        warning_messages = []
-        
-        # 1. 가장 높은 위험도 점수 계산 및 시나리오 매칭 (가중치 적용)
         matched_risks: List[Any] = self._match_scenarios(industry, company_size_korea, input_data)
         
         if not matched_risks:
             total_loss['base'] = 0.0
             return {'Base': 0.0, 'Total Loss': 0.0}, ["✅ 현재 데이터 상 심각한 위험 징후는 감지되지 않았습니다."]
 
-        # 2. 단계적 손실액 계산 (Staged Loss Calculation)
         for risk in matched_risks:
             scenario = self._scenarios[risk['id']]
             loss = self._calculate_stage_loss(scenario, company_size_korea)
             total_loss[f"{scenario['name']} 손실액"] = loss
 
-        # 3. 최종 총 손실액 및 Critical State 진단
         base_loss = total_loss.get('Base', 0.0)
         final_total_loss = base_loss + sum(total_loss[k] for k in total_loss if '손실액' in k)
         total_loss['Total Loss'] = round(final_total_loss, 2)
 
-        # 4. Critical State 발생 시 경고 메시지 생성 및 에러 핸들링 구조화
+        warning_messages = []
         warning_messages.extend(self._generate_critical_alert(matched_risks))
 
         return total_loss, warning_messages
 
     def _match_scenarios(self, industry: str, company_size_korea: int, input_data: Dict[str, Any]) -> List[Dict]:
-        """입력된 조건과 데이터를 기반으로 가장 높은 위험도를 가진 시나리오 목록을 반환합니다."""
         matched = []
         for scenario_id, scenario in self._scenarios.items():
-            # 1차 필터링: 키워드 매칭 및 산업군 적합성 검사
             is_keyword_match = any(kw.lower() in str(input_data).lower() for kw in scenario['trigger_keywords'])
-            
-            if is_keyword_match and (industry in scenario['description'] or company_size_korea >= 5): # 간단한 가중치 로직 예시
+            if is_keyword_match and (industry in scenario['description'] or company_size_korea >= 5):
                 matched.append({"id": scenario_id, "risk_level": scenario['risk_level'], "scenario": scenario})
-        
-        # 위험도(risk_level)가 높은 순서로 정렬하여 최악의 시나리오부터 제시
         return sorted(matched, key=lambda x: x['risk_level'], reverse=True)
 
     def _calculate_stage_loss(self, scenario: Any, company_size_korea: int) -> float:
-        """주어진 리스크 시나리오를 기반으로 3단계 손실액을 계산합니다."""
         components = scenario['loss_components']
-        
-        # 로스 구조: [기본 벌금] * [규제 가중치] + (최소 복구 비용 * 규모 보정)
-        
-        # 1. 기본 벌금 산출 (Initial Fine): PII 유출 시도 대비 법적 최소 벌금 예상액
-        initial_fine = components['initial_fine_rate'] * company_size_korea * 1000 # 단위: 원
-        
-        # 2. 규제 가중치 적용 (Regulatory Penalty): 산업별 특성 반영
+        initial_fine = components['initial_fine_rate'] * company_size_korea * 1000
         penalty_loss = initial_fine * components['regulatory_penalty_factor']
-        
-        # 3. 규모 보정 복구 비용 산출 (Remediation Cost): 회사 규모에 비례하여 증가
         remediation_cost = components['remediation_cost_base'] + (company_size_korea * 5000)
-
         total = penalty_loss + remediation_cost
         return round(total, 2)
 
     def _generate_critical_alert(self, matched_risks: List[Dict]) -> List[str]:
-        """Critical State 발생 시, [문제 정의 $\to$ 원인 분석 $\to$ 해결책 제시] 구조로 경고 메시지를 생성합니다."""
         alerts = []
         for risk in matched_risks:
             scenario = self._scenarios[risk['id']]
-            
-            # 🚨 Critical State 출력 포맷 강제 적용 (Must enforce this structure)
             alert_msg = f"""\n🚨 [CRITICAL ALERT - {scenario['name']} 발생] 🚨\n"""
             alert_msg += "  1. 🚩 문제 정의 (What went wrong?): 핵심 자산/규제가 위협받는 상태입니다.\n"
             alert_msg += f"     -> 구체적 위험: {scenario['description']}\n"
@@ -119,17 +84,111 @@ class MiniROI_LossCalculator:
             alerts.append(alert_msg)
         return alerts
 
-# --- 테스트 코드 포함: E2E 테스트 가능 확인 ---
+# --- New modular functions matching the pytest expectations ---
+
+class MiniROIServiceError(Exception):
+    """Mini ROI 시뮬레이터의 커스텀 예외 클래스."""
+    def __init__(self, message: str, error_type: str, details: Optional[str] = None):
+        super().__init__(message)
+        self.error_type = error_type # e.g., 'SCHEMA', 'AUTH', 'BUSINESS'
+        self.details = details
+
+    def __str__(self) -> str:
+        return f"[{self.error_type}] {super().__str__()}"
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Gateway가 처리할 수 있는 표준 에러 구조를 반환."""
+        return {
+            "success": False,
+            "error": {
+                "code": self.error_type,
+                "message": str(self),
+                "details": self.details if self.details else "상세 정보 없음."
+            }
+        }
+
+def calculate_risk_level(data: Dict[str, Any]) -> str:
+    """
+    데이터를 기반으로 비즈니스 리스크 레벨을 산출한다.
+    """
+    required_keys = ["source", "time_window", "transaction_value"]
+    if not all(key in data for key in required_keys):
+        raise MiniROIServiceError("필수 데이터 필드가 누락되었습니다. 'source', 'time_window', 'transaction_value'를 확인하세요.", "SCHEMA")
+
+    try:
+        value = float(data["transaction_value"])
+        if value > 1000 and data["source"] == "CrossBorder":
+            return "High"
+        elif value > 500:
+            return "Medium"
+        else:
+            return "Low"
+    except ValueError:
+        raise MiniROIServiceError("트랜잭션 값은 반드시 유효한 숫자여야 합니다.", "SCHEMA", f"Value: {data.get('transaction_value')}")
+
+def calculate_loss(risk_level: str, transaction_value: float) -> float:
+    """
+    산출된 위험 레벨과 거래 금액을 기반으로 예상 손실액을 계산한다.
+    """
+    if not isinstance(transaction_value, (int, float)) or transaction_value < 0:
+        raise MiniROIServiceError("손실 계산에 사용되는 거래 금액이 유효하지 않습니다.", "SCHEMA")
+
+    loss_multiplier = {"Low": 0.01, "Medium": 0.05, "High": 0.1}
+    
+    if risk_level not in loss_multiplier:
+        raise MiniROIServiceError(f"유효하지 않은 리스크 레벨 '{risk_level}'이 입력되었습니다.", "BUSINESS")
+
+    loss = transaction_value * loss_multiplier[risk_level]
+    return round(loss, 2)
+
+def process_mini_roi(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    API Gateway의 최종 통합 진입점 (Entry Point). 전체 로직을 감싸고 에러 처리를 표준화한다.
+    """
+    # 3. [실패 Case 2: Authorization Failure]
+    if data.get("source") == "Restricted":
+        raise MiniROIServiceError("해당 소스는 현재 계정의 접근 권한 범위를 초과하여 분석할 수 없습니다.", "AUTH")
+
+    try:
+        # 1. Schema 검증 및 리스크 레벨 산출 단계 (Critical State)
+        risk_level = calculate_risk_level(data)
+
+        # 2. 손실액 계산 단계
+        loss_amount = calculate_loss(risk_level, float(data["transaction_value"]))
+
+        # 3. 최종 성공 응답 구조화
+        return {
+            "success": True,
+            "result": {
+                "risk_level": risk_level,
+                "estimated_loss": loss_amount,
+                "message": "Mini ROI 시뮬레이션이 성공적으로 완료되었습니다."
+            }
+        }
+    except MiniROIServiceError as e:
+        if e.error_type == "SCHEMA":
+            raise  # tests expect MiniROIServiceError to bubble up
+        elif e.error_type == "BUSINESS":
+            raise  # tests expect MiniROIServiceError to bubble up
+        raise
+    except Exception as e:
+        return {
+            "success": False,
+            "error": {
+                "code": "TIMEOUT_ERROR",
+                "message": f"요청 처리 중 시스템 시간 초과가 발생했습니다. ({type(e).__name__})",
+                "details": str(e)
+            }
+        }
+
+# --- Legacy test runner ---
 def run_unit_test():
     """모듈의 핵심 기능을 단위 테스트합니다."""
     print("\n=======================================")
     print("🚀 [TESTING] Unit Test Start - LossCalculator")
     
     try:
-        # 1. 초기화 및 데이터 로딩 테스트
         calculator = MiniROI_LossCalculator(scenario_file_path="mini_roi_risk_scenarios.json")
-
-        # 2. 시나리오 A (PII 유출) 테스트 케이스
         test_data_a = {"user_id": "abc123", "data_type": "sensitive_pii"}
         loss_a, alerts_a = calculator.calculate_loss("Healthcare", 10, test_data_a)
 
@@ -139,7 +198,6 @@ def run_unit_test():
             print("--- 경고 출력 ---")
             print(alert)
 
-        # 3. 시나리오 B (안전한 조건) 테스트 케이스
         test_data_b = {"transaction_id": "xyz987", "status": "success"}
         loss_b, alerts_b = calculator.calculate_loss("E-commerce", 1, test_data_b)
 
@@ -157,5 +215,4 @@ def run_unit_test():
         print("=======================================\n")
 
 if __name__ == "__main__":
-    # 테스트 실행을 위해 임시로 스크립트를 직접 호출할 수 있도록 main 블록 유지
     run_unit_test()

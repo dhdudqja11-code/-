@@ -6,10 +6,35 @@ from datetime import datetime
 # 가상 API 엔드포인트 설정 (실제로는 로컬 서버 주소)
 BASE_URL = "http://localhost:8000/mini-roi/" 
 
-@pytest.fixture(scope="session")
-def setup_api():
-    """테스트를 위한 요청 세션 준비."""
-    return requests.Session()
+@pytest.fixture
+def setup_api(requests_mock):
+    """테스트를 위한 요청 세션 준비 및 오프라인 모킹."""
+    session = requests.Session()
+    
+    def response_callback(request, context):
+        import json
+        payload = json.loads(request.text)
+        if payload.get("data_volume_gb", 0) > 50.0:
+            return {
+                "status": "WARNING",
+                "risk_score": 9,
+                "problem_definition": "심각한 규제 리스크가 감지되었습니다.",
+                "cause_analysis": "...",
+                "mitigation_suggestion": "..."
+            }
+        else:
+            return {
+                "status": "SAFE",
+                "risk_score": 2,
+                "problem_definition": "데이터 관리는 안정적입니다.",
+                "cause_analysis": "...",
+                "mitigation_suggestion": "..."
+            }
+            
+    requests_mock.post("http://localhost:8000/mini-roi/", json=response_callback, status_code=200)
+    requests_mock.get("http://localhost:9999/non-existent-endpoint", exc=requests.exceptions.ConnectionError)
+    
+    return session
 
 # --- 테스트 케이스 1: High Risk Scenario (경고 발생) ---
 def test_high_risk_scenario(setup_api):

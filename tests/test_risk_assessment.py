@@ -57,7 +57,7 @@ def test_02_critical_risk_scenario():
 
     # 리스트에 경고가 하나 이상 존재해야 함을 확인합니다.
     assert len(alerts) >= 1
-    critical_alert = next((a for a in alerts if a['alerts'][0]['risk_level'] == 'Critical'), None)
+    critical_alert = next((a for a in alerts if a['risk_level'] == 'Critical'), None)
     
     if critical_alert:
         print("✅ Test Case 2 Passed: Critical alert detected successfully.")
