@@ -42,9 +42,15 @@ def main():
     if not os.path.exists(SNIPER_PATH):
         print(f"❌ trend_sniper.py를 찾을 수 없어요: {SNIPER_PATH}")
         sys.exit(1)
+        
+    # Windows CPU/GPU 쿨링 및 소음 차단용 커널 스케줄러 가드레일 빌드
+    win_kwargs = {}
+    if sys.platform == "win32":
+        win_kwargs["creationflags"] = 0x00004000 # BELOW_NORMAL_PRIORITY_CLASS
+
     # 첫 실행 전 trend_sniper.py가 정상 동작하는지 빠르게 검증
     print("🔍 trend_sniper.py 첫 회차 검증 중 (~30초)...")
-    test_proc = subprocess.run([sys.executable, SNIPER_PATH], capture_output=True, text=True, timeout=300)
+    test_proc = subprocess.run([sys.executable, SNIPER_PATH], capture_output=True, text=True, timeout=300, **win_kwargs)
     if test_proc.returncode != 0:
         print(f"❌ trend_sniper.py 검증 실패 (exit {test_proc.returncode})")
         print("   먼저 trend_sniper.py 단독으로 ▶ 실행해서 설정·키워드·LLM 연결 확인 후 재시도.")
@@ -92,7 +98,7 @@ def main():
             _write_state("RUNNING", loop, start_ts, elapsed_h, ts, next_ts)
             
             try:
-                subprocess.run([sys.executable, SNIPER_PATH], check=False)
+                subprocess.run([sys.executable, SNIPER_PATH], check=False, **win_kwargs)
             except Exception as e:
                 print(f"❌ 실행 실패: {e}")
             

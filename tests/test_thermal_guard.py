@@ -6,7 +6,10 @@ import pytest
 HERE = os.path.dirname(os.path.abspath(__file__))
 COMPANY_ROOT = os.path.abspath(os.path.join(HERE, "..", "_company"))
 SHARED_DIR = os.path.join(COMPANY_ROOT, "_shared")
+YOUTUBE_TOOLS = os.path.join(COMPANY_ROOT, "_agents", "youtube", "tools")
+
 sys.path.append(SHARED_DIR)
+sys.path.append(YOUTUBE_TOOLS)
 
 import campaign_orchestrator
 
@@ -72,3 +75,33 @@ def test_non_win_cooling_safeguard():
             # creationflags 인자가 없음을 단언
             called_kwargs = mock_run.call_args[1]
             assert "creationflags" not in called_kwargs
+
+
+def test_auto_planner_cooling_creation_flag_injection():
+    """auto_planner.py 기동 시 Windows 환경인 경우 BELOW_NORMAL_PRIORITY_CLASS(0x00004000) 플래그가 주입되는지 검증합니다."""
+    # 동적 로딩하여 sys.path 무결성 매핑
+    import auto_planner
+    
+    mock_proc = mock.Mock()
+    mock_proc.returncode = 0
+    mock_proc.stdout = "Success"
+    mock_proc.stderr = ""
+
+    with mock.patch("subprocess.run", return_value=mock_proc) as mock_run:
+        # sys.platform을 win32로 모킹
+        with mock.patch("sys.platform", "win32"):
+            mock_cfg = {"INTERVAL_HOURS": 1, "TOTAL_RUN_HOURS": 0.00001}
+            with mock.patch("auto_planner.load_config", return_value=mock_cfg):
+                with mock.patch("sys.exit") as mock_exit:
+                    with mock.patch("time.sleep"):
+                        try:
+                            auto_planner.main()
+                        except Exception:
+                            pass
+                        
+                        assert mock_run.call_count >= 1
+                        for call in mock_run.call_args_list:
+                            called_kwargs = call[1]
+                            assert "creationflags" in called_kwargs
+                            assert called_kwargs["creationflags"] == 0x00004000
+
