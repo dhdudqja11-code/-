@@ -1,17 +1,6 @@
 import pytest
-import json
-from mini_roi_simulator import run_mini_roi_analysis # 가정: API 로직을 담은 함수
-
-# --- 테스트 환경 설정 및 가짜 데이터 정의 (Mocking) ---
-# 실제 배포 환경에서는 이 부분이 Core Gateway를 통해 호출될 것입니다.
-
-def mock_gateway_call(payload):
-    """Mini ROI 시뮬레이터의 핵심 로직을 감싸는 가상 게이트웨이 함수."""
-    try:
-        # Mini ROI 시뮬레이터 내부에서 Pydantic 유효성 검사가 이루어진다고 가정하고 호출합니다.
-        return run_mini_roi_analysis(payload) 
-    except Exception as e:
-        return {"status": "ERROR", "message": str(e)}
+from pydantic import ValidationError
+from mini_roi_simulator import SimulationInput, RiskFactor, calculate_mini_roi_loss
 
 # --- 테스트 케이스 정의 ---
 
@@ -19,63 +8,74 @@ def test_successful_run():
     """✅ [성공 케이스] 모든 필수 데이터가 완벽하게 포함된 정상 페이로드."""
     print("\n--- 🧪 Running Test: Successful Run (Happy Path) ---")
     valid_payload = {
-        "source_system": "WebHook",
-        "transaction_id": "TX123456789",
-        "data_subject": {"user_id": 100, "email": "test@example.com"},
-        "risk_score": 0.85, # High risk score for testing the module's action
+        "client_id": "CL-12345",
+        "user_role": "Admin",
+        "risk_factors": [
+            {"activity_name": "Database Backup", "potential_impact_score": 8.0},
+            {"activity_name": "PII Masking", "potential_impact_score": 5.0}
+        ]
     }
-    result = mock_gateway_call(valid_payload)
+    
+    # 1. Input Validation 검증
+    input_data = SimulationInput(**valid_payload)
+    assert input_data.client_id == "CL-12345"
+    assert len(input_data.risk_factors) == 2
+    
+    # 2. 로직 수행 검증
+    report, total_loss = calculate_mini_roi_loss(input_data)
     print("✅ Test Passed: Simulation successful.")
-    # 결과 구조 검증 (Assertion Placeholder)
-    assert result["status"] == "SUCCESS"
+    
+    # 결과 검증
+    assert total_loss == (8.0 * 1500 + 5.0 * 1500)
+    assert len(report) == 6 + 1 # 2개 리스크 * 3단계 + WARNING(19500 > 10000)
 
 def test_malformed_payload_missing_field():
-    """❌ [Guardrail Test 1] 필수 필드(source_system)가 누락된 경우."""
+    """❌ [Guardrail Test 1] 필수 필드(client_id)가 누락된 경우 Pydantic ValidationError 검출."""
     print("\n--- 🧪 Running Test: Missing Field (Guardrail Test) ---")
     invalid_payload = {
-        "transaction_id": "TX999",
-        # 'source_system' 키를 의도적으로 제거함. Pydantic은 이를 필수로 간주해야 함.
-        "data_subject": {"user_id": 100},
-        "risk_score": 0.5,
+        "user_role": "Admin",
+        "risk_factors": [
+            {"activity_name": "Database Backup", "potential_impact_score": 8.0}
+        ]
     }
-    result = mock_gateway_call(invalid_payload)
-    print("⚠️ Test Result: Malformed payload received.")
-    # 핵심 검증 지점: 'Missing Field' 에러가 발생해야 함.
-    assert result["status"] == "ERROR" and "source_system" in result["message"]
+    
+    with pytest.raises(ValidationError) as exc_info:
+        SimulationInput(**invalid_payload)
+        
+    assert "client_id" in str(exc_info.value)
+    print("✅ Test Passed: client_id missing handled by Pydantic.")
 
 def test_type_mismatch_payload():
-    """❌ [Guardrail Test 2] 데이터 타입이 잘못 입력된 경우 (e.g., user_id가 문자열)."""
+    """❌ [Guardrail Test 2] 데이터 타입이 잘못 입력된 경우 (e.g., potential_impact_score가 범위를 초과하거나 문자열)."""
     print("\n--- 🧪 Running Test: Type Mismatch (Guardrail Test) ---")
     invalid_payload = {
-        "source_system": "Manual",
-        "transaction_id": "TX1010",
-        "data_subject": {"user_id": "A-B-C"}, # user_id는 정수형이 기대되는데 문자열 전달
-        "risk_score": 0.7,
+        "client_id": "CL-12345",
+        "user_role": "Admin",
+        "risk_factors": [
+            {"activity_name": "Database Backup", "potential_impact_score": 15.0} # 1~10 범위를 초과함
+        ]
     }
-    result = mock_gateway_call(invalid_payload)
-    print("⚠️ Test Result: Type mismatch payload received.")
-    # 핵심 검증 지점: 'Type Error'가 발생하며 정확한 타입을 명시해야 함.
-    assert result["status"] == "ERROR" and "type" in result["message"].lower()
+    
+    with pytest.raises(ValidationError) as exc_info:
+        SimulationInput(**invalid_payload)
+        
+    assert "potential_impact_score" in str(exc_info.value)
+    print("✅ Test Passed: score limit boundary check passed.")
 
 def test_empty_payload():
-    """❌ [Guardrail Test 3] 빈 객체를 전달했을 경우."""
+    """❌ [Guardrail Test 3] 빈 객체 또는 비어있는 risk_factors 리스트 전달 시 예외 발생."""
     print("\n--- 🧪 Running Test: Empty Payload ---")
-    result = mock_gateway_call({})
-    print("⚠️ Test Result: Empty payload received.")
-    assert result["status"] == "ERROR" and "필수 입력 값" in result["message"]
-
-if __name__ == "__main__":
-    # 실제 테스트 실행 시, pytest 프레임워크를 사용하겠지만, 
-    # 여기서는 명시적 로그 출력을 위해 main 함수 내에서 순차적으로 호출합니다.
-    print("=========================================================")
-    print("🚀 Mini ROI Simulator Gateway 통합 안정성 검증 시작 (Staging)")
-    print("=========================================================")
-
-    test_successful_run()
-    test_malformed_payload_missing_field()
-    test_type_mismatch_payload()
-    test_empty_payload()
+    with pytest.raises(ValidationError):
+        SimulationInput(**{})
+        
+    invalid_payload = {
+        "client_id": "CL-12345",
+        "user_role": "Admin",
+        "risk_factors": [] # 최소 1개 이상 필요
+    }
+    with pytest.raises(ValidationError) as exc_info:
+        SimulationInput(**invalid_payload)
     
-    print("\n\n=========================================================")
-    print("✅ 모든 테스트 케이스 실행 완료. 디버깅 로그를 확인하세요.")
-    print("=========================================================")
+    # min_length (v2) 혹은 min_items (v1) 에러 검출
+    assert "risk_factors" in str(exc_info.value)
+    print("✅ Test Passed: Empty payload validation rejected.")

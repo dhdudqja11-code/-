@@ -1,5 +1,5 @@
 from typing import Optional, Literal
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 import uuid
 
@@ -39,7 +39,28 @@ class ComplianceGateResult(BaseModel):
     compliance_violations: list[ViolationEvidencePayload] = []
     audit_log: str = "Simulation process completed successfully."
 
-@validator('simulation_success', pre=True)
-def check_success(cls, v):
-    # 임시 검증 로직 (필요하다면 추가 가능)
-    return bool(v)
+    @field_validator('simulation_success', mode='before')
+    @classmethod
+    def check_success(cls, v):
+        # 임시 검증 로직 (필요하다면 추가 가능)
+        return bool(v)
+
+# --- 4. 추가 요구 스키마 (ComplianceEvidencePayload 및 ViolationReport) ---
+class ComplianceEvidencePayload(BaseModel):
+    """
+    모든 API 요청 시 입력되는 트랜잭션 데이터 감사용 구조체.
+    """
+    transaction_id: uuid.UUID = Field(default_factory=uuid.uuid4, description="고유 트랜잭션 ID.")
+    timestamp_utc: datetime = Field(default_factory=datetime.utcnow, description="트랜잭션 발생 시점.")
+    transaction_metadata: dict = Field(default_factory=dict, description="트랜잭션 메타데이터 (예: source, ip 등).")
+    action_details: dict = Field(default_factory=dict, description="액션 세부 정보.")
+    evidence_payload: dict = Field(default_factory=dict, description="증거 페이로드.")
+
+class ViolationReport(BaseModel):
+    """
+    규정 위반 여부를 나타내는 보고서 모델.
+    """
+    violation_level: str = Field(..., description="위반 등급 (CRITICAL, HIGH, NONE 등).")
+    rule_id: str = Field(..., description="위반된 규정 ID.")
+    description: str = Field(..., description="위반 설명.")
+    legal_reference: str = Field(..., description="법적 근거.")

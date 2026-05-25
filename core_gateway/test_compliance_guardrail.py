@@ -1,4 +1,5 @@
 import json
+import pytest
 from typing import Dict, Any
 from datetime import datetime
 from pydantic import ValidationError
@@ -7,8 +8,8 @@ from pydantic import ValidationError
 try:
     from compliance_models import ViolationEvidencePayload, LegalEvidence, ComplianceGateResult
 except ImportError:
-    print("🚨 ERROR: compliance_models.py 파일을 먼저 실행하여 모델을 정의해야 합니다.")
-    exit()
+    # pytest 환경을 위해 상대 경로 폴백 지원
+    from .compliance_models import ViolationEvidencePayload, LegalEvidence, ComplianceGateResult
 
 
 def simulate_compliance_check(input_data: Dict[str, Any], violation_details: Dict[str, Any]) -> ComplianceGateResult:
@@ -37,7 +38,7 @@ def simulate_compliance_check(input_data: Dict[str, Any], violation_details: Dic
         return ComplianceGateResult(
             simulation_success=False, 
             raw_input_data=input_data, 
-            compliance_violations=[violation_payload] # 가짜 Payload로 오류 구조화
+            compliance_violations=[] # 빈 목록으로 대체하여 유효성 확보
         )
 
     # 3. 최종 게이트웨이 결과물 구성 (성공 케이스 시뮬레이션)
@@ -50,12 +51,10 @@ def simulate_compliance_check(input_data: Dict[str, Any], violation_details: Dic
     )
 
 
-if __name__ == "__main__":
-    # --- 🟢 테스트 시나리오 1: 일반적인 개인정보 유출 위반 (성공 케이스) ---
-    print("\n" + "="*50)
-    print("✨ [TEST] 시나리오 1: 데이터 규제 위반 감지 및 기록")
-    print("="*50)
+# --- pytest를 위한 테스트 케이스 정의 ---
 
+def test_scenario_1_successful_violation_recording():
+    """✨ [TEST] 시나리오 1: 데이터 규제 위반 감지 및 기록"""
     test_input = {
         "user_id": "U-9876",
         "action": "profile_update",
@@ -73,15 +72,20 @@ if __name__ == "__main__":
     }
 
     result_success = simulate_compliance_check(test_input, violation_details_success)
+    assert result_success.simulation_success is True
+    assert len(result_success.compliance_violations) == 1
+    assert result_success.compliance_violations[0].severity_level == "HIGH"
+    assert result_success.compliance_violations[0].legal_evidence.applicable_law == "개인정보보호법"
     print("\n[FINAL RESULT] Simulation Success:", result_success.simulation_success)
-    # 실제 환경에서는 이 결과를 API 응답으로 반환합니다.
-    print(json.dumps({"status": "SUCCESS", "data": result_success.dict()}, indent=2))
 
 
-    # --- 🔴 테스트 시나리오 2: 법적 근거 미비로 인한 구조체 유효성 검증 실패 (실패 케이스) ---
-    print("\n" + "="*50)
-    print("🚨 [TEST] 시나리오 2: 필수 필드 누락으로 인한 Validation Failure")
-    print("="*50)
+def test_scenario_2_validation_failure():
+    """🚨 [TEST] 시나리오 2: 필수 필드 누락으로 인한 Validation Failure"""
+    test_input = {
+        "user_id": "U-9876",
+        "action": "profile_update",
+        "data": {"email": "test@example.com", "phone": "010-xxxx-xxxx"}
+    }
 
     # legal_evidence에서 applicable_law를 제거하여 의도적으로 실패 유발
     violation_details_fail = {
@@ -94,8 +98,12 @@ if __name__ == "__main__":
     }
 
     result_failure = simulate_compliance_check(test_input, violation_details_fail)
+    assert result_failure.simulation_success is False
+    assert len(result_failure.compliance_violations) == 0
     print("\n[FINAL RESULT] Simulation Success:", result_failure.simulation_success)
-    # 실패 시에도 시스템은 다운되지 않고, 이 Failure Payload를 기록합니다.
-    if not result_failure.simulation_success:
-        print("⚠️ [FAILURE HANDLED] System did not crash. Compliance failure recorded.")
-        print(json.dumps({"status": "FAILURE", "data": result_failure.dict()}, indent=2))
+
+
+if __name__ == "__main__":
+    # 수동 실행용 스텁 유지
+    test_scenario_1_successful_violation_recording()
+    test_scenario_2_validation_failure()

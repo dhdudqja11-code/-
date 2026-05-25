@@ -54,24 +54,54 @@ def main():
                 print(f"   {line}")
         sys.exit(1)
     print("✅ 검증 완료. 본 루프 시작.\n")
-    start = time.time()
-    loop = 0
-    while True:
-        # v2.89.71 — total_h = 0이면 무한 (24시간 자율 모드)
-        if total_h > 0 and (time.time() - start > total_h * 3600):
-            print("\n☀️ 목표 가동 시간을 채웠어요. 종료합니다.")
-            break
-        loop += 1
-        ts = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        elapsed_h = (time.time() - start) / 3600
-        print(f"\n[{ts}] 🤖 {loop}회차 트렌드 스나이핑 (가동 {elapsed_h:.1f}시간)")
+    STATE_PATH = os.path.join(HERE, "planner_state.json")
+
+    def _write_state(status, loop_count, start_ts, elapsed, last_ts, next_ts):
         try:
-            subprocess.run([sys.executable, SNIPER_PATH], check=False)
-        except Exception as e:
-            print(f"❌ 실행 실패: {e}")
-        next_at = datetime.datetime.now() + datetime.timedelta(hours=interval_h)
-        print(f"⏳ 다음 실행: {next_at.strftime('%Y-%m-%d %H:%M')} ({interval_h}시간 후)")
-        time.sleep(interval_h * 3600)
+            with open(STATE_PATH, "w", encoding="utf-8") as f:
+                json.dump({
+                    "status": status,
+                    "loop_count": loop_count,
+                    "start_time": start_ts,
+                    "elapsed_hours": round(elapsed, 2),
+                    "last_run_time": last_ts,
+                    "next_run_time": next_ts
+                }, f, indent=4, ensure_ascii=False)
+        except Exception:
+            pass
+
+    start = time.time()
+    start_ts = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    loop = 0
+    _write_state("RUNNING", 0, start_ts, 0.0, "N/A", "계산 중...")
+    
+    try:
+        while True:
+            # v2.89.71 — total_h = 0이면 무한 (24시간 자율 모드)
+            if total_h > 0 and (time.time() - start > total_h * 3600):
+                print("\n☀️ 목표 가동 시간을 채웠어요. 종료합니다.")
+                _write_state("COMPLETED", loop, start_ts, (time.time() - start) / 3600, "N/A", "N/A")
+                break
+            loop += 1
+            ts = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            elapsed_h = (time.time() - start) / 3600
+            next_at = datetime.datetime.now() + datetime.timedelta(hours=interval_h)
+            next_ts = next_at.strftime('%Y-%m-%d %H:%M:%S')
+            
+            print(f"\n[{ts}] 🤖 {loop}회차 트렌드 스나이핑 (가동 {elapsed_h:.1f}시간)")
+            _write_state("RUNNING", loop, start_ts, elapsed_h, ts, next_ts)
+            
+            try:
+                subprocess.run([sys.executable, SNIPER_PATH], check=False)
+            except Exception as e:
+                print(f"❌ 실행 실패: {e}")
+            
+            print(f"⏳ 다음 실행: {next_at.strftime('%Y-%m-%d %H:%M')} ({interval_h}시간 후)")
+            time.sleep(interval_h * 3600)
+    except KeyboardInterrupt:
+        print("\n👋 사용자에 의해 수동 종료되었습니다.")
+        _write_state("STOPPED", loop, start_ts, (time.time() - start) / 3600, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "N/A")
+
 
 if __name__ == "__main__":
     main()

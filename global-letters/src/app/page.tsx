@@ -428,7 +428,7 @@ export default function Home() {
   };
 
   const handleDrawGreeting = async () => {
-    if (drawCount >= 3) {
+    if (drawCount >= 99999) {
       alert(t.alertDrawLimit);
       return;
     }

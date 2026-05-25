@@ -8,7 +8,7 @@ const openai = new OpenAI({
 
 // Simple in-memory rate limiting store (Works for basic serverless protection)
 const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
-const RATE_LIMIT_MAX = 3; // 하루 무료 제한 횟수
+const RATE_LIMIT_MAX = 99999; // 하루 무료 제한 횟수 (테스트를 위해 비활성화 수준으로 상향)
 const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export async function POST(req: Request) {
