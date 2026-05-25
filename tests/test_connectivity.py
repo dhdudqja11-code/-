@@ -1,90 +1,127 @@
+# -*- coding: utf-8 -*-
 import pytest
-from unittest.mock import patch, MagicMock
-import time
-# 로직 파일 경로를 임포트합니다. (실제 프로젝트 구조에 맞게 수정 필요)
+import requests
+import requests_mock
 from src.modules.connectivity.connection_module import (
-    establish_secure_connection, 
-    AuthenticationFailed, 
-    QuotaExceededError, 
+    establish_secure_connection,
+    ConnectionModule,
+    AuthenticationFailed,
+    MfaRequiredError,
+    QuotaExceededError,
     ConnectionError
 )
 
-# --- Mocking 환경 설정 및 Fixtures ---
+# --- 🧪 pytest & requests-mock 기반의 자급자족형 통합 테스트 ---
 
-@pytest.fixture(scope="module")
-def mock_dependencies():
-    """모든 외부 의존성 함수들을 테스트 세션 전체에 걸쳐 모킹합니다."""
-    with (
-        patch('src.modules.connectivity.connection_module.validate_credentials') as MockAuth,
-        patch('src.modules.connectivity.connection_module.check_quota_and_log') as MockQuotaCheck,
-        patch('src.modules.connectivity.connection_module.execute_initial_api_call') as MockAPIExec:
-            yield MockAuth, MockQuotaCheck, MockAPIExec
+BASE_URL = "http://127.0.0.1:8000"
 
-def test_successful_secure_connection(mock_dependencies):
-    """[성공 케이스] 인증, 쿼터 확인, API 호출 모두 성공하는 최적의 경로 테스트."""
-    MockAuth, MockQuotaCheck, MockAPIExec = mock_dependencies
-    
-    # 목킹 설정: 모든 함수가 성공적으로 작동한다고 가정
-    MockAuth.return_value = True
-    MockQuotaCheck.return_value = 100  # 충분한 쿼터
-    MockAPIExec.return_value = "SUCCESS_DATA"
+def test_successful_secure_connection():
+    """[성공 경로] 올바른 로그인 정보로 토큰을 획득하고, 보호 리소스 데이터까지 정상적으로 조회하는 흐름."""
+    with requests_mock.Mocker() as m:
+        # 1. 로그인 API 모킹
+        m.post(
+            f"{BASE_URL}/auth/login", 
+            json={"access_token": "mocked_jwt_token_admin", "token_type": "bearer"}, 
+            status_code=200
+        )
+        # 2. 보호 리소스 조회 API 모킹
+        m.get(
+            f"{BASE_URL}/api/v1/data/system_status",
+            json={
+                "status": "success",
+                "message": "Data retrieved successfully.",
+                "data": {"cpu": "22%", "memory": "48%"}
+            },
+            status_code=200
+        )
+        
+        # 실행 및 검증
+        result = establish_secure_connection("admin", "correct_password", "system_status", BASE_URL)
+        
+        assert result["status"] == "success"
+        assert result["data"]["cpu"] == "22%"
+        assert m.called
+        assert m.call_count == 2
+        # 요청 헤더에 Authorization Bearer 토큰이 올바르게 주입되었는지 확인
+        assert m.request_history[1].headers["Authorization"] == "Bearer mocked_jwt_token_admin"
 
-    result = establish_secure_connection("admin", "SECURE_TOKEN")
 
-    # 검증: 결과값 확인 및 의존성 함수 호출 여부 확인 (Coverage)
-    assert result == "SUCCESS_DATA"
-    MockAuth.assert_called_once_with("admin", "SECURE_TOKEN")
-    MockQuotaCheck.assert_called_once()
-    MockAPIExec.assert_called_once()
+def test_failure_authentication_login():
+    """[실패 경로 1] 로그인 자격 증명이 틀려 401 Unauthorized 에러를 리턴할 때, AuthenticationFailed 예외 검증."""
+    with requests_mock.Mocker() as m:
+        # 로그인 실패 모킹
+        m.post(
+            f"{BASE_URL}/auth/login", 
+            json={"detail": "Invalid username or password."}, 
+            status_code=401
+        )
+        
+        # 실행 및 예외 확인
+        with pytest.raises(AuthenticationFailed) as excinfo:
+            establish_secure_connection("baduser", "wrong_pass", "system_status", BASE_URL)
+            
+        assert "유효하지 않습니다" in str(excinfo.value)
+        assert m.called
+        assert m.call_count == 1 # 로그인에서 실패했으므로 데이터 호출은 수행하지 않아야 함 (Guardrail)
 
-def test_failure_authentication(mock_dependencies):
-    """[실패 케이스 1] 인증 단계에서 실패했을 때, 후속 로직이 실행되지 않음을 확인."""
-    MockAuth, MockQuotaCheck, MockAPIExec = mock_dependencies
 
-    # 목킹 설정: 인증만 실패하도록 강제
-    MockAuth.return_value = False
+def test_failure_mfa_required():
+    """[실패 경로 2] 로그인엔 성공했으나, 리소스 접근 과정에서 MFA 요구로 403 Forbidden을 리턴할 때, MfaRequiredError 예외 검증."""
+    with requests_mock.Mocker() as m:
+        # 로그인 성공
+        m.post(
+            f"{BASE_URL}/auth/login", 
+            json={"access_token": "valid_token_but_mfa_needed"}, 
+            status_code=200
+        )
+        # MFA 미통과로 403 Forbidden 리턴 모킹
+        m.get(
+            f"{BASE_URL}/api/v1/data/sensitive_db", 
+            json={"detail": "MFA required or failed."}, 
+            status_code=403
+        )
+        
+        # 실행 및 예외 확인
+        with pytest.raises(MfaRequiredError) as excinfo:
+            establish_secure_connection("admin", "pass", "sensitive_db", BASE_URL)
+            
+        assert "MFA" in str(excinfo.value)
+        assert m.call_count == 2
 
-    with pytest.raises(AuthenticationFailed) as excinfo:
-        establish_secure_connection("baduser", "wrong_token")
 
-    # 검증 1: 에러 메시지 확인
-    assert "유효하지 않습니다" in str(excinfo.value)
-    # 검증 2: 중요한 로직 (Quota Check, API Call)이 실행되지 않았는지 확인
-    MockQuotaCheck.assert_not_called()
-    MockAPIExec.assert_not_called()
+def test_failure_quota_exceeded():
+    """[실패 경로 3] 접근은 허용되었으나 사용량 제한(Rate Limit / Quota)으로 429 Too Many Requests를 리턴할 때, QuotaExceededError 예외 검증."""
+    with requests_mock.Mocker() as m:
+        # 로그인 성공
+        m.post(
+            f"{BASE_URL}/auth/login", 
+            json={"access_token": "valid_token_admin"}, 
+            status_code=200
+        )
+        # 쿼터 초과로 429 리턴 모킹
+        m.get(
+            f"{BASE_URL}/api/v1/data/system_status", 
+            json={"detail": "Rate limit exceeded."}, 
+            status_code=429
+        )
+        
+        # 실행 및 예외 확인
+        with pytest.raises(QuotaExceededError) as excinfo:
+            establish_secure_connection("admin", "pass", "system_status", BASE_URL)
+            
+        assert "사용량 한도를 초과했습니다" in str(excinfo.value)
+        assert m.call_count == 2
 
-def test_failure_quota_exceeded(mock_dependencies):
-    """[실패 케이스 2] 인증은 성공했으나, 쿼터 제한에 걸렸을 때의 처리 흐름 테스트."""
-    MockAuth, MockQuotaCheck, MockAPIExec = mock_dependencies
 
-    # 목킹 설정: 인증 성공 -> 쿼터 실패 (예외 발생)
-    MockAuth.return_value = True
-    # QuotaExceededError를 강제 발생시킴
-    MockQuotaCheck.side_effect = QuotaExceededError(remaining=0)
-
-    with pytest.raises(QuotaExceededError):
-        establish_secure_connection("testuser", "SECURE_TOKEN")
-
-    # 검증 1: 인증은 정상 작동했는지 확인 (이전 단계까지는 성공해야 함)
-    MockAuth.assert_called_once()
-    # 검증 2: API 호출은 절대 실행되어서는 안 됨 (Guardrail가 잘 작동하는지 테스트)
-    MockAPIExec.assert_not_called()
-
-def test_failure_api_connection(mock_dependencies):
-    """[실패 케이스 3] 인증과 쿼터까지 통과했으나, 최종 API 호출에서 실패했을 때의 처리 테스트."""
-    MockAuth, MockQuotaCheck, MockAPIExec = mock_dependencies
-
-    # 목킹 설정: 성공적으로 AuthN/Quota를 통과하도록 함.
-    MockAuth.return_value = True
-    MockQuotaCheck.return_value = 50
-    # API 호출 시 ConnectionError 발생을 강제
-    MockAPIExec.side_effect = ConnectionError("Gateway connection refused.")
-
-    with pytest.raises(ConnectionError) as excinfo:
-        establish_secure_connection("admin", "SECURE_TOKEN")
-
-    # 검증 1: 에러 메시지 확인 및 Guardrail 동작 여부 확인
-    assert "최종 API 통신 실패" in str(excinfo.value)
-    MockAuth.assert_called_once()
-    MockQuotaCheck.assert_called_once()
-    MockAPIExec.assert_called_once()
+def test_failure_network_connection_error():
+    """[실패 경로 4] 게이트웨이 백엔드 서버가 다운되었거나 네트워크 장애 발생 시, ConnectionError 예외 변환 검증."""
+    with requests_mock.Mocker() as m:
+        # 네트워크 예외 강제 유도
+        m.post(f"{BASE_URL}/auth/login", exc=requests.exceptions.ConnectionError("Connection refused"))
+        
+        # 실행 및 예외 확인
+        with pytest.raises(ConnectionError) as excinfo:
+            establish_secure_connection("admin", "pass", "system_status", BASE_URL)
+            
+        assert "연결 실패" in str(excinfo.value)
+        assert m.called

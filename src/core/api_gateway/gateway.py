@@ -54,7 +54,7 @@ def authenticate_and_authorize(token: str = Header(...)):
     실제로는 JWT 디코딩 및 DB 조회가 필요합니다.
     """
     # 실제 환경에서는 여기서 JWT 유효성 검사(서명, 만료)를 수행해야 합니다.
-    if not token or "valid_jwt_" not in token:
+    if not token or not token.startswith("valid_jwt_"):
         raise HTTPException(status_code=401, detail="Invalid or missing authentication token.")
 
     try:
@@ -69,6 +69,8 @@ def authenticate_and_authorize(token: str = Header(...)):
         # PoLP 검증을 위해 (user_id, role)를 반환합니다.
         return {"user_id": f"User_{user_id}", "role": role}
 
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Authentication failure: {e}")
         raise HTTPException(status_code=401, detail="Token processing failed.")
@@ -76,8 +78,8 @@ def authenticate_and_authorize(token: str = Header(...)):
 
 # -------------------------------------------------
 # [API Endpoints] - 게이트웨이 백엔드 로직
-@app.get("/api/v1/data/read", dependencies=[Depends(rate_limit_checker), Depends(authenticate_and_authorize)])
-def read_data(auth_info: dict):
+@app.get("/api/v1/data/read", dependencies=[Depends(rate_limit_checker)])
+def read_data(auth_info: dict = Depends(authenticate_and_authorize)):
     """
     데이터 읽기 API. 최소한의 권한으로 접근 가능해야 합니다. (Read-Only)
     Rate Limit 및 Auth/PoLP 검증이 모두 작동합니다.
@@ -88,8 +90,8 @@ def read_data(auth_info: dict):
         raise HTTPException(status_code=403, detail="Forbidden: Role does not allow reading data.")
     return {"message": f"Data read success for {auth_info['user_id']} (Role: {role})."}
 
-@app.post("/api/v1/data/write", dependencies=[Depends(rate_limit_checker), Depends(authenticate_and_authorize)])
-def write_data(auth_info: dict, payload: Dict[str, Any]):
+@app.post("/api/v1/data/write", dependencies=[Depends(rate_limit_checker)])
+def write_data(payload: Dict[str, Any], auth_info: dict = Depends(authenticate_and_authorize)):
     """
     데이터 쓰기 API. 높은 권한이 필요합니다. (Write Operation)
     Rate Limit 및 Auth/PoLP 검증이 모두 작동합니다.
@@ -101,8 +103,8 @@ def write_data(auth_info: dict, payload: Dict[str, Any]):
     
     return {"message": f"Data written successfully by {auth_info['user_id']} (Role: {role})."}
 
-@app.delete("/api/v1/admin/manage")
-def manage_endpoint(auth_info: dict):
+@app.delete("/api/v1/admin/manage", dependencies=[Depends(rate_limit_checker)])
+def manage_endpoint(auth_info: dict = Depends(authenticate_and_authorize)):
     """
     관리자 전용 엔드포인트. 가장 높은 권한만 접근 가능해야 합니다.
     Rate Limit은 관리자도 적용되지만, PoLP는 이 API 자체가 방어합니다.

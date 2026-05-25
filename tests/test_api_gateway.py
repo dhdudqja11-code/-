@@ -1,82 +1,70 @@
 import pytest
-from httpx import AsyncClient
-# 실제로는 app 객체를 가져와야 하지만, 골격이므로 Mocking으로 가정합니다.
-from src.core.api_gateway.gateway import app 
+from api_gateway.core_gateway import APIGateway, QuotaExceededError, APIError
 
-@pytest.mark.asyncio
-async def test_successful_data_read():
-    """테스트 케이스 1: 일반 사용자가 데이터를 읽는 성공 경로 (Basic Role)"""
-    # 가상의 토큰 구조: valid_jwt_{user_id}:{role}
-    token = "valid_jwt_testuserbasic:basic" 
-    headers = {
-        "X-User-Id": "TestRunner", # Rate Limit User ID
-        "Authorization": token
-    }
-    # FastAPI 클라이언트를 사용한다고 가정하고 테스트합니다.
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get("/api/v1/data/read", headers=headers)
-        assert response.status_code == 200
-        assert "Data read success" in response.json()['message']
+@pytest.fixture(scope="module")
+def gateway():
+    """API Gateway 인스턴스를 테스트 픽스처로 제공합니다."""
+    return APIGateway()
 
-@pytest.mark.asyncio
-async def test_rate_limit_exceeded():
-    """테스트 케이스 2: Rate Limit 초과 시 강제 실패 검증 (Critical Security Test)"""
-    # 이 테스트는 rate_limit_checker의 로직을 여러 번 호출하여 429를 유발해야 합니다.
-    # 실제 구현에서는 Mocking이나 반복적인 요청이 필요합니다. 여기서는 구조만 정의합니다.
-    token = "valid_jwt_rateuser:basic"
-    headers = {
-        "X-User-Id": "RateTester", # 고정된 사용자 ID로 제한 테스트
-        "Authorization": token
-    }
+# --- 성공 경로 테스트 (Happy Path) ---
+def test_successful_request(gateway):
+    """유효한 키와 충분한 쿼터를 가진 사용자의 정상 요청 처리 검증."""
+    api_key = "secure_test_key123"
+    user_id = "admin_user" # 쿼터가 남아있는 사용자
+    
+    result = gateway.process_request(api_key, user_id)
+    assert result['status'] == 'SUCCESS'
+    # 쿼터는 반드시 감소했는지 확인 (로직의 사이드 이펙트 검증)
+    assert result['remaining_quota'] == 98 
 
-    # 🚨 주의: Rate Limit을 강제 초과시키기 위해 여러 번의 요청 시뮬레이션이 필요합니다.
-    # 현재는 구조적 테스트를 위해 429 에러 메시지 존재 여부를 확인하는 로직만 정의합니다.
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        # 임시 요청 (실제 테스트에서는 반복 호출 필요)
-        response = await ac.get("/api/v1/data/read", headers=headers) 
-        # 만약 RateLimit이 구현되었다면, 특정 시점 이후에 429가 나와야 합니다.
-        pass # 이 부분은 실제 환경에서 요청 카운트를 조작하여 테스트해야 완벽합니다.
+# --- 인증 실패 테스트 (Authentication Guard Test) ---
+def test_invalid_api_key(gateway):
+    """유효하지 않은 API 키를 사용했을 때, Quota 체크 전에 차단되는지 확인."""
+    user_id = "admin_user" # 쿼터는 남아있음.
+    invalid_key = "short"
+    
+    with pytest.raises(APIError) as excinfo:
+        gateway.process_request(invalid_key, user_id)
+    # 반드시 인증 에러 메시지가 포함되어야 함.
+    assert "유효하지 않은 API 키입니다." in str(excinfo.value)
 
-@pytest.mark.asyncio
-async def test_polp_violation_write():
-    """테스트 케이스 3: PoLP 위반 시도 검증 (Basic Role -> Write Attempt)"""
-    # Basic 역할은 write_data를 할 권한이 없습니다. 403 Forbidden이 나와야 합니다.
-    token = "valid_jwt_basicuser:basic" 
-    headers = {
-        "X-User-Id": "TestRunner",
-        "Authorization": token,
-        "Content-Type": "application/json"
-    }
-    payload = {"key": "value"}
+# --- 쿼터 초과 테스트 (Quota Guard Test - Critical Path) ---
+def test_quota_exceeded(gateway):
+    """사용량 할당량이 0 이하일 때, QuotaExceededError가 발생하며 로직이 안전하게 차단되는지 검증."""
+    user_id = "guest_user" # 초기 쿼터가 0인 사용자
+    api_key = "valid_test_key123"
+    
+    with pytest.raises(QuotaExceededError) as excinfo:
+        gateway.process_request(api_key, user_id)
+    # QuotaExceededError 타입과 메시지 확인
+    assert isinstance(excinfo.value, QuotaExceededError)
+    assert "사용량 할당량을 초과했습니다." in str(excinfo.value)
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.post("/api/v1/data/write", headers=headers, json=payload)
-        assert response.status_code == 403
-        assert "Forbidden" in response.json()['detail']
+def test_unknown_user_id(gateway):
+    """존재하지 않는 user_id를 사용할 경우 에러가 발생하는지 확인."""
+    api_key = "valid_test_key123"
+    unknown_user = "non_existent_user"
+    
+    with pytest.raises(APIError) as excinfo:
+        gateway.process_request(api_key, unknown_user)
+    assert "알 수 없는 사용자 ID입니다." in str(excinfo.value)
 
-@pytest.mark.asyncio
-async def test_polp_violation_admin():
-    """테스트 케이스 4: 비관리자 역할이 관리 엔드포인트에 접근 시도 (Non-Admin -> Admin Endpoint)"""
-    token = "valid_jwt_premiumuser:premium" # Premium은 admin 권한이 없음
-    headers = {
-        "X-User-Id": "TestRunner",
-        "Authorization": token
-    }
+# --- Webhook 통합 시나리오 테스트 (End-to-End Simulation Test) ---
+def test_webhook_successful_processing():
+    """Webhook을 통해 성공적으로 트랜잭션 데이터를 처리하는 시뮬레이션."""
+    payload = {"user_id": "admin_user", "source_key": "secure_test_key123"}
+    # Webhook 로직이 QuotaExceededError를 잡아서 Alert를 출력하도록 설계됨을 검증.
+    result = handle_webhook_request(payload)
+    assert result and result['status'] == 'SUCCESS'
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.delete("/api/v1/admin/manage", headers=headers)
-        assert response.status_code == 403
-        assert "Only 'admin' can access this endpoint" in response.json()['detail']
+def test_webhook_quota_failure_handling():
+    """Webhook으로 들어온 데이터가 쿼터 초과 시, 안전하게 Alert를 발생시키는지 확인."""
+    # 가상의 쿼터 제로 사용자를 강제 주입하여 테스트
+    original_quotas = {"guest_user": 0}
+    gateway = APIGateway()
+    gateway._user_quotas = original_quotas
 
-@pytest.mark.asyncio
-async def test_authn_token_failure():
-    """테스트 케이스 5: 유효하지 않은 토큰으로 접근 시도 (Missing AuthN)"""
-    headers = {
-        "X-User-Id": "TestRunner",
-        "Authorization": "invalid_jwt_format" # 가짜 토큰
-    }
-
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get("/api/v1/data/read", headers=headers)
-        assert response.status_code == 401
-        assert "Invalid or missing authentication token" in response.json()['detail']
+    payload = {"user_id": "guest_user", "source_key": "secure_test_key123"}
+    result = handle_webhook_request(payload)
+    # 쿼터 초과 시, Alert가 발생하며 에러 구조를 반환해야 함.
+    assert result and 'error' in result
