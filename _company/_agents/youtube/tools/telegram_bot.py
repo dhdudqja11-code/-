@@ -164,12 +164,13 @@ def get_latest_reels_script():
     except Exception as e:
         return f"[최신 대본 로드 에러]: {e}"
 
-# 📱 7대 핵심 제어 이모지 단축 키보드 레이아웃 개편
+# 📱 9대 핵심 제어 이모지 단축 키보드 레이아웃 개편
 KEYBOARD = {
     "keyboard": [
         [{"text": "🎯 트렌드 분석"}, {"text": "🔭 경쟁사 분석"}],
         [{"text": "✍️ 블로그 칼럼"}, {"text": "📊 플래너 상태"}],
         [{"text": "🎨 비주얼 가이드"}, {"text": "📱 릴스 대본"}],
+        [{"text": "📢 캠페인 일괄 실행"}, {"text": "💬 사장님 피드백"}],
         [{"text": "❓ 도움말 안내"}]
     ],
     "resize_keyboard": True,
@@ -183,6 +184,8 @@ def handle_command(cmd, token, chat_id):
     NAVER_WRITER_PATH = os.path.join(HERE, "naver_writer.py")
     VISUAL_DIRECTOR_PATH = os.path.abspath(os.path.join(HERE, "..", "..", "designer", "tools", "visual_director.py"))
     REELS_PLANNER_PATH = os.path.abspath(os.path.join(HERE, "..", "..", "instagram", "tools", "reels_planner.py"))
+    ORCHESTRATOR_PATH = os.path.abspath(os.path.join(HERE, "..", "..", "..", "_shared", "campaign_orchestrator.py"))
+    FEEDER_PATH = os.path.abspath(os.path.join(HERE, "..", "..", "..", "_shared", "feedback_feeder.py"))
 
     if cmd in ("/help", "❓ 도움말 안내"):
         help_text = """🤖 [1인 기업 유튜브 에이전트 원격 제어 비서]
@@ -195,6 +198,8 @@ def handle_command(cmd, token, chat_id):
 📊 [플래너 상태] : 24시간 오토 플래너(auto_planner.py) 구동 상황 실시간 요약 조회.
 🎨 [비주얼 가이드] : 비주얼 디렉터(visual_director.py) 즉시 실행 및 디자인 지시서 회신.
 📱 [릴스 대본] : 릴스 플래너(reels_planner.py) 즉시 실행 및 숏폼 비디오 스크립트 회신.
+📢 [캠페인 일괄 실행] : 마케팅 파이프라인(유튜브트렌드->블로그->비주얼->릴스대본->발행) 자동 완성.
+💬 [사장님 피드백] : 에이전트들의 성능 교정을 위한 지시 로그(decisions.md) 실시간 피딩.
 ❓ [도움말 안내] : 현재 가이드라인 및 조종법 안내."""
         send_message(token, chat_id, help_text, reply_markup=KEYBOARD)
 
@@ -203,7 +208,7 @@ def handle_command(cmd, token, chat_id):
         last_size = os.path.getsize(SNIPER_REPORT_PATH) if os.path.exists(SNIPER_REPORT_PATH) else 0
         
         try:
-            proc = subprocess.run([sys.executable, SNIPER_PATH], capture_output=True, text=True, timeout=180)
+            proc = subprocess.run([sys.executable, SNIPER_PATH], capture_output=True, encoding="utf-8", timeout=180)
             if proc.returncode == 0:
                 report = get_new_report_section(SNIPER_REPORT_PATH, last_size)
                 if not report:
@@ -220,7 +225,7 @@ def handle_command(cmd, token, chat_id):
         last_size = os.path.getsize(BRIEF_REPORT_PATH) if os.path.exists(BRIEF_REPORT_PATH) else 0
         
         try:
-            proc = subprocess.run([sys.executable, BRIEF_PATH], capture_output=True, text=True, timeout=240)
+            proc = subprocess.run([sys.executable, BRIEF_PATH], capture_output=True, encoding="utf-8", timeout=240)
             if proc.returncode == 0:
                 report = get_new_report_section(BRIEF_REPORT_PATH, last_size)
                 if not report:
@@ -236,7 +241,7 @@ def handle_command(cmd, token, chat_id):
         send_message(token, chat_id, "📡 [에이전트 기동] 네이버 칼럼 라이터(naver_writer.py)를 즉시 실행합니다. 약 10~30초 소요됩니다...")
         
         try:
-            proc = subprocess.run([sys.executable, NAVER_WRITER_PATH], capture_output=True, text=True, timeout=240)
+            proc = subprocess.run([sys.executable, NAVER_WRITER_PATH], capture_output=True, encoding="utf-8", timeout=240)
             if proc.returncode == 0:
                 post = get_latest_naver_post()
                 if not post:
@@ -252,7 +257,7 @@ def handle_command(cmd, token, chat_id):
         send_message(token, chat_id, "📡 [에이전트 기동] 비주얼 디렉터(visual_director.py)를 즉시 실행합니다. 약 10~30초 소요됩니다...")
         
         try:
-            proc = subprocess.run([sys.executable, VISUAL_DIRECTOR_PATH], capture_output=True, text=True, timeout=240)
+            proc = subprocess.run([sys.executable, VISUAL_DIRECTOR_PATH], capture_output=True, encoding="utf-8", timeout=240)
             if proc.returncode == 0:
                 guide = get_latest_visual_guide()
                 if not guide:
@@ -268,7 +273,7 @@ def handle_command(cmd, token, chat_id):
         send_message(token, chat_id, "📡 [에이전트 기동] 릴스 플래너(reels_planner.py)를 즉시 실행합니다. 약 10~30초 소요됩니다...")
         
         try:
-            proc = subprocess.run([sys.executable, REELS_PLANNER_PATH], capture_output=True, text=True, timeout=240)
+            proc = subprocess.run([sys.executable, REELS_PLANNER_PATH], capture_output=True, encoding="utf-8", timeout=240)
             if proc.returncode == 0:
                 script = get_latest_reels_script()
                 if not script:
@@ -279,6 +284,93 @@ def handle_command(cmd, token, chat_id):
                 send_message(token, chat_id, f"❌ 릴스 플래너 가동 실패 (exit {proc.returncode}).\n에러 요약: {err_msg}", reply_markup=KEYBOARD)
         except Exception as e:
             send_message(token, chat_id, f"❌ 릴스 플래너 실행 도중 장애 발생: {e}", reply_markup=KEYBOARD)
+
+    elif cmd in ("/campaign", "📢 캠페인 일괄 실행"):
+        send_message(token, chat_id, "📡 [오케스트레이터 기동] 1인 기업 자동 마케팅 캠페인 파이프라인(유튜브트렌드스캔->블로그집필->썸네일설계->릴스대본->자율발행) 연쇄 기동 중... 약 20~40초 소요됩니다.")
+        
+        try:
+            proc = subprocess.run([sys.executable, ORCHESTRATOR_PATH], capture_output=True, encoding="utf-8", timeout=400)
+            if proc.returncode == 0:
+                # 마지막 JSON 블록을 추출 및 로드
+                lines = proc.stdout.splitlines()
+                json_lines = []
+                start_json = False
+                for line in lines:
+                    if line.strip() == "{":
+                        start_json = True
+                    if start_json:
+                        json_lines.append(line)
+                    if line.strip() == "}":
+                        json_lines.append(line)
+                        break
+                
+                json_str = "\n".join(json_lines)
+                data = json.loads(json_str)
+                
+                campaign_id = data.get("timestamp", "N/A")
+                summary_msg = f"""📢 [1인 기업 일괄 캠페인 성공 완료!]
+
+사장님, 4대 에이전트 툴 체인이 연쇄 기동되어 신규 마케팅 캠페인이 완벽하게 완료되었습니다!
+
+📅 캠페인 회차: campaign_{campaign_id}
+📂 포트폴리오: _company/marketing_history/campaign_{campaign_id}/
+
+🛡️ [에이전트 자율 기동 상태]
+● 유튜브 트렌드 스캔: {data['steps'].get('trend_sniper', 'N/A')}
+● 네이버 블로그 칼럼: {data['steps'].get('naver_writer', 'N/A')}
+● 비주얼 가이드 설계: {data['steps'].get('visual_director', 'N/A')}
+● 인스타 릴스 숏폼대본: {data['steps'].get('reels_planner', 'N/A')}
+
+🚀 [자율 채널 발행 현황]
+● 네이버 블로그: {data['steps']['naver_publish'].get('status', 'N/A')}
+🔗 링크: {data['steps']['naver_publish'].get('url', '시뮬레이션 모드')}
+● 인스타 Reels: {data['steps']['instagram_publish'].get('status', 'N/A')}
+🔗 링크: {data['steps']['instagram_publish'].get('url', '시뮬레이션 모드')}
+
+🤖 감사 로그 및 캠페인 세부 지표는 로컬 SQLite DB에 안전하게 보존되었습니다. 세부 글/대본 전문을 보시려면 개별 이모지 버튼을 클릭하세요!"""
+                send_message(token, chat_id, summary_msg, reply_markup=KEYBOARD)
+            else:
+                err_msg = proc.stderr.strip()[-300:] if proc.stderr else "상세 에러 내용 없음"
+                send_message(token, chat_id, f"❌ 캠페인 오케스트레이터 가동 실패 (exit {proc.returncode}).\n에러 요약: {err_msg}", reply_markup=KEYBOARD)
+        except Exception as e:
+            send_message(token, chat_id, f"❌ 캠페인 오케스트레이터 실행 중 장애 발생: {e}", reply_markup=KEYBOARD)
+
+    elif cmd == "💬 사장님 피드백":
+        feed_info = """💬 [사장님 자율 피드백 피딩 작동법]
+
+에이전트의 글쓰기 톤, 썸네일 카피, 인스타 릴스 훅 등 아쉬운 점이나 추가 지시사항을 한 줄의 피드백으로 전송해 주십시오.
+
+👉 입력 형식: /feedback [선택: 피드백 내용]
+👉 예시: /feedback 썸네일 카피를 더 직관적으로 잡고, 예상 리스크액을 수치로 2배 강조해라!
+
+피드백이 접수되는 즉시 에이전트 공용 의사결정 로그(decisions.md)에 연동되어 다음 캠페인 기동부터 자율 수정됩니다."""
+        send_message(token, chat_id, feed_info, reply_markup=KEYBOARD)
+
+    elif cmd.startswith("/feedback"):
+        feedback_text = cmd[9:].strip()
+        if not feedback_text:
+            send_message(token, chat_id, "⚠️ 피드백 내용을 적어주세요. 예: /feedback 썸네일 카피를 강렬하게 수정해라.", reply_markup=KEYBOARD)
+            return
+            
+        send_message(token, chat_id, f"📡 [피드백 접수 중...] 사장님의 지시사항을 분석하여 공용 의사결정 데이터베이스에 주입하는 중입니다...")
+        try:
+            proc = subprocess.run([sys.executable, FEEDER_PATH, feedback_text], capture_output=True, encoding="utf-8", timeout=120)
+            if proc.returncode == 0:
+                summary_msg = f"""🎯 [의사결정 로그 실시간 반영 완료!]
+
+사장님의 소중한 지시사항이 에이전트 공용 의사결정 로그(decisions.md)에 안전하게 반영 및 누적되었습니다!
+
+📅 반영 일시: {time.strftime('%Y-%m-%d %H:%M:%S')}
+📝 [반영된 사장님 피드백 내용]:
+- {feedback_text}
+
+🤖 다음 캠페인 기동 시부터 모든 에이전트가 이 피드백을 최우선(메모리 1순위 위계)으로 주입받아 작동 방식을 자율 교정합니다!"""
+                send_message(token, chat_id, summary_msg, reply_markup=KEYBOARD)
+            else:
+                err_msg = proc.stderr.strip()[-300:] if proc.stderr else "상세 에러 내용 없음"
+                send_message(token, chat_id, f"❌ 피드백 피딩 처리 실패 (exit {proc.returncode}).\n에러 요약: {err_msg}", reply_markup=KEYBOARD)
+        except Exception as e:
+            send_message(token, chat_id, f"❌ 피드백 피딩 처리 도중 예외 발생: {e}", reply_markup=KEYBOARD)
 
     elif cmd in ("/status", "📊 플래너 상태"):
         if not os.path.exists(PLANNER_STATE_PATH):
