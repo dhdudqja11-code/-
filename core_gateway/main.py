@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Header
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, Depends, HTTPException, status, Header
 from slowapi.limiter import Limiter
 from slowapi import apirouter
 from typing import Annotated
@@ -8,7 +8,7 @@ import hashlib
 # 로컬 모듈 임포트 (타입 안전성 확보)
 from .schemas import ConnectionRequest, ScopeValidationResponse, GatekeeperResponse, UserCredentials 
 
-app = FastAPI(title="Core Gateway API", description="모든 원격 접속 요청을 통제하는 게이트웨이.")
+app = FastAPI(title="""Core Gateway API - WebSockets Security Layer""", description="모든 원격 접속 요청을 통제하는 게이트웨이.")
 
 # --- 보안 장치 1: Rate Limiting 적용 ---
 limiter = Limiter(app)

@@ -1,4 +1,4 @@
-fastapi
-uvicorn[standard]
+fastapi[all]
+python-jose[cryptography] python-multipart passlib[bcrypt][standard]
 pydantic
 python-jose[cryptography]
