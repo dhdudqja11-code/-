@@ -4,7 +4,7 @@
 top-priority joint decisions log decisions.md to enable self-improving RAG behavior.
 Also logs audit indicators in SQLite.
 """
-import os, sys, time, datetime
+import os, sys, time, datetime, subprocess
 
 # Windows 환경 한글 입출력 가드
 if sys.platform == "win32":
@@ -52,6 +52,18 @@ _세션: {current_time}_
             database.log_audit("ceo", "FEEDBACK_FEEDED", f"Feedback successfully integrated: {feedback_text}")
         except Exception as e:
             print(f"⚠️ 감사 로그 연동 기록 실패: {e}")
+
+        # RAG 메모리 지능형 다이어트 압축기 백그라운드 트리거 기동 ( Below Normal Priority Class 쿨링 가드 적용 )
+        try:
+            compressor_py = os.path.join(HERE, "decision_compressor.py")
+            win_kwargs = {}
+            if sys.platform == "win32":
+                win_kwargs["creationflags"] = 0x00004000 # BELOW_NORMAL_PRIORITY_CLASS
+            
+            # 백그라운드로 안전하게 스폰하여 사장님 대기 시간 0초 보증
+            subprocess.Popen([sys.executable, compressor_py], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **win_kwargs)
+        except Exception as ex:
+            print(f"⚠️ RAG 압축기 트리거 오류: {ex}")
 
         return {
             "status": "success",
