@@ -1,65 +1,98 @@
-# 🛠️ AI 1인 기업 트러블슈팅 (오류 수정 로그)
+# 🛠️ AI 1인 기업 시스템 구축 · 오류 해결 및 최적화 종합 마스터 로그
 
-본 문서는 AI 1인 기업 운영 중 발생하는 시스템 오류 및 해결 방법을 기록하는 문서입니다.
-
----
-
-## 📅 2026-05-18: CEO 에이전트 작업 분배 계획(JSON) 생성 실패 (LM Studio 출력 잘림)
-
-### 🚨 오류 증상
-* Connect AI 실행 중 CEO 에이전트가 "작업 분배 계획(JSON)을 생성하지 못했어요."라는 에러 알림 발생.
-* LM Studio의 텍스트 출력이 중간에 뚝 끊기거나 잘리는 현상 확인.
-
-### 🔍 원인 파악
-* **Context Length(컨텍스트 길이) 제한 초과**: LM Studio에 로드된 LLM 모델의 기본 컨텍스트 길이(예: 4096)가 부족하여 발생했습니다.
-* AI 1인 기업의 7명 에이전트 시스템은 작동할 때마다 회사의 규칙(`_system.md`), 목표(`goals.md`), 일정(`schedule.md`), 그리고 에이전트의 개인 메모리(`memory.md`)를 모두 읽고 시작합니다. 이 파일들에 로그가 누적되면서 모델이 한 번에 읽을 수 있는 글자 수를 초과해 버린 것입니다.
-
-### 💡 해결 방법 (완료)
-
-**1. 프롬프트 용량 압축 (AI 조치 완료)**
-다음 파일들을 핵심 내용만 남기고 아주 짧게 요약(압축)하여, 모델이 소화해야 하는 글자 수를 획기적으로 줄였습니다.
-* `_company/_agents/ceo/memory.md` (CEO 메모리 최적화)
-* `_company/_shared/decisions.md` (회사 의사결정 최적화)
-* `_company/_shared/schedule.md` (긴 작업 로그 요약)
-
-**2. LM Studio 설정 변경 (직접 조치)**
-1. LM Studio 프로그램에서 현재 켜져 있는 모델을 내립니다 (Eject/Unload).
-2. 화면 우측 설정(Configuration) 패널에서 **Context Length** (또는 n_ctx) 슬라이더를 찾아 **8192** 이상으로 늘려줍니다.
-3. 모델을 다시 로드(Reload)한 뒤 에이전트 작업을 재개합니다.
+본 문서는 Connect AI 프로젝트를 진행하며 발생했던 모든 오류의 원인 분석, 하드웨어 스펙 한계를 극복하기 위한 소프트웨어 최적화 과정, 모놀리식 구조 리팩토링 및 24시간 자율 사이클 운영에 따른 문제 해결 내역을 통합한 **최종 마스터 문제 해결 로그(Master Log)**입니다.
 
 ---
 
-### 📌 예방 팁
-* AI 에이전트들이 작업을 반복하면 `.md` 파일들에 로그가 길어지게 됩니다. 
-* 종종 저에게 **"의사결정 로그랑 스케줄 파일 좀 짧게 압축해 줘"**라고 요청해 주시면 컨텍스트 초과 오류를 예방할 수 있습니다.
+## 🧭 1. 하드웨어 성능 한계 극복 및 AI 추론 최적화
+
+### ❌ 초기 문제 상황
+- **저사양 하드웨어 환경**: Intel i7-8550U (32GB RAM, NVIDIA 930MX 외장 GPU)
+- **증상**: 로컬 LLM 구동 시 잦은 로딩 타임아웃, VRAM 부족으로 인한 프로세스 멈춤(Hang), 리소스 병목 현상 발생.
+- **원인**: 여러 에이전트가 다른 종류의 큰 모델을 동시에 또는 교대로 호출하면서 발생하는 **'모델 스와핑(Model Swapping)'** 병목 및 CPU 추론 클럭 저하.
+
+### 🛠️ 핵심 최적화 조치
+1. **모델 단일화 고정 (Model Lock)**:
+   - 전문 에이전트들이 설정 UI 값을 무시하고 무조건 로컬에 최적화된 초경량 **`qwen/qwen3-1.7b`** 모델(식별자 `connectai-main`)을 사용하도록 `src/extension.ts`를 강제 수정.
+2. **컨텍스트 크기 다이어트 및 타임아웃 상향**:
+   - 컨텍스트 윈도우 크기를 **`4096`**으로, 예측 토큰(`num_predict`)을 **`2048`**로 조절하여 메모리 부족(OOM) 방지.
+   - CPU 추론 및 열 스로틀링을 감안하여 스트림 첫 토큰 대기 시간(`streamFirstTokenTimeoutSec`)을 **900초(15분)**로, 유휴 타임아웃을 **120초**로 파격 상향.
+3. **CEO 입력 프롬프트 캡(Cap) 적용**:
+   - 회사 규칙 및 과거 대화 로그가 누적되어 컨텍스트 한도를 넘지 않도록 입력 프롬프트 길이를 **최대 12,000자(약 3,000토큰)로 제한**.
+4. **저전력 모드 기본화**:
+   - `lowPowerMode: true` 및 자율 사이클 간격 `autoCycleIntervalMin: 60`을 기본값으로 지정하여 CPU 점유율 최적화.
 
 ---
 
-## 📅 2026-05-18: LM Studio API 호출 경로 중복 오류 (POST /v1/v1/chat/completions 404/Unexpected endpoint)
+## 🛠️ 2. 시스템 리팩토링, 테스트 환경 및 의존성 구축
 
-### 🚨 오류 증상
-* Connect AI 실행 중 `⚠️ CEO가 작업 분배 계획(JSON)을 생성하지 못했어요.` 알림이 뜨며 LLM 호출이 실패함.
-* LM Studio의 로그에 `[ERROR] Unexpected endpoint or method. (POST /v1/v1/chat/completions). Returning 200 anyway` 라는 에러 메시지가 찍힘.
-* API 경로에 `/v1`이 두 번 중복해서 들어가는 바람에 올바른 Chat Completion 호출이 처리되지 못하고 빈 응답 또는 에러가 반환됨.
+### 📦 모놀리식 구조 리팩토링
+- **모듈화 진행**: 약 20,000줄에 달하던 거대한 단일 파일 `extension.ts`에서 마이그레이션 로직 및 에이전트 제어 로직을 하위 모듈(`src/core/agent-manager.ts` 등)로 점진적 분리 수행.
 
-### 🔍 원인 파악
-* `.vscode/settings.json`에서 `"connectAiLab.ollamaUrl"`이 `"http://127.0.0.1:1234/v1"`로 설정되어 있었습니다.
-* 소스 코드(`src/extension.ts`)에서 LM Studio 모드일 때 API 주소를 생성하면서 `${ollamaBase}/v1/chat/completions`와 같이 URL 뒤에 `/v1/chat/completions`를 **무조건 추가로 결합**하게 설계되어 있었습니다.
-* 이로 인해 설정에 `/v1`이 붙어있을 경우 `/v1/v1/chat/completions` 경로로 잘못 요청이 전송되는 버그가 있었습니다.
+### 🧪 테스트 및 패키지 환경 정비
+- **Jest 테스트 환경 완비**: `jest.config.js` 검증, `ts-jest` 프리셋 설정, `testMatch` 지정을 통해 TypeScript 유닛 테스트 스위트 구축.
+- **의존성 해결**: `package.json`을 기반으로 `axios`, `jsdom` 및 주요 개발 도구 패키지 설치 완료.
 
-### 💡 해결 방법 (완료)
+### 🔌 OpenCode 및 외부 명령 연동 버그 수정
+- VS Code 명령어 팔레트에 "OpenCode: 수석 개발자에게 작업 위임"이 보이지 않던 에이전트 등록 및 활성화 프로세스 오류 해결.
+- 로컬 디렉토리 경로 동적 매핑 및 인코딩 기술 부채 해소.
 
-**1. 설정 값 교정 (완료)**
-* `.vscode/settings.json`의 `"connectAiLab.ollamaUrl"` 값을 `"http://127.0.0.1:1234"`로 수정하여 중복을 원천 차단했습니다.
+---
 
-**2. 코드 레벨의 자가 치유(Self-healing) 로직 도입 (완료)**
-* 사용자가 혹시라도 설정에 `/v1`을 포함시키거나 포함시키지 않더라도 자동으로 주소를 보정하도록 로직을 수정했습니다.
-* **적용 파일**:
-  * [src/extension.ts](file:///c:/Users/user/AI%20%EA%B8%B0%EC%97%85%20%EB%91%90%EB%87%8C/%EB%82%B4%20%EC%9E%91%EC%97%85%EB%93%A4/src/extension.ts)
-  * [ConnectAI/src/extension.ts](file:///c:/Users/user/AI%20%EA%B8%B0%EC%97%85%20%EB%91%90%EB%87%8C/%EB%82%B4%20%EC%9E%91%EC%97%85%EB%93%A4/ConnectAI/src/extension.ts)
-  * [scripts/cycle.js](file:///c:/Users/user/AI%20%EA%B8%B0%EC%97%85%20%EB%91%90%EB%87%8C/%EB%82%B4%20%EC%9E%91%EC%97%85%EB%93%A4/scripts/cycle.js)
-  * [ConnectAI/scripts/cycle.js](file:///c:/Users/user/AI%20%EA%B8%B0%EC%97%85%20%EB%91%90%EB%87%8C/%EB%82%B4%20%EC%9E%91%EC%97%85%EB%93%A4/ConnectAI/scripts/cycle.js)
-* **수정 내용**: URL 끝부분의 `/v1` 또는 `/v1/` 경로를 정규식을 통해 검출하여 제거한 뒤 API 엔드포인트를 붙이도록 강인한 자가 치유 로직(`replace(/\/v1\/?$/, '')`)을 적용했습니다.
+## 📝 3. 에이전트 트러블슈팅 및 예방 역사 (Chronological History)
 
-이제 설정과 코드 양쪽에서 완벽히 해결되었으므로, 경로 중복으로 인한 API 호출 실패 문제는 다시 발생하지 않습니다!
+### 📅 [2026-05-15] 1차 수정: 에이전트별 모델 강제 지정 해제
+- **원인**: `_shared/agent_models.json` 내 직원 에이전트들이 무거운 `qwen/qwen3-vl-4b`로 지정되어 있어 스와핑이 끊임없이 발생.
+- **조치**: `agent_models.json`을 `{}`(빈 객체)로 초기화하여 공통 모델인 `connectai-main`을 호출하도록 강제 적용.
+- **GitHub 원격 주소 에러 조치**: 존재하지 않는 저장소 `https://github.com/dhdudqja1-art/-.git`가 설정에 들어가 빌드를 방해하던 버그 해결을 위해 `secondBrainRepo`를 빈 값(`""`)으로 초기화.
 
+### 📅 [2026-05-16] 2차 수정: LM Studio CPU/RAM 기반 완전 안정화
+- **원인**: 930MX GPU의 성능 한계로 인해 모델이 불완전하게 로드되거나 감시 스크립트가 비활성화됨.
+- **조치**: 로딩 명령어를 `--gpu off` 플래그를 추가하여 CPU/RAM 기반 구동으로 변경.
+- **감시 프로그램 정상화**: 바탕화면의 `Watch-LM-Studio-ConnectAI.ps1` 감시 루프를 수동 및 시작프로그램에 재등록하여 5분마다 상태를 점검하고 자율 치유하도록 설정.
+
+### 📅 [2026-05-16] 3차 수정: 자율 운영 고도화 및 세부 진단 강화
+- **오류 감지 개선**: `_reportInferenceError` 유틸리티를 제작하여 에러 유형을 `TIMEOUT`, `ABORTED`, `ECONNREFUSED`로 분류하고 `_shared/last_inference_error.txt`에 중앙 집중식 기록.
+- **자가 치유**: 워치독에 **최대 5회 재시도 제한**을 두어 하드웨어 과부하로 인한 무한 루프를 방지하고, 정상 구동 시 카운트가 자동 초기화되도록 안전장치 구현.
+
+### 📅 [2026-05-18] 4차 수정: CEO 작업 분배 계획(JSON) 생성 실패 (LM Studio 출력 잘림)
+- **오류 증상**: Connect AI 실행 중 CEO 에이전트가 "작업 분배 계획(JSON)을 생성하지 못했어요."라는 에러 알림 발생 및 LM Studio 텍스트 출력이 중간에 잘리는 현상 확인.
+- **원인**: LM Studio 모델의 기본 컨텍스트 길이(4096)가 부족함. 에이전트 자율 반복 실행으로 회사 규칙, 일정, 에이전트 메모리가 누적되면서 모델 수용한도를 초과함.
+- **조치**: 
+  - `memory.md`, `decisions.md`, `schedule.md` 파일들을 핵심 요약본으로 압축하여 프롬프트 용량 획기적 축소.
+  - LM Studio 우측 설정 패널에서 **Context Length (n_ctx)** 값을 **8192 이상**으로 수동 확장 조치.
+
+### 📅 [2026-05-18] 5차 수정: LM Studio API 호출 경로 중복 오류
+- **오류 증상**: CEO 에이전트가 JSON 생성을 실패하며 LM Studio 로그에 `[ERROR] Unexpected endpoint or method (POST /v1/v1/chat/completions)` 에러 발생.
+- **원인**: `.vscode/settings.json`에서 `"connectAiLab.ollamaUrl"`이 `"http://127.0.0.1:1234/v1"`로 설정되어 있었고, 코드 내에서 추가로 `/v1/chat/completions`를 결합하여 `/v1` 경로가 중복 결합됨.
+- **조치**: 
+  - 설정을 `"http://127.0.0.1:1234"`로 수정.
+  - 사용자가 설정 끝에 `/v1`을 넣더라도 정규식(`replace(/\/v1\/?$/, '')`)으로 자동 보정하는 자가 치유(Self-healing) 경로 코드를 `src/extension.ts` 및 `scripts/cycle.js`에 긴급 반영.
+
+### 📅 [2026-05-18] 6차 수정: 병렬 프리패치 구문 에러 해결 및 최종 빌드 성공
+- **오류 증상**: `npm run compile` 빌드 시 `Expected "finally" but found "try"` 구문 컴파일 오류 발생으로 `out/extension.js` 생성 차단.
+- **원인**: 모든 에이전트 데이터를 병렬로 사전 수집하는 Parallel Prefetch 로직을 작성하는 도중 `try` 블록만 있고 `catch` 혹은 `finally` 블록이 완전히 누락됨.
+- **조치**: `src/extension.ts` 프리패치 블록 끝부분에 예외 처리를 보장하는 `catch { /* ignore */ }` 구문을 정확히 추가하여 구문 에러 해결 및 esbuild 성공(1.4MB 번들 생성).
+
+### 📅 [2026-05-19] 7차 수정: 모델 맵 유동화 & OOM·타임아웃 실시간 자율 복구 (Model Fallback Retry) 도입
+- **원인**: 모델 스와핑 병목을 막고자 무조건 `'connectai-main'`으로 하드코딩 락을 걸면서 사용자가 에이전트별로 무거운 고성능 모델을 테스트해보는 유연성이 제한됨. 반면 락을 무작정 풀면 OOM/TIMEOUT으로 기업 사이클이 폭사하는 딜레마 발생.
+- **조치**:
+  - `getAgentModel()` 내부에서 `agent_models.json`을 동적으로 읽어오되 없을 때만 `'connectai-main'`으로 대체하도록 유연하게 개선.
+  - 에이전트 호출 로직 `_callAgentLLM`에 **Fault-Tolerant Retry Loop**를 설계하여, 1차 호출 중 OOM/TIMEOUT/ECONNREFUSED/HTTP 500 등이 감지되면 즉시 사용자에게 경고 알림을 보내고 자동으로 `'connectai-main'` 모델로 스왑하여 2차 재시도(Retry)를 즉석 자율 수행하도록 고도화.
+
+---
+
+## 📖 4. 최종 운영 및 유지보수 지침
+
+1. **에이전트 모델 자유도와 자동 생존 가드**:
+   - 사용자는 이제 자유롭게 에이전트별로 무거운 모델을 배정하여 실험할 수 있습니다. 시스템이 과부하로 인해 폭사하지 않고 **알아서 최경량 모델로 스왑하여 작업을 완수**하므로 안심하고 구성하셔도 됩니다.
+2. **컨텍스트 용량 다이어트 관리**:
+   - `_shared/decisions.md` 및 `ceo/memory.md` 파일들의 용량이 비대해지지 않도록 주기적으로 관리(각각 2KB 내외 권장)하여 추론 타임아웃을 미연에 방지합니다.
+   - 종종 **"의사결정 로그랑 스케줄 파일 좀 짧게 압축해 줘"**라고 요청하여 관리 가능합니다.
+3. **오류 상황 발생 시 복구 절차**:
+   - 대기 상태가 길어지거나 "Retrieving data..." 지연이 발생할 경우, VS Code에서 `F1` -> `Developer: Reload Window` (창 다시 로드)를 실행하여 최신 빌드 메모리를 리프레시합니다.
+   - 백그라운드에서 실행 중인 `Watch-LM-Studio-ConnectAI.ps1` 감시 프로그램이 켜져 있는지 확인합니다.
+
+---
+**최종 마스터 업데이트 일시**: 2026-05-25 11:52 (원격 제어 및 레거시 API 게이트웨이 검증 성공 시점에 양대 로그 병합 완료)  
+**작성자 및 검증**: Antigravity & 개발 사장님 합작
