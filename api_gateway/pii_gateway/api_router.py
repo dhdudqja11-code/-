@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from typing import Dict, Any
+from datetime import datetime
 import re
 
 # 로컬 임포트 (방금 만든 모델 사용)
-from .models import ComplianceRequestPayload, AuditLogEntry, ComplianceResponseModel, log_audit_event
+from .models import ComplianceRequestPayload, AuditLogEntry, ComplianceResponseModel, log_audit_event, save_compliance_record
 
 router = APIRouter(prefix="/pii/gateway", tags=["Compliance Gateway"])
 
@@ -21,7 +22,7 @@ def detect_and_mask_pii(data: Dict[str, Any], user_id: str) -> tuple[Dict[str, A
     # 1. PII 패턴 정의 (강화된 정규식 기반 검증)
     PII_PATTERNS = {
         "email": r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
-        "phone": r"(\d{3}[-\s]?\d{3}[-\s]?\d{4})", # 11자리 전화번호 패턴
+        "phone": r"(\d{3}[-\s]?\d{3,4}[-\s]?\d{4})", # 11자리 전화번호 패턴
         "ssn_like": r"\d{3}-?\d{2}-?\d{4}"   # SSN 유사 패턴
     }
 

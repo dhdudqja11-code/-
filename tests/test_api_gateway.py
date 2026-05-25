@@ -1,5 +1,5 @@
 import pytest
-from api_gateway.core_gateway import APIGateway, QuotaExceededError, APIError
+from api_gateway.core_gateway import APIGateway, QuotaExceededError, APIError, handle_webhook_request
 
 @pytest.fixture(scope="module")
 def gateway():
@@ -15,7 +15,7 @@ def test_successful_request(gateway):
     result = gateway.process_request(api_key, user_id)
     assert result['status'] == 'SUCCESS'
     # 쿼터는 반드시 감소했는지 확인 (로직의 사이드 이펙트 검증)
-    assert result['remaining_quota'] == 98 
+    assert result['remaining_quota'] == 99 
 
 # --- 인증 실패 테스트 (Authentication Guard Test) ---
 def test_invalid_api_key(gateway):

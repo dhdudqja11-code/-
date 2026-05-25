@@ -12,8 +12,13 @@ class APIError(Exception):
 class QuotaExceededError(APIError):
     """사용량 제한 초과 오류."""
     def __init__(self, remaining_quota: int = 0):
-        super().__init__("사용량 할당량을 초과했습니다. 재시도 전 유료 결제가 필요합니다.", code=429)
-        self.error_details = {"status": "QUOTA_EXCEEDED", "remaining": remaining_quota}
+        msg = "사용량 할당량을 초과했습니다. 재시도 전 유료 결제가 필요합니다."
+        super().__init__(msg, code=429)
+        self.error_details = {
+            "status": "QUOTA_EXCEEDED",
+            "remaining": remaining_quota,
+            "message": msg
+        }
 
 class APIGateway:
     """

@@ -1,13 +1,16 @@
 import pytest
 from pydantic import ValidationError
 from fastapi.testclient import TestClient
+from fastapi import FastAPI
 
-# 로컬 임포트
-from .models import ComplianceRequestPayload, AuditLogEntry
-from .api_router import detect_and_mask_pii # 핵심 함수 테스트용으로 분리하여 가져옴
+# 로컬 임포트 (절대 경로 적용)
+from api_gateway.pii_gateway.models import ComplianceRequestPayload, AuditLogEntry
+from api_gateway.pii_gateway.api_router import router, detect_and_mask_pii # 핵심 함수 테스트용으로 분리하여 가져옴
 
-# FastAPI 클라이언트 초기화 (실제 서버 실행 없이 테스트 가능)
-client = TestClient() 
+# FastAPI 클라이언트 초기화 (실제 라우터 연결)
+app = FastAPI()
+app.include_router(router)
+client = TestClient(app) 
 
 @pytest.fixture(scope="module")
 def mock_user_id():
@@ -27,8 +30,8 @@ def test_detect_and_mask_pii_success(mock_user_id):
     }
     masked_data, audit_log = detect_and_mask_pii(raw_data, mock_user_id)
 
-    assert masked_data["email"] == "jXxx.doe@exampX.com" # 첫 글자만 유지 및 마스킹 확인
-    assert masked_data["phone"] == "0XXXXXXXX"          # 전화번호 마스크 확인
+    assert masked_data["email"] == "j" + "X" * 19 # 첫 글자만 유지 및 마스킹 확인
+    assert masked_data["phone"] == "0" + "X" * 12          # 전화번호 마스크 확인
     assert audit_log is not None                        # 로그 객체가 생성되었는지 확인
 
 def test_detect_and_mask_pii_no_pii(mock_user_id):
@@ -51,7 +54,7 @@ def test_detect_and_mask_pii_single_pii(mock_user_id):
     }
     masked_data, audit_log = detect_and_mask_pii(raw_data, mock_user_id)
 
-    assert masked_data["ssn"] == "Xxx-XX-XXXX"          # SSN 마스킹 확인
+    assert masked_data["ssn"] == "9" + "X" * 10          # SSN 마스킹 확인
     assert audit_log is not None
 
 

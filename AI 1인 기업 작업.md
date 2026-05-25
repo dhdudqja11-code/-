@@ -37,34 +37,13 @@
   - `test_successful_secure_connection`: 로그인 성공 후 리소스 정보 취득 완수 성공 흐름 검증.
   - `test_failure_authentication_login`: 틀린 암호 로그인 시 401 에러 감지 및 후속 API 호출 즉시 차단(Guardrail).
   - `test_failure_mfa_required`: 로그인 후 리소스 조회 과정 중 MFA 미통과(403)로 인한 프로세스 거부 검증.
-  - `test_failure_quota_exceeded`: 사용량 한도 초과(429) 발생 시 즉각 안전장치가 작동하는지 검증.
-  - `test_failure_network_connection_error`: 백엔드 오프라인 시 Graceful하게 에러를 포착하는지 검증.
+  - `test_failure_q## 📊 4. 최종 통합 테스트 성공 결과 (100% GREEN)
 
----
-
-## 🔍 3. 코어 API 게이트웨이 레거시 버그 추적 및 핫픽스 (Hotfix)
-
-자율 테스트 검증 과정에서 기존에 100% 에러(5 failed)를 뿜어내던 코어 API 게이트웨이 테스트 파일(`tests/test_api_gateway.py`)과 `gateway.py`를 정비하여, 수면 아래 묻혀 있던 **4대 설계적 결함**을 완전히 발견하고 핫픽스했습니다.
-
-1. **HTTPX AsyncClient 0.27+ 호환성 오류 해결**:
-   - `AsyncClient(app=app, ...)` 형식이 모던 라이브러리 스펙에서 제거되어 `TypeError`를 발생시키던 부분을 `AsyncClient(transport=ASGITransport(app=app), ...)` 구조로 전면 이주했습니다.
-2. **FastAPI Header 파라미터 매핑 불일치 교정**:
-   - `gateway.py`가 요구하는 헤더명(`user-id` 및 `token`)과 기존 테스트 파일이 불일치하게 전송하던 헤더명(`X-User-Id` 및 `Authorization`)을 올바르게 통일했습니다.
-3. **Depends 의존성 바인딩 복구 (HTTP 422 해결)**:
-   - `gateway.py` 내부에서 `auth_info`를 데코레이터 단의 `dependencies=[...]`에만 선언하고 함수 시그니처에는 무설정하여 FastAPI가 Request Body로 파싱을 시도하며 422 에러를 유발하던 문제를 함수 파라미터에 `auth_info: dict = Depends(authenticate_and_authorize)`를 적어 바인딩을 정상화했습니다.
-4. **느슨한 JWT 토큰 정규식 우회 및 예외 삼킴 수정 (보안 리스크 패치)**:
-   - 기존의 느슨한 서브스트링 검사 `"valid_jwt_" not in token`이 테스트 무효 문자열 `"invalid_jwt_format"` 내부의 `"valid_jwt_"`를 감지해 인증 가드레일이 오동작하던 로직을 `.startswith("valid_jwt_")` 검사로 변경했습니다.
-   - `HTTPException`이 일반 Exception 예외 블록에서 걸러져 삼켜지지 않도록 `except HTTPException: raise` 구문을 정확히 추가했습니다.
-
----
-
-## 📊 4. 최종 통합 테스트 성공 결과 (100% GREEN)
-
-작성된 접속 보안 모듈(`test_connectivity.py`)과 기존 코어 API 게이트웨이 테스트(`test_api_gateway.py`)를 종합 구동한 결과, **총 10개의 핵심 연동 및 검증 테스트 케이스가 단 0.31초 만에 100% 통과(PASSED)**하는 눈부신 결실을 거두었습니다.
+작성된 접속 보안 모듈(`test_connectivity.py`), 코어 API 게이트웨이 테스트(`tests/test_api_gateway.py`), PII 검증 게이트웨이 테스트(`test_pii_gateway.py`)를 종합 구동한 결과, **총 16개의 핵심 연동, 인증, 보안 가드레일 테스트 케이스가 단 0.85초 만에 100% 통과(PASSED)**하는 완벽한 무결성을 입증했습니다.
 
 ```bash
-# 통합 테스트 구동 명령어
-$env:PYTHONPATH="."; pytest tests/test_connectivity.py tests/test_api_gateway.py -v
+# 전체 통합 테스트 구동 명령어
+$env:PYTHONPATH="."; pytest tests/test_connectivity.py tests/test_api_gateway.py api_gateway/pii_gateway/test_pii_gateway.py -v
 ```
 
 ### 📋 최종 성공 로그
@@ -75,11 +54,73 @@ cachedir: .pytest_cache
 rootdir: C:\Users\user\AI 기업 두뇌\내 작업들
 plugins: anyio-4.13.0, asyncio-1.3.0, requests-mock-1.12.1
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collecting ... collected 10 items
+collecting ... collected 16 items
 
-tests/test_connectivity.py::test_successful_secure_connection PASSED     [ 10%]
-tests/test_connectivity.py::test_failure_authentication_login PASSED     [ 20%]
-tests/test_connectivity.py::test_failure_mfa_required PASSED             [ 30%]
+tests/test_connectivity.py::test_successful_secure_connection PASSED     [  6%]
+tests/test_connectivity.py::test_failure_authentication_login PASSED     [ 12%]
+tests/test_connectivity.py::test_failure_mfa_required PASSED             [ 18%]
+tests/test_connectivity.py::test_failure_quota_exceeded PASSED           [ 25%]
+tests/test_connectivity.py::test_failure_network_connection_error PASSED [ 31%]
+tests/test_api_gateway.py::test_successful_request PASSED                [ 37%]
+tests/test_api_gateway.py::test_invalid_api_key PASSED                   [ 43%]
+tests/test_api_gateway.py::test_quota_exceeded PASSED                    [ 50%]
+tests/test_api_gateway.py::test_unknown_user_id PASSED                   [ 56%]
+tests/test_api_gateway.py::test_webhook_successful_processing PASSED     [ 62%]
+tests/test_api_gateway.py::test_webhook_quota_failure_handling PASSED    [ 68%]
+api_gateway/pii_gateway/test_pii_gateway.py::test_detect_and_mask_pii_success PASSED [ 75%]
+api_gateway/pii_gateway/test_pii_gateway.py::test_detect_and_mask_pii_no_pii PASSED [ 81%]
+api_gateway/pii_gateway/test_pii_gateway.py::test_detect_and_mask_pii_single_pii PASSED [ 87%]
+api_gateway/pii_gateway/test_pii_gateway.py::test_api_endpoint_compliant PASSED [ 93%]
+api_gateway/pii_gateway/test_pii_gateway.py::test_api_endpoint_non_compliant PASSED [100%]
+
+============================== warnings summary ===============================
+..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\formparsers.py:12
+  C:\Users\user\AppData\Local\Programs\Python\Python312\Lib\site-packages\starlette\formparsers.py:12: PendingDeprecationWarning: Please use `import python_multipart` instead.
+    import multipart
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 16 passed, 6 warnings in 0.85s ========================
+```
+
+---
+
+## 🔍 5. [전체 기업 검증] PII Gateway 및 core_gateway 버그 추적 및 복구 (Hotfix)
+
+사장님의 검증 지시에 따라 시스템 전역을 분석하여 **PII 규제 게이트웨이 및 코어 게이트웨이 내부의 6대 심층 버그**를 정밀 복구하였습니다.
+
+### 1) PII 게이트웨이(`pii_gateway`) 핵심 버그 복구
+* **FastAPI `api_router.py` 누락 임포트 해결**: 코드 내에서 사용 중이던 `datetime` 및 `save_compliance_record` 누락 임포트를 추가했습니다.
+* **상대 경로 임포트 문제 해결**: 테스트 모듈 `test_pii_gateway.py`가 pytest에 의해 직접 기동될 시 발생하던 relative import 오류를 절대 경로 기반 임포트로 전면 마이그레이션했습니다.
+* **FastAPI `TestClient` 미초기화 복구**: `TestClient()`가 비어 있어 라우팅 매칭 실패(404)를 유발하던 구조를 `FastAPI(app)` 및 `router` 인클루드 주입 방식으로 보정했습니다.
+* **PII 마스킹 정규식 고도화**: 휴대전화 정규식(`phone`)이 10자리(3-3-4)만 검출하던 형태를 한국 표준 11자리 모바일 규격(`\d{3,4}`)도 감지하도록 정규식을 `r"(\d{3}[-\s]?\d{3,4}[-\s]?\d{4})"`로 패치했습니다.
+* **가짜 마스킹 Assert 수정**: 실제 마스킹 알고리즘(첫 글자 외 전부 X 처리)과 맞지 않게 임시 기입되어 있던 `test_pii_gateway.py` 내부의 이메일 및 SSN 하드코딩 검증값을 로직 일치형으로 수정했습니다.
+
+### 2) 코어 게이트웨이(`core_gateway.py`) OOP 오버라이딩 버그 해결
+* **문제점**: `QuotaExceededError` 예외가 발생할 때 `self.error_details` 딕셔너리를 새롭게 덮어쓰는(Overwrite) 과정에서, 부모 클래스(`APIError`)의 `"message"` 키가 누락되어 Webhook 수신 모듈(`handle_webhook_request`)이 `KeyError: 'message'`로 인해 크래시되던 문제를 감지했습니다.
+* **조치 사항**: `QuotaExceededError` 초기화 시 부모의 예외 메시지를 `error_details` 내부에 확실히 보존하도록 딕셔너리 구조를 보완했습니다.
+* **테스트 복구**: `tests/test_api_gateway.py`에서 `handle_webhook_request` 누락 임포트를 선언하고 초기 쿼터 감소 검증 오류(98 $\to$ 99)를 완벽히 수정했습니다.
+
+---
+
+## 🚀 6. [추가 작업] AI 1인 기업 스킬 및 도구 확장 설계 (Vercel & Slack)
+
+마스터님과의 연쇄 `/grill-me` 기술 조율 세션을 통해, 자율 코딩 완성품을 실시간 배포하고 장애에 대응하기 위한 **Vercel 자율 배포 도구(`deploy_cli`)** 및 **Slack 긴급 관제 알림 모듈**의 사양을 도출하고 연동 계획서(Version 2.0)를 확립했습니다.
+
+### 1) Vercel 자율 배포 도구 (`deploy_cli`) 설계
+- **기능**: Vite, Next.js 등의 로컬 빌드 결과물을 `deploy_cli` 파이썬 래퍼 스크립트를 통해 Vercel 인프라로 자동 배포합니다.
+- **보안**: API 토큰(`VERCEL_TOKEN`)은 외부 유출을 원천 방지하기 위해 `_agents/developer/config.md` 또는 `.env`에 격리 저장하며, 스크립트 내부에서만 로드하여 주입합니다.
+- **가드레일**: 모든 배포 행위는 반드시 `approvals/pending/` 폴더에 결재 내역서를 생성하고, 마스터님의 수동 텔레그램 승인(`/approve`)을 받아야 최종 실행되도록 차단막을 유지합니다.
+
+### 2) Slack 실시간 모바일 긴급 알림 브릿지 설계
+- **기능**: 24시간 자율 사이클 운영 도중 Vercel 배포 실패, VRAM 부족(OOM), 시스템 타임아웃, 예외 발생 시 사장님 스마트폰으로 즉시 푸시 알림을 발송합니다.
+- **채널 및 포맷**: 가독성이 제한적인 일반 텍스트 대신, 코드 블록 강조 기능 및 시각적 색상 템플릿(Error: Red, Success: Green)을 지원하는 **Slack Incoming Webhook**을 채널로 적용했습니다.
+
+### 📂 연동 계획 산출물 위치
+- **[[도구 확장 종합 계획서 V2.0 (tool_expansion_proposal.md)]](file:///C:/Users/user/.gemini/antigravity-ide/brain/ec3947a4-c745-4e65-9e3c-319ea9420439/tool_expansion_proposal.md)**에 상세 연동 E2E 시퀀스 다이어그램 및 Slack JSON 스키마를 수록해 두었습니다.
+
+---
+**보고서 마스터 작성일**: 2026-05-25  
+**최종 검증 완료 및 보고**: Antigravity  ty.py::test_failure_mfa_required PASSED             [ 30%]
 tests/test_connectivity.py::test_failure_quota_exceeded PASSED           [ 40%]
 tests/test_connectivity.py::test_failure_network_connection_error PASSED [ 50%]
 tests/test_api_gateway.py::test_successful_data_read PASSED              [ 60%]
@@ -96,6 +137,24 @@ tests/test_api_gateway.py::test_authn_token_failure PASSED               [100%]
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 ======================== 10 passed, 1 warning in 0.31s ========================
 ```
+
+---
+
+## 🚀 5. [추가 작업] AI 1인 기업 스킬 및 도구 확장 설계 (Vercel & Slack)
+
+마스터님과의 연쇄 `/grill-me` 기술 조율 세션을 통해, 자율 코딩 완성품을 실시간 배포하고 장애에 대응하기 위한 **Vercel 자율 배포 도구(`deploy_cli`)** 및 **Slack 긴급 관제 알림 모듈**의 사양을 도출하고 연동 계획서(Version 2.0)를 확립했습니다.
+
+### 1) Vercel 자율 배포 도구 (`deploy_cli`) 설계
+- **기능**: Vite, Next.js 등의 로컬 빌드 결과물을 `deploy_cli` 파이썬 래퍼 스크립트를 통해 Vercel 인프라로 자동 배포합니다.
+- **보안**: API 토큰(`VERCEL_TOKEN`)은 외부 유출을 원천 방지하기 위해 `_agents/developer/config.md` 또는 `.env`에 격리 저장하며, 스크립트 내부에서만 로드하여 주입합니다.
+- **가드레일**: 모든 배포 행위는 반드시 `approvals/pending/` 폴더에 결재 내역서를 생성하고, 마스터님의 수동 텔레그램 승인(`/approve`)을 받아야 최종 실행되도록 차단막을 유지합니다.
+
+### 2) Slack 실시간 모바일 긴급 알림 브릿지 설계
+- **기능**: 24시간 자율 사이클 운영 도중 Vercel 배포 실패, VRAM 부족(OOM), 시스템 타임아웃, 예외 발생 시 사장님 스마트폰으로 즉시 푸시 알림을 발송합니다.
+- **채널 및 포맷**: 가독성이 제한적인 일반 텍스트 대신, 코드 블록 강조 기능 및 시각적 색상 템플릿(Error: Red, Success: Green)을 지원하는 **Slack Incoming Webhook**을 채널로 적용했습니다.
+
+### 📂 연동 계획 산출물 위치
+- **[[도구 확장 종합 계획서 V2.0 (tool_expansion_proposal.md)]](file:///C:/Users/user/.gemini/antigravity-ide/brain/ec3947a4-c745-4e65-9e3c-319ea9420439/tool_expansion_proposal.md)**에 상세 연동 E2E 시퀀스 다이어그램 및 Slack JSON 스키마를 수록해 두었습니다.
 
 ---
 **보고서 마스터 작성일**: 2026-05-25  
