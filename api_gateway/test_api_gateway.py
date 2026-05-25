@@ -1,5 +1,5 @@
 import pytest
-from api_gateway import get_user_profile, is_ip_valid, check_rate_limit, check_authorization, TEST_CONFIG
+from api_gateway.api_gateway import get_user_profile, is_ip_valid, check_rate_limit, check_authorization, TEST_CONFIG
 
 # --- 1. Guard Logic 단위 테스트 (개별 함수 검증) ---
 

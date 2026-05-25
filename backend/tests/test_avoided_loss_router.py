@@ -1,7 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-# 로컬 경로에 따라 임포트 경로는 조정 필요하다고 가정합니다.
-from backend.api.v1.main import app 
+from app.main import app 
 
 client = TestClient(app)
 

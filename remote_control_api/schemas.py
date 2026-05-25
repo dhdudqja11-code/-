@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Dict
 
+from enum import Enum
+
 # ========================================
 # [Authentication & Authorization Schemas]
 # ========================================
@@ -15,7 +17,7 @@ class UserCredentials(BaseModel):
     password: str = Field(description="비밀번호 (실제로는 패스워드 해싱 검증 필요)")
 
 # RBAC 역할을 정의하는 기본 모델
-class Role(str):
+class Role(str, Enum):
     ADMIN = "admin"
     OPERATOR = "operator"
     VIEWER = "viewer"

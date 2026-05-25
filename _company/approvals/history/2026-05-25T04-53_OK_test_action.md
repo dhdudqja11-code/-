@@ -7,3 +7,14 @@
 
 ### 상세 업무 설명
 이것은 양방향 승인 테스트입니다.
+
+---
+
+## 결정: **✅ 승인**
+- 시각: 2026-05-25T04:53:08.570Z
+- 사유: _(없음)_
+- 실행 결과: OK
+
+```
+(no executor for deploy — approval recorded, manual follow-up)
+```

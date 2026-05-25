@@ -15,7 +15,7 @@ class SessionManager:
         """세션 고유 ID 생성. UUID 등을 사용하는 것이 안전합니다."""
         return f"SESSION_{int(time.time())}_UNIQUE"
 
-    def create_session(self, user_id: str, token: str, duration_minutes: int = 60) -> bool:
+    def create_session(self, user_id: str, token: str, duration_minutes: int = 60, ip_address: str = "127.0.0.1") -> str:
         """새로운 세션을 등록하고 유효성을 체크합니다."""
         session_id = self.generate_session_id()
         expiry_time = time.time() + (duration_minutes * 60)
@@ -23,11 +23,12 @@ class SessionManager:
         self._active_sessions[session_id] = {
             "user_id": user_id,
             "token": token,
+            "ip_address": ip_address,
             "created_at": time.time(),
             "expires_at": expiry_time
         }
-        print(f"INFO: Session created for User {user_id}. ID: {session_id}")
-        return True
+        print(f"INFO: Session created for User {user_id}. ID: {session_id}, IP: {ip_address}")
+        return session_id
 
     def is_session_valid(self, session_id: str) -> bool:
         """세션의 유효성을 검사하고 만료 여부를 확인합니다."""
@@ -42,6 +43,21 @@ class SessionManager:
             del self._active_sessions[session_id] # 만료 시 자동 제거
             return False
         return True
+
+    def is_token_active(self, token: str) -> bool:
+        """
+        [이중 유효성 검증] 주어진 JWT 토큰이 현재 활성 세션 풀에 정상적으로 매칭되어 유효한 상태인지 판별합니다.
+        """
+        now = time.time()
+        for session_id, session in list(self._active_sessions.items()):
+            if session["token"] == token:
+                if now <= session["expires_at"]:
+                    return True
+                else:
+                    print(f"WARNING: Active Session {session_id} expired during token check.")
+                    del self._active_sessions[session_id]
+                    return False
+        return False
 
     def revoke_session(self, session_id: str) -> bool:
         """사용자 요청 또는 비정상 종료 시 세션을 즉시 무효화합니다."""
