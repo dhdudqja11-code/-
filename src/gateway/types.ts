@@ -1,37 +1,53 @@
+// src/gateway/types.ts
+
 /**
- * @fileoverview Immutable Audit Log 시스템에서 사용되는 공통 타입 정의 파일.
- * 모든 트랜잭션 데이터, 성공/실패 여부, 그리고 분석 결과를 표준화합니다.
+ * ---------------------------------------------------------------------
+ * [PROTOCOL DEFINITION]
+ * 모든 통신은 TLS 1.3 기반의 WebSockets을 통해 이루어지며, 메시지는 JSON 페이로드를 사용합니다.
+ * 인증 과정에서 JWT 토큰 검증 및 세션 관리가 필수입니다.
+ * ---------------------------------------------------------------------
  */
 
-// API 요청에 들어오는 모든 원본 Payload의 형태를 정의
-export type IncomingPayload = {
-    source: string;       // 호출 주체 (e.g., 'web-client', 'webhook-partner')
-    user_id?: string | null; // 사용자 식별자
-    data: Record<string, any>; // 실제 분석에 필요한 데이터 묶음
+export type RemoteSessionMessage = {
+    action: 'AUTH' | 'COMMAND' | 'RESPONSE'; // 행동 유형 정의
+    payload: any; // 실제 데이터 로드
+    auth_token?: string; // JWT 인증 토큰 (필수)
 };
 
-// 트랜잭션의 최종 결과 구조를 정의합니다. (3단계 논리 구조 강제)
-export type AnalysisResult = {
-    status: 'SUCCESS' | 'FAILURE'; // 성공 또는 실패
-    timestamp_utc: string;        // UTC 시간 기록
-    problem_definition: string;   // [1] 문제 정의 (What went wrong?)
-    cause_analysis: string;       // [2] 원인 분석 (Why did it go wrong? Source/Time)
-    mitigation_suggestion: string;// [3] 해결책 제시 (How to fix it?)
-    raw_data: Record<string, any>; // 원본 데이터 참조를 위한 필드
-}
+/**
+ * ---------------------------------------------------------------------
+ * [IMMMUTABLE AUDIT LOG STRUCTURE]
+ * 모든 트랜잭션은 이 구조를 따라 기록되어야 하며, 체이닝 해싱을 통해 무결성을 검증합니다.
+ * ---------------------------------------------------------------------
+ */
 
-// 감사 로그에 기록될 최종 구조체
 export type AuditLogEntry = {
-    log_id: string;       // 고유 트랜잭션 ID (UUID)
-    timestamp: string;    // 로그 기록 시간
-    status: 'SUCCESS' | 'FAILURE'; // 결과 상태
-    input_payload: IncomingPayload;
-    output_result: AnalysisResult;
-    is_immutable: boolean; // 이 필드는 항상 true여야 함
+    timestamp: string; // ISO 8601 포맷 (법적 증명 시점)
+    transaction_id: string; // 고유 트랜잭션 ID
+    source_module: string; // 데이터를 요청한 시스템 모듈 (e.g., 'MiniROISimulator')
+    action_taken: string; // 수행된 핵심 액션 (e.g., 'RiskAssessment', 'DataFetch')
+    input_data_hash: string; // 입력 데이터의 SHA-256 해시값
+    output_result_summary: any; // 결과 요약본 (민감 정보 제외)
+    preceding_log_hash: string; // 이전 로그 엔트리의 전체 해시값 (체이닝)
+    current_entry_hash: string; // 이 엔트리 자체의 최종 SHA-256 해시값
+};
+
+/**
+ * ---------------------------------------------------------------------
+ * [CORE BUSINESS TYPES]
+ * 기존 핵심 비즈니스 로직 타입.
+ * ---------------------------------------------------------------------
+ */
+
+export type RiskDiagnosis = {
+    risk_category: 'Legal' | 'Financial' | 'Compliance'; // 위험 분류
+    severity_level: number; // 1 (Low) - 5 (Critical)
+    quantitative_loss_estimate: number; // 정량화된 재무 손실 예측액 (KRW)
+    mitigation_suggested: string; // 해결책 제시 문구
 };
 
 export type GatewayResponse = {
-    success: boolean;
+    status: 'SUCCESS' | 'FAILURE';
     message: string;
-    data: any;
+    data?: any;
 }
