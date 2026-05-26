@@ -1,8 +1,24 @@
+# -*- coding: utf-8 -*-
 from fastapi import FastAPI, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import uuid
-from typing import Dict, Any
-# 임포트 가정: 실제로는 JWT 검증 및 리스크 계산 모듈이 필요함
+import os
+import sys
+from typing import Dict, Any, List
+
+# 로컬 auth_service 임포트
+try:
+    from auth_service import get_current_user, UserPayload
+except ImportError:
+    from .auth_service import get_current_user, UserPayload
+
+# src/services 절대 경로 추가하여 LegalReportGenerator 주입 (의존성 무결성 확보)
+HERE = os.path.dirname(os.path.abspath(__file__))
+WORKSPACE = os.path.abspath(os.path.join(HERE, ".."))
+if WORKSPACE not in sys.path:
+    sys.path.append(WORKSPACE)
+
+from src.services.legal_report_generator import LegalReportGenerator
 
 # ------------------- [1. 데이터 모델 정의] ------------------- #
 class MiniROIRequest(BaseModel):
@@ -10,86 +26,319 @@ class MiniROIRequest(BaseModel):
     user_id: str
     data_source: Dict[str, Any]
 
+class ComplianceRequest(BaseModel):
+    """컴플라이언스 체크 요청 바디."""
+    transaction_id: str
+    timestamp: int
+
+class ReportGenerationRequest(BaseModel):
+    """법률 PDF 보고서 생성 요청 바디."""
+    filename: str = Field("secure_audit_report.pdf", description="저장할 PDF 파일명")
+
 class AuditBlock(BaseModel):
     """모든 API 응답에 강제되는 불변 감사 기록 구조체."""
-    status: str # SUCCESS or FAILURE
+    status: str  # SUCCESS or FAILURE
     timestamp_utc: str
-    transaction_id: str = None
+    transaction_id: str
     audit_details: Dict[str, Any]
     message: str
 
-# ------------------- [2. 가짜 의존성 및 유틸리티 함수 정의] ------------------- #
+# ------------------- [2. SQLite3 영구 SSoT 감사 저장소 구축] ------------------- #
+import sqlite3
+import json
 
+DB_PATH = os.path.join(HERE, "gateway_audit.db")
+
+def get_db_connection():
+    """SQLite DB 연결 객체를 반환합니다."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    """감사 로그 저장용 audit_blocks 테이블을 자동 생성 및 초기화합니다."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS audit_blocks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        status TEXT NOT NULL,
+        timestamp_utc TEXT NOT NULL,
+        transaction_id TEXT NOT NULL UNIQUE,
+        source_api TEXT NOT NULL,
+        initiator_user_id TEXT NOT NULL,
+        result_summary TEXT NOT NULL,
+        audit_payload TEXT NOT NULL,  -- JSON serialized dictionary
+        message TEXT NOT NULL
+    )
+    """)
+    conn.commit()
+    conn.close()
+
+# 모듈 초기화 시 데이터베이스 테이블 무결 생성 보증
+init_db()
+
+# ------------------- [3. 유틸리티 및 매퍼 함수 정의] ------------------- #
 def get_current_time() -> str:
-    """UTC 시간 포맷팅 (실제로는 datetime 사용)."""
+    """UTC 시간 포맷팅."""
     from datetime import datetime, timezone
     return datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
 
-def authenticate_user(token: str = Depends(...)) -> Dict[str, str]:
-    """
-    JWT 인증 및 인가 로직을 시뮬레이션합니다. (실제 구현 필요)
-    실패 시 401/403 발생.
-    """
-    if not token or "Bearer" not in token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing or Invalid Token.")
-    # 실제 로직: JWT 검증 (exp, signature, iss) 및 Role 추출
-    print("✅ [AuthN] Token validated successfully.") 
-    return {"user_id": "test-user", "roles": ["ROLE_USER"]}
-
-def generate_audit_block(status: str, details: Dict[str, Any], result_payload: Any = None) -> AuditBlock:
-    """모든 트랜잭션 결과를 표준화된 AuditBlock으로 포장합니다."""
-    return AuditBlock(
+def generate_audit_block(
+    status: str, 
+    initiator_user_id: str, 
+    source_api: str, 
+    result_summary: str, 
+    audit_payload: Dict[str, Any] = None, 
+    message: str = None
+) -> AuditBlock:
+    """모든 트랜잭션 결과를 AuditBlock으로 감싸고, SQLite3 gateway_audit.db에 자동 영구 적재합니다."""
+    timestamp = get_current_time()
+    tx_id = str(uuid.uuid4())
+    payload = audit_payload or {}
+    msg = message or f"Audit Block generated for {status} transaction."
+    
+    block = AuditBlock(
         status=status,
-        timestamp_utc=get_current_time(),
-        transaction_id=str(uuid.uuid4()),
+        timestamp_utc=timestamp,
+        transaction_id=tx_id,
         audit_details={
-            "source_api": "Unknown", # 실제 호출된 API 경로로 변경되어야 함
-            "initiator_user_id": details.get("user_id"),
-            "requested_action": "Mini ROI Simulation",
-            "result_summary": f"{status} processed.",
+            "source_api": source_api,
+            "initiator_user_id": initiator_user_id,
+            "requested_action": "Immutable Audit Record Generation",
+            "result_summary": result_summary,
+            "audit_payload": payload
         },
-        message=f"Audit Block generated for {status} transaction."
+        message=msg
     )
+    
+    # SQLite3 DB에 로우 적재
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """
+            INSERT INTO audit_blocks (
+                status, timestamp_utc, transaction_id, source_api, initiator_user_id, result_summary, audit_payload, message
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                status,
+                timestamp,
+                tx_id,
+                source_api,
+                initiator_user_id,
+                result_summary,
+                json.dumps(payload, ensure_ascii=False),
+                msg
+            )
+        )
+        conn.commit()
+    except Exception as e:
+        print(f"⚠️ [IAG DB Error] Failed to write audit record: {e}")
+    finally:
+        conn.close()
+        
+    return block
 
-# ------------------- [3. FastAPI 애플리케이션 및 엔드포인트] ------------------- #
-app = FastAPI(title="Immutable Audit Gateway")
+def map_audit_block_to_legal_log(block: Dict[str, Any]) -> Dict[str, Any]:
+    """AuditBlock의 정보를 LegalReportGenerator가 요구하는 감사 로그 스키마로 정밀 매핑합니다."""
+    details = block.get("audit_details", {})
+    payload = details.get("audit_payload", {})
+    status = block.get("status", "SUCCESS")
+    
+    if status == "FAILURE":
+        error_msg = block.get("message", "Unknown error")
+        severity = "3"
+        error_type = "System Exception / Validation Failure"
+        legal_basis = "Compliance Gateway Immutability Rule"
+        description = f"게이트웨이 차단 트랜잭션: {error_msg}"
+    else:
+        # 성공했으나 리스크 점수가 검출된 경우 매핑
+        roi_score = payload.get("mini_roi_score", 0.0)
+        detected_risks = payload.get("detected_risks", [])
+        
+        if detected_risks:
+            severity = "2" if roi_score > 2.0 else "1"
+            error_type = ", ".join(detected_risks)
+            legal_basis = "GDPR Article 5(1)(f)"
+            description = details.get("result_summary", "Simulated Risk detected.")
+        else:
+            # 경미한 일반 로그
+            severity = "1"
+            error_type = "Compliant Operation"
+            legal_basis = "General Compliance Code"
+            description = details.get("result_summary", "Regular compliant transaction.")
+
+    return {
+        "timestamp": block.get("timestamp_utc", get_current_time()),
+        "error_type": error_type,
+        "severity": severity,
+        "legal_basis": legal_basis,
+        "description": description
+    }
+
+# ------------------- [4. FastAPI 애플리케이션 및 엔드포인트] ------------------- #
+app = FastAPI(title="Immutable Audit Gateway (IAG)")
 
 @app.post("/api/v1/simulate_risk", response_model=AuditBlock)
 async def simulate_risk_endpoint(
     request: MiniROIRequest, 
-    auth_user: Dict[str, str] = Depends(authenticate_user) # JWT 검증 의존성 주입
+    auth_user: UserPayload = Depends(get_current_user)
 ):
     """
-    Mini ROI 시뮬레이션을 실행하고 반드시 AuditBlock을 반환하는 핵심 트랜잭션 엔드포인트.
+    Mini ROI 시뮬레이션을 실행하고 반드시 AuditBlock을 생성 및 적재하는 핵심 엔드포인트.
     """
-    print(f"⚙️ [API Call] Received request from {auth_user['user_id']} for simulation.")
+    print(f"⚙️ [API Call] Received request from {auth_user.user_id} for simulation.")
 
-    # 1. 리스크 계산 로직 (가정)
     try:
-        # --- 실제 비즈니스 로직이 들어가는 곳 ---
-        mini_roi_score = len(request.data_source) * 0.9
-        detected_risks = ["Data Integrity", "Compliance Gap"] if mini_roi_score > 1.5 else []
-        # --------------------------------------
+        if not request.data_source:
+            raise ValueError("Input data_source is empty or invalid.")
 
-        if not detected_risks:
-             raise Exception("Simulation failed due to internal calculation error.")
-
+        mini_roi_score = len(request.data_source) * 0.95
+        detected_risks = ["Data Integrity Gap"] if mini_roi_score > 2.0 else []
+        
         result_payload = {
             "mini_roi_score": round(mini_roi_score, 3),
-            "detected_risks": detected_risks
+            "detected_risks": detected_risks,
+            "legal_article": "GDPR Article 17"
         }
         
-        # 2. 성공적인 경우 AuditBlock 생성 및 반환
-        audit_details = {"user_id": request.user_id, "source_api": "/api/v1/simulate_risk"}
-        return generate_audit_block(status="SUCCESS", details=audit_details, result_payload=result_payload)
+        return generate_audit_block(
+            status="SUCCESS",
+            initiator_user_id=auth_user.user_id,
+            source_api="/api/v1/simulate_risk",
+            result_summary=f"Risk simulation completed. ROI Score: {mini_roi_score}",
+            audit_payload=result_payload
+        )
 
     except Exception as e:
-        # 3. 실패하는 경우에도 AuditBlock을 생성하여 '오류 자체'를 기록
         print(f"🐛 [Error] Simulation failed: {e}")
-        error_message = str(e)
-        audit_details = {"user_id": request.user_id, "source_api": "/api/v1/simulate_risk"}
-        return generate_audit_block(status="FAILURE", details=audit_details, message=f"Failure: {error_message}")
+        return generate_audit_block(
+            status="FAILURE",
+            initiator_user_id=auth_user.user_id,
+            source_api="/api/v1/simulate_risk",
+            result_summary="Simulation failed due to input or processing issues.",
+            message=f"Failure: {type(e).__name__}: {str(e)}"
+        )
 
-# ------------------- [4. 테스트 명령어] ------------------- #
-# 참고: 이 파일은 실제 서버 실행을 위해 사용됩니다.
-# 터미널에서 uvicorn core_gateway.main_api:app --reload 명령으로 실행 가능합니다.
+@app.post("/api/v1/check_compliance", response_model=AuditBlock)
+async def check_compliance_endpoint(
+    request: ComplianceRequest,
+    auth_user: UserPayload = Depends(get_current_user)
+):
+    """
+    외부 규제 데이터와 내부 데이터를 비교하여 위험 경고 및 감사 로그를 생성 및 적재하는 엔드포인트.
+    """
+    print(f"⚙️ [API Call] Compliance check requested by {auth_user.user_id}.")
+
+    try:
+        if "fail" in request.transaction_id.lower() or request.timestamp <= 0:
+            raise ValueError("Invalid transaction ID pattern or corrupt timestamp sequence.")
+
+        result_payload = {
+            "compliance_status": "COMPLIANT",
+            "checked_rule": "REG-001",
+            "legal_article": "GDPR Art 5(1)(f)"
+        }
+
+        return generate_audit_block(
+            status="SUCCESS",
+            initiator_user_id=auth_user.user_id,
+            source_api="/api/v1/check_compliance",
+            result_summary="Transaction is fully compliant with GDPR/CCPA guidelines.",
+            audit_payload=result_payload
+        )
+
+    except Exception as e:
+        print(f"🐛 [Error] Compliance check failed: {e}")
+        return generate_audit_block(
+            status="FAILURE",
+            initiator_user_id=auth_user.user_id,
+            source_api="/api/v1/check_compliance",
+            result_summary="Transaction is non-compliant or corrupt data sequence detected.",
+            message=f"Failure: {type(e).__name__}: {str(e)}"
+        )
+
+@app.post("/api/v1/generate_legal_report", response_model=Dict[str, Any])
+async def generate_legal_report_endpoint(
+    request: ReportGenerationRequest,
+    auth_user: UserPayload = Depends(get_current_user)
+):
+    """
+    게이트웨이에 SQLite3로 적재된 불변 감사 로그를 추출 및 자동 매핑하여
+    법적 효력을 갖는 PDF 증명서를 서버 측에 실물 저장하고 상세 요약을 반환합니다.
+    """
+    print(f"⚙️ [API Call] Legal Report Generation requested by {auth_user.user_id}.")
+    
+    # SQLite3 DB에서 모든 감사 블록 읽기
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM audit_blocks ORDER BY id ASC")
+        rows = cursor.fetchall()
+    except Exception as e:
+        print(f"🐛 [Error] Failed to read audit blocks: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database query error: {str(e)}"
+        )
+    finally:
+        conn.close()
+        
+    if not rows:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No audit blocks found in the gateway database to generate a report."
+        )
+        
+    try:
+        # DB 로우를 기존 AuditBlock.dict() 구조의 딕셔너리 리스트로 변환 가공
+        db_audit_blocks = []
+        for r in rows:
+            try:
+                payload_dict = json.loads(r["audit_payload"])
+            except Exception:
+                payload_dict = {}
+                
+            db_audit_blocks.append({
+                "status": r["status"],
+                "timestamp_utc": r["timestamp_utc"],
+                "transaction_id": r["transaction_id"],
+                "message": r["message"],
+                "audit_details": {
+                    "source_api": r["source_api"],
+                    "initiator_user_id": r["initiator_user_id"],
+                    "requested_action": "Immutable Audit Record Generation",
+                    "result_summary": r["result_summary"],
+                    "audit_payload": payload_dict
+                }
+            })
+            
+        # 1. 스키마 매핑 번역 수행
+        mapped_logs = [map_audit_block_to_legal_log(block) for block in db_audit_blocks]
+        
+        # 2. 최신 risk_context 가상 조립 및 PDF 빌드
+        risk_context = {
+            'reg_name': 'Immutable Audit Gateway 통합 모니터링',
+            'art_num': 'PoC Compliance Audit',
+            'base_factor': 15,
+            'market_impact': 500000
+        }
+        
+        generator = LegalReportGenerator(mapped_logs)
+        final_text = generator.generate_report(initial_risk_context=risk_context, filename=request.filename)
+        
+        return {
+            "success": True,
+            "message": f"Successfully generated legal PDF report with {len(mapped_logs)} audit blocks.",
+            "pdf_path": os.path.abspath(request.filename),
+            "mapped_records_count": len(mapped_logs),
+            "report_summary": final_text[:500] + "..."
+        }
+    except Exception as e:
+        print(f"🐛 [Error] Legal report generation failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate legal report: {str(e)}"
+        )

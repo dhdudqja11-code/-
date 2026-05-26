@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Mini ROI 리스크 시뮬레이션 PoC</title>
+    <style>
+        /* 🔧 코다리 스타일: 권위적이고 냉철한(Clinical) 디자인 */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7fa; color: #333; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
+        h2 { color: #0056b3; border-bottom: 2px solid #eee; padding-bottom: 10px;}
+        label { display: block; margin-top: 15px; font-weight: bold; color: #555; }
+        input[type="text"], input[type="number"], textarea, select { width: 98%; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; transition: background-color 0.3s; }
+        button:hover { background-color: #0056b3; }
+        #resultArea { margin-top: 30px; padding: 20px; border-radius: 8px; display: none; }
+
+        /* 경고 레벨별 스타일 (Critical Alert / Shadow) */
+        .alert-critical { background-color: #fddede; border: 2px solid #dc3545; color: #dc3545; padding: 15px; margin-bottom: 10px; }
+        .alert-warning { background-color: #fffbe6; border: 2px solid #ffc107; color: #856404; padding: 15px; margin-bottom: 10px; }
+        .alert-ok { background-color: #d4edda; border: 2px solid #28a745; color: #155724; padding: 15px; margin-bottom: 10px; }
+
+        /* 구조화된 리포트 강조 */
+        .report-section { margin-top: 10px; border-left: 3px solid #ccc; padding-left: 15px;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🛡️ Mini ROI 리스크 시뮬레이션 PoC</h2>
+        <p><em>(실시간 데이터 입력 $\rightarrow$ 법규 위반 검사 $\rightarrow$ 위험 경고)</em></p>
+
+        <form id="riskForm">
+            <label for="transaction_id">트랜잭션 ID (필수):</label>
+            <input type="text" id="transaction_id" required value="TX-1234567890">
+
+            <label for="user_data_source">사용자 데이터 출처 (Source, 필수):</label>
+            <!-- 예시: GDPR, HIPAA 등을 입력하면 경고 발생 시뮬레이션 -->
+            <select id="user_data_source" required>
+                <option value="Website Click">웹사이트 클릭 (기본)</option>
+                <option value="API Call/GDPR Compliant">API 호출 / GDPR 준수</option>
+                <option value="Internal Database Access">내부 데이터베이스 접근</option>
+            </select>
+
+            <label for="risk_score">위험 평가 점수 (Risk Score, -100 ~ 100):</label>
+            <!-- 예시: 높은 위험 점수를 입력하면 Audit Trail 부족 경고 발생 시뮬레이션 -->
+            <input type="number" id="risk_score" step="0.1" required value="-5">
+
+             <label for="data_fields">추가 데이터 필드 (JSON 형태):</label>
+            <!-- JSON 입력을 위해 텍스트 영역 사용 -->
+            <textarea id="data_fields" rows="4" placeholder='{"Audit Trail": "Confirmed", "IP Address": "192.168..."}'>{"User ID": "user-abcde"}</textarea>
+
+            <button type="submit">🔍 리스크 시뮬레이션 실행</button>
+        </form>
+
+        <div id="resultArea">
+            <!-- 결과가 여기에 표시됩니다. -->
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('riskForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = {
+                transaction_id: document.getElementById('transaction_id').value,
+                user_data_source: document.getElementById('user_data_source').value,
+                risk_assessment_score: parseFloat(document.getElementById('risk_score').value),
+                // 텍스트 영역의 내용을 JSON으로 파싱하여 사용
+                data_fields: {}
+            };
+
+            try {
+                const fieldsJson = document.getElementById('data_fields').value;
+                formData.data_fields = JSON.parse(fieldsJson);
+            } catch (e) {
+                alert("데이터 필드는 유효한 JSON 형식이어야 합니다.");
+                return;
+            }
+
+            document.getElementById('resultArea').style.display = 'none';
+            const resultArea = document.getElementById('resultArea');
+            resultArea.innerHTML = '<p style="text-align: center;">⚙️ 시뮬레이션 중... 잠시만 기다려 주세요.</p>';
+            resultArea.style.display = 'block';
+
+            try {
+                // 백엔드 엔드포인트 호출 (FastAPI가 8000 포트에서 실행된다고 가정)
+                const response = await fetch("http://localhost:8000/simulate_risk", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                displayResult(result);
+
+            } catch (error) {
+                resultArea.innerHTML = `<div class="alert-critical">❌ 통신 오류 발생: ${error.message}. 백엔드 서버가 실행 중인지 확인해주세요.</div>`;
+            }
+        });
+
+
+        function displayResult(result) {
+            const resultArea = document.getElementById('resultArea');
+            let alertClass = '';
+            if (result.alert_level === 'CRITICAL') {
+                alertClass = 'alert-critical';
+            } else if (result.alert_level === 'WARNING') {
+                alertClass = 'alert-warning';
+            } else {
+                alertClass = 'alert-ok';
+            }
+
+            let htmlContent = `<div class="${alertClass}">`;
+            htmlContent += `<h4>✅ 시뮬레이션 결과: ${result.report.problem} (${result.alert_level})</h4>`;
+            htmlContent += `<p><strong>규정 준수 여부 (Compliance):</strong> ${result.is_compliant ? '✅ 충족됨' : '❌ 위반됨'} </p>`;
+
+            // 구조화된 보고서 출력
+            htmlContent += `<h5>📑 [Audit Block] 법적 무결성 검증 보고서</h5>`;
+            htmlContent += `<div class="report-section"><strong>1. 문제 정의 (What went wrong?):</strong> ${result.report.problem}</div>`;
+            htmlContent += `<div class="report-section"><strong>2. 원인 분석 (Why did it go wrong? Source/Time):</strong> ${result.report.cause}</div>`;
+            htmlContent += `<div class="report-section" style="border-left: 3px solid #007bff;"><strong>3. 해결책 제시 (How to fix it? Mitigation Suggestion):</strong> ${result.report.solution}</div>`;
+
+            htmlContent += `</div>`; // End of Alert Box
+            resultArea.innerHTML = htmlContent;
+            resultArea.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
