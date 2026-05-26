@@ -298,14 +298,223 @@ def _execute_remote_simulate(bot_token, chat_id, target_context, hypothetical_ac
     except Exception as e:
         send_message(bot_token, chat_id, f"❌ 원격 제어 서버 통신 예외: {e}", reply_markup=KEYBOARD)
 
-# 📱 9대 핵심 제어 이모지 단축 키보드 레이아웃 개편 (보안 관제탑 추가)
+def _execute_remote_resume(bot_token, chat_id):
+    """MFA 인증 완료 상태에서 API Gateway의 플래너 락다운 해제(/api/v1/planner/resume) API를 호출합니다."""
+    global API_TOKEN
+    url = f"{_resolve_api_url()}/api/v1/planner/resume"
+    headers = {"Authorization": f"Bearer {API_TOKEN}"}
+    try:
+        import requests
+        resp = requests.post(url, headers=headers, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            msg = f"✅ [자율 오토 플래너 락다운 해제 성공]\n\n● 메시지: {data.get('message')}"
+            send_message(bot_token, chat_id, msg, reply_markup=KEYBOARD)
+        else:
+            send_message(bot_token, chat_id, f"❌ 플래너 락다운 해제 실패 (API 응답코드: {resp.status_code})\n상세: {resp.text}", reply_markup=KEYBOARD)
+    except Exception as e:
+        send_message(bot_token, chat_id, f"❌ 원격 제어 서버 통신 예외: {e}", reply_markup=KEYBOARD)
+
+def edit_message_text(token, chat_id, message_id, text, reply_markup=None):
+    """텔레그램 대화방 내 기존 메시지의 본문 텍스트를 화면 전환 없이 실시간 교체합니다."""
+    import requests
+    try:
+        cleaned_text = clean_markdown_for_telegram(text)
+        url = f"https://api.telegram.org/bot{token}/editMessageText"
+        payload = {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "text": cleaned_text[:4000]
+        }
+        if reply_markup:
+            payload["reply_markup"] = reply_markup
+        requests.post(url, json=payload, timeout=15)
+    except Exception as e:
+        print(f"⚠️ 메시지 수정 실패: {e}")
+
+def answer_callback_query(token, callback_query_id, text=None):
+    """인라인 키보드 버튼 터치 시의 모바일 로딩 대기 바(모래시계)를 즉각 소거합니다."""
+    import requests
+    try:
+        url = f"https://api.telegram.org/bot{token}/answerCallbackQuery"
+        payload = {"callback_query_id": callback_query_id}
+        if text:
+            payload["text"] = text
+        requests.post(url, json=payload, timeout=10)
+    except Exception as e:
+        print(f"⚠️ 콜백 응답 실패: {e}")
+
+def _query_audit_logs(mode, offset=0, limit=5):
+    """SQLite3 gateway_audit.db 감사 데이터베이스에 안전하게 연결하여 감사 블록 레코드를 조회합니다."""
+    import sqlite3
+    gateway_dir = os.path.abspath(os.path.join(HERE, "..", "..", "..", "core_gateway"))
+    db_path = os.path.join(gateway_dir, "gateway_audit.db")
+    
+    if not os.path.exists(db_path):
+        return []
+        
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        if mode == "recent":
+            cursor.execute("SELECT * FROM audit_blocks ORDER BY id DESC LIMIT ?", (limit,))
+            rows = cursor.fetchall()
+        elif mode == "fail_today":
+            today_str = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
+            cursor.execute(
+                "SELECT * FROM audit_blocks WHERE status = 'FAILURE' AND timestamp_utc LIKE ? ORDER BY id DESC",
+                (f"{today_str}%",)
+            )
+            rows = cursor.fetchall()
+        elif mode == "success":
+            cursor.execute(
+                "SELECT * FROM audit_blocks WHERE status = 'SUCCESS' ORDER BY id DESC LIMIT ? OFFSET ?",
+                (limit, offset)
+            )
+            rows = cursor.fetchall()
+        elif mode == "failure":
+            cursor.execute(
+                "SELECT * FROM audit_blocks WHERE status = 'FAILURE' ORDER BY id DESC LIMIT ? OFFSET ?",
+                (limit, offset)
+            )
+            rows = cursor.fetchall()
+        else:
+            rows = []
+            
+        conn.close()
+        return [dict(r) for r in rows]
+    except Exception as e:
+        print(f"⚠️ [Telegram Bot DB Error] {e}")
+        return []
+
+def _format_audit_message(rows, mode, page=1):
+    """조회된 감사 레코드 정보들을 보기 편한 이모지 친화형 마크다운 구조로 가공합니다."""
+    if not rows:
+        return f"📂 [감사 로그 스캔 결과]\n\n조회된 감사 로그가 존재하지 않습니다. (모드: {mode}, 페이지: {page})"
+        
+    mode_titles = {
+        "recent": "🔄 최근 감사 로그 요약 (최대 5건)",
+        "fail_today": "🚨 오늘 규제 위반 실패 로그",
+        "success": f"🟢 준수(SUCCESS) 감사 로그 (페이지 {page})",
+        "failure": f"🔴 위반(FAILURE) 감사 로그 (페이지 {page})"
+    }
+    title = mode_titles.get(mode, "📊 감사 로그 조회")
+    
+    lines = [f"📊 **{title}**", "---"]
+    for idx, r in enumerate(rows, 1):
+        status_emoji = "🟢" if r["status"] == "SUCCESS" else "🔴"
+        ts = r["timestamp_utc"]
+        if "T" in ts:
+            ts = ts.split(".")[0].replace("T", " ")
+            if ts.endswith("Z"):
+                ts = ts[:-1]
+                
+        lines.append(f"{idx}. {status_emoji} [{ts}]")
+        lines.append(f"   ● API: {r['source_api']}")
+        lines.append(f"   ● ID: {r['transaction_id'][:8]}... (기동자: {r['initiator_user_id']})")
+        lines.append(f"   ● 요약: {r['result_summary']}")
+        if r["status"] == "FAILURE":
+            lines.append(f"   ● 에러: {r['message']}")
+        lines.append("")
+        
+    return "\n".join(lines)
+
+AUDIT_MENU_MARKUP = {
+    "inline_keyboard": [
+        [
+            {"text": "🔄 최근 5건", "callback_data": "audit_recent"},
+            {"text": "🚨 오늘 위반 로그", "callback_data": "audit_fail_today"}
+        ],
+        [
+            {"text": "🟢 성공 로그만", "callback_data": "audit_success_0"},
+            {"text": "🔴 실패 로그만", "callback_data": "audit_failure_0"}
+        ],
+        [
+            {"text": "❌ 닫기", "callback_data": "audit_close"}
+        ]
+    ]
+}
+
+AUDIT_BACK_MARKUP = {
+    "inline_keyboard": [
+        [
+            {"text": "◀️ 메인 메뉴로", "callback_data": "audit_menu"}
+        ]
+    ]
+}
+
+def _execute_remote_audit_menu(bot_token, chat_id):
+    """MFA 인증 완료 상태에서 감사 로그 대화형 인라인 키보드 메뉴를 송신합니다."""
+    text = """📊 [IAG 감사 로그 실시간 원격 관제]
+    
+사장님, SQLite3 영구 SSoT 감사 데이터베이스(gateway_audit.db)에 기록된 감사기록을 원터치로 안전하게 실시간 조회하실 수 있습니다.
+
+아래 원하시는 분석 및 조회 메뉴를 선택해 주십시오."""
+    send_message(bot_token, chat_id, text, reply_markup=AUDIT_MENU_MARKUP)
+
+def handle_callback_query(callback_data, callback_id, message_id, token, chat_id):
+    """인라인 키보드 버튼 클릭으로 전송된 콜백 쿼리를 분석하고 동적 실시간 피딩을 실행합니다."""
+    answer_callback_query(token, callback_id)
+    
+    if not API_TOKEN or not MFA_VERIFIED:
+        edit_message_text(token, chat_id, message_id, "🔒 세션이 비활성화되었거나 만료되었습니다. 다시 2FA OTP 인증을 진행해 주십시오.")
+        return
+        
+    if callback_data == "audit_menu":
+        text = """📊 [IAG 감사 로그 실시간 원격 관제]
+        
+사장님, SQLite3 영구 SSoT 감사 데이터베이스(gateway_audit.db)에 기록된 감사기록을 원터치로 안전하게 실시간 조회하실 수 있습니다.
+
+아래 원하시는 분석 및 조회 메뉴를 선택해 주십시오."""
+        edit_message_text(token, chat_id, message_id, text, reply_markup=AUDIT_MENU_MARKUP)
+        
+    elif callback_data == "audit_close":
+        edit_message_text(token, chat_id, message_id, "🔒 감사 로그 조회가 안전하게 종료되었습니다.", reply_markup={"inline_keyboard": []})
+        
+    elif callback_data == "audit_recent":
+        rows = _query_audit_logs("recent")
+        text = _format_audit_message(rows, "recent")
+        edit_message_text(token, chat_id, message_id, text, reply_markup=AUDIT_BACK_MARKUP)
+        
+    elif callback_data == "audit_fail_today":
+        rows = _query_audit_logs("fail_today")
+        text = _format_audit_message(rows, "fail_today")
+        edit_message_text(token, chat_id, message_id, text, reply_markup=AUDIT_BACK_MARKUP)
+        
+    elif callback_data.startswith("audit_success_") or callback_data.startswith("audit_failure_"):
+        parts = callback_data.split("_")
+        mode = parts[1]
+        offset = int(parts[2])
+        limit = 5
+        
+        rows = _query_audit_logs(mode, offset=offset, limit=limit)
+        page = (offset // limit) + 1
+        text = _format_audit_message(rows, mode, page=page)
+        
+        inline_buttons = []
+        if offset > 0:
+            inline_buttons.append({"text": "◀️ 이전", "callback_data": f"audit_{mode}_{offset-limit}"})
+        if len(rows) == limit:
+            inline_buttons.append({"text": "다음 ▶️", "callback_data": f"audit_{mode}_{offset+limit}"})
+            
+        keyboard = []
+        if inline_buttons:
+            keyboard.append(inline_buttons)
+        keyboard.append([{"text": "◀️ 메인 메뉴로", "callback_data": "audit_menu"}])
+        
+        reply_markup = {"inline_keyboard": keyboard}
+        edit_message_text(token, chat_id, message_id, text, reply_markup=reply_markup)
+
+# 📱 10대 핵심 제어 이모지 단축 키보드 레이아웃 개편 (감사 로그 및 보안 관제탑 추가)
 KEYBOARD = {
     "keyboard": [
         [{"text": "🎯 트렌드 분석"}, {"text": "🔭 경쟁사 분석"}],
         [{"text": "✍️ 블로그 칼럼"}, {"text": "📊 플래너 상태"}],
         [{"text": "🎨 비주얼 가이드"}, {"text": "📱 릴스 대본"}],
-        [{"text": "🛡️ 원격 보안 관제"}, {"text": "💬 사장님 피드백"}],
-        [{"text": "❓ 도움말 안내"}]
+        [{"text": "🛡️ 원격 보안 관제"}, {"text": "📊 감사 로그"}],
+        [{"text": "💬 사장님 피드백"}, {"text": "❓ 도움말 안내"}]
     ],
     "resize_keyboard": True,
     "one_time_keyboard": False
@@ -358,6 +567,21 @@ def handle_command(cmd, token, chat_id):
                     _execute_remote_mitigate(token, chat_id, *args)
                 elif cmd_type == "simulate":
                     _execute_remote_simulate(token, chat_id, *args)
+                elif cmd_type == "audit":
+                    _execute_remote_audit_menu(token, chat_id)
+                    
+            # 4. 만약 오토 플래너가 규제 위반 락다운(PAUSED) 상태라면 자동으로 원격 잠금 해제(Resume)
+            is_paused = False
+            if os.path.exists(PLANNER_STATE_PATH):
+                try:
+                    with open(PLANNER_STATE_PATH, "r", encoding="utf-8") as f:
+                        state_data = json.load(f)
+                    if state_data.get("status") == "PAUSED":
+                        is_paused = True
+                except Exception:
+                    pass
+            if is_paused:
+                _execute_remote_resume(token, chat_id)
         else:
             send_message(token, chat_id, "❌ [MFA 인증 실패] OTP 코드가 일치하지 않거나 만료되었습니다. 다시 시도하십시오.", reply_markup=KEYBOARD)
         return
@@ -391,6 +615,17 @@ def handle_command(cmd, token, chat_id):
             _execute_remote_mitigate(token, chat_id, mitigate_match.group(1), mitigate_match.group(2))
         elif simulate_match:
             _execute_remote_simulate(token, chat_id, simulate_match.group(1), simulate_match.group(2))
+        return
+
+    # 🔒 감사 로그 조회 (/audit) 보안 차단 및 개시
+    if cmd in ("/audit", "📊 감사 로그"):
+        if not API_TOKEN or not MFA_VERIFIED:
+            PENDING_SECURE_CMD = {"cmd_type": "audit", "args": []}
+            _api_login(token, chat_id)
+            send_message(token, chat_id, "🔒 [MFA 2차 인증 요구]\n감사 로그 조치는 최고 권한 세션 및 2FA 인증이 필수로 요구됩니다. 실시간 구글 OTP 6자리를 입력하십시오.\n\n👉 예: `/verify 123456` 또는 단순 `123456` 입력")
+            return
+            
+        _execute_remote_audit_menu(token, chat_id)
         return
 
     if cmd in ("/help", "❓ 도움말 안내"):
@@ -706,6 +941,26 @@ def main():
             updates = resp.json().get("result", [])
             for up in updates:
                 offset = up["update_id"] + 1
+                
+                # 🔒 인라인 키보드 콜백 쿼리 수신 및 보안 가드 작동
+                callback_query = up.get("callback_query")
+                if callback_query:
+                    callback_id = callback_query.get("id")
+                    callback_data = callback_query.get("data", "")
+                    sender_chat_id = callback_query.get("message", {}).get("chat", {}).get("id")
+                    message_id = callback_query.get("message", {}).get("message_id")
+                    from_user = callback_query.get("from", {})
+                    
+                    if sender_chat_id != target_chat_id:
+                        username = from_user.get("username", "N/A")
+                        first_name = from_user.get("first_name", "N/A")
+                        print(f"🚨 [보안 위반 차단] 비인가 콜백 시도 감지! chat_id: {sender_chat_id} | 이름: {first_name}(@{username}) | 입력: {callback_data}")
+                        continue
+                        
+                    print(f"💬 [CEO 콜백 수신]: {callback_data}")
+                    handle_callback_query(callback_data, callback_id, message_id, token, target_chat_id)
+                    continue
+
                 msg = up.get("message", {})
                 txt = (msg.get("text") or "").strip()
                 from_user = msg.get("from", {})

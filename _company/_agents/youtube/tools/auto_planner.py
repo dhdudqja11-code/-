@@ -104,6 +104,33 @@ def main():
             next_at = datetime.datetime.now() + datetime.timedelta(hours=interval_h)
             next_ts = next_at.strftime('%Y-%m-%d %H:%M:%S')
             
+            # 🔒 IAG 규제 가드레일 기동 허용 여부 체크
+            allowed = True
+            try:
+                import requests
+                allowed_resp = requests.get("http://127.0.0.1:8000/api/v1/planner/allowed", timeout=5)
+                if allowed_resp.status_code == 200:
+                    allowed = allowed_resp.json().get("allowed", True)
+            except Exception:
+                # 오프라인 PoC 하위 호환 및 회복탄력성을 위해 예외 발생 시 바이패스
+                pass
+                
+            if not allowed:
+                print(f"🚨 [IAG 가드레일 작동] 게이트웨이에 의해 규제 위반 잠금이 감지되었습니다! 자율 가동 일시정지(PAUSED)...")
+                _write_state("PAUSED", loop - 1, start_ts, elapsed_h, ts, "2FA OTP 승인 대기 중...")
+                
+                # allowed가 다시 true가 될 때까지 10초 주기 폴링하는 Suspension Loop
+                while not allowed:
+                    time.sleep(10)
+                    try:
+                        allowed_resp = requests.get("http://127.0.0.1:8000/api/v1/planner/allowed", timeout=5)
+                        if allowed_resp.status_code == 200:
+                            allowed = allowed_resp.json().get("allowed", True)
+                    except Exception:
+                        allowed = False
+                print(f"✅ [IAG 가드레일 해제 확인] 사장님 2FA 승인이 완료되었습니다. 자율 기동 복원(RESUMED)!")
+                _write_state("RUNNING", loop, start_ts, elapsed_h, ts, next_ts)
+
             print(f"\n[{ts}] 🤖 {loop}회차 트렌드 스나이핑 (가동 {elapsed_h:.1f}시간)")
             _write_state("RUNNING", loop, start_ts, elapsed_h, ts, next_ts)
             

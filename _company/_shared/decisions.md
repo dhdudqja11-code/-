@@ -144,12 +144,6 @@ _세션: 2026-05-26T03-07_
 - 신규 모듈 개발의 아키텍처 설계는 기능 구현 전에 '법적 증명 가능성'과 보안 로직을 최우선으로 검토해야 한다.
 _세션: 2026-05-26T03-37_
 
-### 📡 [RAG Feed] trend_sniper 자율 스캔 최신 트렌드 — 2026-05-26 12:53:21
-- **추천 틈새 키워드**: `로컬 AI 1인 기업 자동화` (우선순위 1순위 위계 주입)
-- **추천 썸네일 카피**: "와이파이 끄고 30초 만에 게임 만든 AI 회사 실체"
-- **콘텐츠 핵심 테마**: "인터넷 선 뽑고 100% 로컬로 구동하는 AI 다마고치 1인 기업 실체 폭로"
-- **RAG 지침**: 후속 naver_writer.py 및 reels_planner.py는 본 RAG 피드의 키워드와 테마를 최우선 지침(Constraint)으로 로딩하여 콘텐츠를 자율 집필하여야 합니다.
-
 ## [2026-05-26] [자율 사이클 — 2026-05-26] 1인 기업 24시간 운영 중. 회사 목표·각 에이전트의 개인 목표(_
 - 핵심 데이터는 체이닝 해싱(Chained Hashing) 기반의 불변 감사 로그를 필수적으로 사용한다.
 - 모든 핵심 모듈 간 데이터 흐름은 상세한 워크플로우 다이어그램으로 시각화하여 정의한다.
@@ -312,3 +306,139 @@ _세션: 2026-05-26T10-37_
 - 시장 접근 시 '규정 준수'가 아닌 재무적 손실 회피(Insurance)를 핵심 가치로 제시한다.
 - 모든 기획 단계에서 성공 로직보다 실패 및 예외 상황을 포착하는 불변 감사 로그를 최우선으로 강조한다.
 _세션: 2026-05-26T10-52_
+
+## [2026-05-26] [자율 사이클 — 2026-05-26] 1인 기업 24시간 운영 중. 회사 목표·각 에이전트의 개인 목표(_
+- Researcher가 제공한 규제 위반 데이터를 활용하여 POST /simulate_risk 엔드포인트에 실제 경고 로직을 구현한다.
+- 경고 보고서는 단순 실패 알림이 아닌, 구체적인 법적 벌금 범위를 제시하여 권위성을 확보해야 한다.
+- Critical Failure Path(예: HIPAA) 테스트 케이스와 참조 규정 목록을 확보해 검증 범위를 확장한다.
+_세션: 2026-05-26T11-07_
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:22:30
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Input data_source is empty or invalid.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:22:30
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Invalid transaction ID pattern or corrupt timestamp sequence.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:22:30
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Invalid transaction ID pattern or corrupt timestamp sequence.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:22:32
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Invalid transaction ID pattern or corrupt timestamp sequence.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+### 📡 [RAG Feed] trend_sniper 자율 스캔 최신 트렌드 — 2026-05-26 20:23:20
+- **추천 틈새 키워드**: `로컬 AI 1인 기업 자동화` (우선순위 1순위 위계 주입)
+- **추천 썸네일 카피**: "와이파이 끄고 30초 만에 게임 만든 AI 회사 실체"
+- **콘텐츠 핵심 테마**: "인터넷 선 뽑고 100% 로컬로 구동하는 AI 다마고치 1인 기업 실체 폭로"
+- **RAG 지침**: 후속 naver_writer.py 및 reels_planner.py는 본 RAG 피드의 키워드와 테마를 최우선 지침(Constraint)으로 로딩하여 콘텐츠를 자율 집필하여야 합니다.
+
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:35:10
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Input data_source is empty or invalid.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:35:10
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Invalid transaction ID pattern or corrupt timestamp sequence.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:35:10
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Invalid transaction ID pattern or corrupt timestamp sequence.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:35:14
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Invalid transaction ID pattern or corrupt timestamp sequence.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:37:00
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Input data_source is empty or invalid.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:37:00
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Invalid transaction ID pattern or corrupt timestamp sequence.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:37:00
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Invalid transaction ID pattern or corrupt timestamp sequence.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:37:03
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Invalid transaction ID pattern or corrupt timestamp sequence.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:37:11
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Input data_source is empty or invalid.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:37:11
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Invalid transaction ID pattern or corrupt timestamp sequence.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:37:12
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Invalid transaction ID pattern or corrupt timestamp sequence.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:37:15
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Invalid transaction ID pattern or corrupt timestamp sequence.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.

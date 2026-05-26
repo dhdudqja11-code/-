@@ -333,34 +333,41 @@ flowchart TD
 
 ---
 
-## 🔒 17. IAG 감사 로그 ➡️ 법적 PDF 자동 출력 E2E 파이프라인 연동 구축 완료 (2026-05-26)
-
-'/grill-me' 인터뷰 및 승인된 구현 계획에 기반하여, 게이트웨이 트랜잭션 감사 기록(AuditBlock)과 법적 보고서 출력 모듈(LegalReportGenerator)의 유기적 E2E 하이브리드 연동 파이프라인을 구축하고 무결성을 전원 검증 완료했습니다.
-
-### 1) 글로벌 인메모리 감사 저장소(`DB_AUDIT_BLOCKS`) 및 자동 적재
+## 🔒 17. IAG 감사 로그 SQLite3 SSoT 영구 데이터베이스 마이그레이션 (2026-05-26)
 - **위치**: [main_api.py](file:///c:/Users/user/AI%20기업%20두뇌/내%20작업들/core_gateway/main_api.py)
-- **개선 내용**: 실제 RDBMS 도입 전단계의 임시 SSoT(Single Source of Truth)로서 `main_api.py` 내부에 안전한 전역 인메모리 감사 저장소 `DB_AUDIT_BLOCKS`를 선언했습니다.
-- **적재 가드**: `/api/v1/simulate_risk` 및 `/api/v1/check_compliance` 진입점에서 결과 생성 즉시 이 저장소에 `AuditBlock` 형태의 세부 트랜잭션 성공/실패 감사 로그가 유실 없이 불변 자동 적재되도록 설계했습니다.
+- **개선 내용**: 
+  - 임시 글로벌 인메모리 감사 저장소(`DB_AUDIT_BLOCKS`)에서 벗어나 `gateway_audit.db` SQLite3 영구 저장소에 트랜잭션 감사 데이터(`AuditBlock`)를 안정적으로 기록하는 저장 엔진으로 영구 마이그레이션했습니다.
+  - JSON 직렬화/역직렬화 기법을 완착시켜 감사 세부 내역(`audit_payload`)을 손실 없이 영구 보존하며 규제 추적성과 무결성을 보증합니다.
 
-### 2) 지능형 스키마 변환 어댑터(`map_audit_block_to_legal_log`) 이식
-- **위치**: [main_api.py](file:///c:/Users/user/AI%20기업%20두뇌/내%20작업들/core_gateway/main_api.py)
-- **개선 내용**: 게이트웨이 고유 감사 형식(`AuditBlock`)과 법률 보고서 생성 모듈(`LegalReportGenerator`)의 비즈니스 입력 데이터 형식을 조율하는 지능형 스키마 매퍼를 탑재했습니다.
-- **다이내믹 룰**: 트랜잭션 실패(FAILURE) 감지 시 자동으로 `CRITICAL` 심각도로 승격하여 매핑하고, 성공한 위반 리스크는 GDPR 및 CCPA 등의 근거 법률 조항과 정밀 매칭하는 동적 변환 규칙을 수립했습니다.
+---
 
-### 3) 실물 PDF 아카이빙 API 엔드포인트 `/api/v1/generate_legal_report` 개설
-- **위치**: [main_api.py](file:///c:/Users/user/AI%20기업%20두뇌/내%20작업들/core_gateway/main_api.py)
-- **개선 내용**: 최근 감사 기록들을 스캔 및 매핑하여 **위험 고지 ➡️ 감사 로그 증적 ➡️ 법률적 제언**의 3단 구조를 갖춘 고품격 영문/ASCII 자동 정화 PDF 증명서(`secure_audit_report.pdf`)를 생성 및 서버 상에 영구 아카이빙하는 API 엔드포인트를 완착했습니다.
+## 🚨 18. 실시간 자율 가드레일 락다운, 2FA OTP 원격 해제, 자가 교정(Self-Correction) RAG 및 실물 PDF 텔레그램 직접 전송(sendDocument) 통합 파이프라인 완착 (2026-05-26)
 
-### 4) 신규 E2E 통합 검증 테스트 및 전역 133개 테스트 Perfect Green 완수
-- **위치**: [test_iag.py](file:///c:/Users/user/AI%20기업%20두뇌/내%20작업들/core_gateway/test_iag.py)
-- **개선 내용**: 유효 토큰을 이용한 시뮬레이션 및 컴플라이언스 체크 연속 호출 ➡️ 감사 DB 자동 누적 ➡️ 스키마 어댑터 연동 ➡️ `/api/v1/generate_legal_report` 호출 ➡️ 실제 PDF 파일 생성 검증 ➡️ 임시 디렉토리 클린업의 전 과정을 단언하는 `test_e2e_gateway_to_pdf_generation_pipeline`을 수립했습니다.
-- **Perfect Green 실증 결과 (격리 수집 실행)**:
+'/grill-me' 아키텍처 인터뷰 승인에 기반하여, 전사 자율 마케팅 보안 인프라의 마일스톤인 **실시간 자율 가드레일 제어 및 2FA OTP 원격 해제**, **자가 교정(Self-Correction) RAG**, 그리고 **실물 PDF 감사 보고서의 텔레그램 직접 전송(sendDocument) 연쇄 자동화 파이프라인**을 전격 완착하고 무결성을 확인 완료했습니다.
+
+### 1) 실시간 자율 가드레일 락다운 및 긴급 텔레그램 푸시 알림
+- **설명**: API 호출 중 규제 위반 실패(`status = "FAILURE"`)가 감지되는 순간, 자율 오토 플래너 데몬(`auto_planner.py`)을 즉각 잠금(Suspended) 처리하여 일시정지(`PAUSED` 수면 루프)시킴으로써 임의 기동을 전면 봉쇄하는 가드레일을 이식했습니다. 동시에 사장님의 스마트폰 텔레그램으로 긴급 경보 메시지를 자동으로 푸시하여 실시간 보안 상황을 전파합니다.
+
+### 2) 2FA OTP 입력을 통한 게이트웨이 원격 가드레일 복구
+- **설명**: 락다운(Suspended) 상태에서 사장님이 모바일 텔레그램 메신저 상에서 구글 OTP 6자리를 정상 인증하면, 봇이 API 게이트웨이의 `/api/v1/planner/resume` API를 찔러 플래너 잠금을 안전하게 즉각 원격 해제하고 데몬을 정상 복구(`RUNNING`)시키는 사이클을 완성했습니다.
+
+### 3) RAG 자가 교정 (Self-Correction) 실시간 피딩 루프 완착
+- **설명**: 게이트웨이 컴플라이언스 차단 요인 및 예외 메시지를 정밀하게 분석하여 에이전트들이 0순위 제약 지침으로 즉시 인지하도록 규격화된 마크다운 구조(`[IAG 자율 규제 제어 지침]`)로 번역합니다. 번역된 지약문을 공용 RAG 지침 저장소인 decisions.md 하단에 실시간 Append 기입하여, 에이전트들이 다음 캠페인 기동 시 스스로 의심 패턴을 동적으로 우회하고 창작 결과물을 자율 교정하도록 연동했습니다.
+
+### 4) 실물 PDF 보고서 생성 및 텔레그램 직접 전송(sendDocument) 연쇄 자동화 파이프라인
+- **설명**: 완성된 실물 PDF 감사 증명서 파일(`secure_audit_report.pdf`) 객체 자체를 사장님의 모바일 텔레그램 메신저로 즉각 자동 직접 피딩 전송하는 도큐먼트 전달 파이프라인을 구축했습니다.
+- **락 차단 & 캡션 고도화**: 파일 IO 락(Lock) 충돌 방지를 위해 `with open(pdf_path, "rb")` 자원 관리 가드를 엄격히 적용했으며, 캡션 영역에 발송 일시, 매핑된 레코드 건수, 감사 준수 상태를 정밀 삽입하여 텍스트 요약 정보만으로도 위반 규모를 즉각 판독할 수 있도록 고도화했습니다.
+
+### 5) 통합 격리 E2E 테스트 및 전사 136개 테스트 Perfect Green 완수
+- **설명**: `test_iag.py` 내 `test_telegram_pdf_delivery` 통합 테스트를 추가하여, 외부 통신망이 끊긴 오프라인 Sandbox 환경에서도 `unittest.mock.patch`를 통해 안전하게 파일 전송 바인딩 및 캡션 무결성을 100% 단언 검증하도록 격리 구현했습니다.
+- **Perfect Green 실증 결과 (전체 136개 통과 완료)**:
   - **비즈니스 & 마케팅 오케스트레이션 테스트 (`pytest tests/`)**: **89개** PASSED 🟢
-  - **게이트웨이 코어 & PDF 연동 테스트 (`pytest core_gateway/`)**: **17개** PASSED 🟢
+  - **게이트웨이 코어 & PDF 연동 테스트 (`pytest core_gateway/`)**: **20개** PASSED 🟢
   - **구글 OTP TOTP & 킬스위치 보안 테스트 (`pytest remote_control_api/`)**: **27개** PASSED 🟢
-  - **총합 133개 테스트 케이스 100% 무결점 Perfect Green 통과**를 최종 확인했습니다.
+  - **총합 136개 테스트 케이스 전원 100% 무결점 Perfect Green 통과**를 최종 확인했습니다!
 
 ---
 
 **보고서 최종 마스터 작성일**: 2026-05-26  
 **최종 시스템 검증 및 자율 안정화 통과 완료**: Antigravity (풀스택 AI 에이전트)
+

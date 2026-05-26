@@ -191,3 +191,80 @@ def test_telegram_bot_simulate_risk_sandbox_success():
         assert "격리 Sandbox 위험 시뮬레이션 결과" in sent_text
         assert "CRITICAL" in sent_text
         assert "$250,000.00" in sent_text
+
+def test_telegram_bot_audit_mfa_gating():
+    """[텔레그램 봇 - /audit MFA 차단] 인증이 미달된 상태에서 /audit 진입 시 로그인 후 OTP 검증을 요구하는지 단언합니다."""
+    mock_resp_login = mock.MagicMock()
+    mock_resp_login.status_code = 200
+    mock_resp_login.json.return_value = {"access_token": "valid_token_bot_test_123"}
+    
+    with mock.patch("requests.post", return_value=mock_resp_login) as mock_post, \
+         mock.patch("telegram_bot.send_message") as mock_send:
+         
+        telegram_bot.handle_command("/audit", "fake_token", "fake_chat_id")
+        
+        # 보류 명령어 적재 및 OTP 요구 단언
+        assert telegram_bot.PENDING_SECURE_CMD is not None
+        assert telegram_bot.PENDING_SECURE_CMD["cmd_type"] == "audit"
+        mock_post.assert_called_once()
+        mock_send.assert_called_once()
+        assert "MFA 2차 인증 요구" in mock_send.call_args[0][2]
+
+def test_telegram_bot_audit_inline_keyboard_rendering():
+    """[텔레그램 봇 - /audit 메뉴 노출] MFA 인증 완료 후 /audit 입력 시 인라인 키보드 메뉴가 정상 송신되는지 단언합니다."""
+    telegram_bot.API_TOKEN = "valid_token_bot_test_123"
+    telegram_bot.MFA_VERIFIED = True
+    
+    with mock.patch("telegram_bot.send_message") as mock_send:
+        telegram_bot.handle_command("/audit", "fake_token", "fake_chat_id")
+        
+        mock_send.assert_called_once()
+        args, kwargs = mock_send.call_args
+        assert "IAG 감사 로그 실시간 원격 관제" in args[2]
+        assert "reply_markup" in kwargs
+        assert "inline_keyboard" in kwargs["reply_markup"]
+        
+        # 인라인 키보드 구조에 audit_recent 등 콜백 데이터 유효성 단언
+        ik = kwargs["reply_markup"]["inline_keyboard"]
+        flat_callbacks = [btn["callback_data"] for row in ik for btn in row]
+        assert "audit_recent" in flat_callbacks
+        assert "audit_fail_today" in flat_callbacks
+        assert "audit_success_0" in flat_callbacks
+        assert "audit_close" in flat_callbacks
+
+def test_telegram_bot_callback_query_audit_routing():
+    """[텔레그램 봇 - CallbackQuery 스캔] 인라인 버튼 터치 콜백 유입 시 봇이 감사 로그를 조회하고 메시지를 실시간 교체하는지 단언합니다."""
+    telegram_bot.API_TOKEN = "valid_token_bot_test_123"
+    telegram_bot.MFA_VERIFIED = True
+    
+    mock_audit_records = [
+        {
+            "status": "SUCCESS",
+            "timestamp_utc": "2026-05-26T20:30:00Z",
+            "transaction_id": "TX_MOCK_111222",
+            "source_api": "/api/v1/simulate_risk",
+            "initiator_user_id": "test_user",
+            "result_summary": "Risk simulation completed successfully.",
+            "message": "None"
+        }
+    ]
+    
+    with mock.patch("telegram_bot._query_audit_logs", return_value=mock_audit_records) as mock_query, \
+         mock.patch("telegram_bot.answer_callback_query") as mock_answer, \
+         mock.patch("telegram_bot.edit_message_text") as mock_edit:
+         
+        # 콜백 핸들러 직접 가동
+        telegram_bot.handle_callback_query("audit_recent", "fake_query_id", 987, "fake_token", "fake_chat_id")
+        
+        # 콜백 모래시계 소거 단언
+        mock_answer.assert_called_once_with("fake_token", "fake_query_id")
+        # SQLite 조회 가동 단언
+        mock_query.assert_called_once_with("recent")
+        # 메시지 교체 단언
+        mock_edit.assert_called_once()
+        edit_args = mock_edit.call_args[0]
+        assert edit_args[1] == "fake_chat_id"
+        assert edit_args[2] == 987
+        assert "/api/v1/simulate_risk" in edit_args[3]
+        assert "TX_MOCK_" in edit_args[3]
+
