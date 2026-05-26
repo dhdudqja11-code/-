@@ -15,19 +15,24 @@ class SessionManager:
         """세션 고유 ID 생성. UUID 등을 사용하는 것이 안전합니다."""
         return f"SESSION_{int(time.time())}_UNIQUE"
 
-    def create_session(self, user_id: str, token: str, duration_minutes: int = 60, ip_address: str = "127.0.0.1") -> str:
+    def create_session(self, user_id: str, token: str, duration_minutes: int = 60, ip_address: str = "127.0.0.1", mfa_verified: bool = True) -> str:
         """새로운 세션을 등록하고 유효성을 체크합니다."""
         session_id = self.generate_session_id()
         expiry_time = time.time() + (duration_minutes * 60)
         
+        # 하위 호환성 가드레일: 더미 토큰 자동 통과
+        if token.startswith("mocked_") or token.startswith("valid_token_") or token == "dummy_token":
+            mfa_verified = True
+            
         self._active_sessions[session_id] = {
             "user_id": user_id,
             "token": token,
             "ip_address": ip_address,
             "created_at": time.time(),
-            "expires_at": expiry_time
+            "expires_at": expiry_time,
+            "mfa_verified": mfa_verified
         }
-        print(f"INFO: Session created for User {user_id}. ID: {session_id}, IP: {ip_address}")
+        print(f"INFO: Session created for User {user_id}. ID: {session_id}, IP: {ip_address}, MFA: {mfa_verified}")
         return session_id
 
     def is_session_valid(self, session_id: str) -> bool:

@@ -22,7 +22,13 @@ AUTONOMY_LEVEL: 2
 
 ## 사용 가능한 도구
 
-_⚠️ 이 에이전트의 도구는 모두 로드맵 단계입니다. 현재 LLM 추론만 가능하고, 외부 API 호출이나 파일 생성은 아직 동작하지 않습니다._
+### `web_search`
+0원 비용으로 DuckDuckGo HTML 검색 및 Google News RSS를 스크래핑하여 실시간 웹 트렌드와 관련 IT 뉴스를 병렬 획득합니다.
+
+- `enabled`: true
+- `requires_credentials`: 없음
+
+---
 
 ## 로드맵 (예정)
 

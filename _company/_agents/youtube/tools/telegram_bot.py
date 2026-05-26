@@ -164,13 +164,147 @@ def get_latest_reels_script():
     except Exception as e:
         return f"[최신 대본 로드 에러]: {e}"
 
-# 📱 9대 핵심 제어 이모지 단축 키보드 레이아웃 개편
+# 💡 [MFA API 게이트웨이 연동 상태값]
+REMOTE_API_URL = "http://127.0.0.1:8000"
+API_TOKEN = None
+MFA_VERIFIED = False
+PENDING_SECURE_CMD = None
+
+def _resolve_api_url():
+    """youtube_account.json에서 REMOTE_API_URL 값을 로드합니다. 기본값은 http://127.0.0.1:8000 입니다."""
+    url = "http://127.0.0.1:8000"
+    if os.path.exists(ACCOUNT):
+        try:
+            with open(ACCOUNT, "r", encoding="utf-8") as f:
+                acct = json.load(f)
+            url = acct.get("REMOTE_API_URL", url)
+        except Exception:
+            pass
+    return url
+
+def _api_login(bot_token, chat_id):
+    """API 게이트웨이에 admin 자격으로 로그인을 시도해 임시 토큰을 획득합니다."""
+    global API_TOKEN, MFA_VERIFIED
+    url = f"{_resolve_api_url()}/auth/login"
+    payload = {
+        "username": "admin",
+        "password": "admin_pass"
+    }
+    headers = {
+        "X-Forwarded-For": "127.0.0.1",
+        "X-MFA-Test": "true"  # 2FA 흐름을 강제로 기동하기 위해 테스트 헤더 전송
+    }
+    try:
+        import requests
+        resp = requests.post(url, json=payload, headers=headers, timeout=10)
+        if resp.status_code == 200:
+            API_TOKEN = resp.json().get("access_token")
+            MFA_VERIFIED = False
+            return True
+    except Exception as e:
+        print(f"⚠️ API Gateway login failed: {e}")
+    return False
+
+def _api_verify_otp(bot_token, chat_id, otp_code):
+    """사장님이 제공한 6자리 OTP 코드로 API 게이트웨이의 /auth/mfa/verify를 호출하여 최종 인증에 성공시킵니다."""
+    global API_TOKEN, MFA_VERIFIED
+    if not API_TOKEN:
+        return False
+    url = f"{_resolve_api_url()}/auth/mfa/verify"
+    payload = {"otp_code": otp_code}
+    headers = {
+        "Authorization": f"Bearer {API_TOKEN}",
+        "X-Forwarded-For": "127.0.0.1"
+    }
+    try:
+        import requests
+        resp = requests.post(url, json=payload, headers=headers, timeout=10)
+        if resp.status_code == 200 and resp.json().get("success"):
+            MFA_VERIFIED = True
+            return True
+    except Exception as e:
+        print(f"⚠️ API Gateway MFA verification failed: {e}")
+    return False
+
+def _execute_remote_kill(bot_token, chat_id, session_id):
+    """MFA 인증이 통과된 상태로 API Gateway의 세션 폭파(Kill Switch) API를 원격으로 기동합니다."""
+    global API_TOKEN
+    url = f"{_resolve_api_url()}/api/v1/security/kill"
+    payload = {"session_id": session_id}
+    headers = {"Authorization": f"Bearer {API_TOKEN}"}
+    try:
+        import requests
+        resp = requests.post(url, json=payload, headers=headers, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            msg = f"🛡️ [원격 킬 스위치 완료]\n\n✅ {data.get('message')}"
+            send_message(bot_token, chat_id, msg, reply_markup=KEYBOARD)
+        else:
+            send_message(bot_token, chat_id, f"❌ 세션 폭파 실패 (API 응답코드: {resp.status_code})\n상세: {resp.text}", reply_markup=KEYBOARD)
+    except Exception as e:
+        send_message(bot_token, chat_id, f"❌ 원격 제어 서버 통신 예외: {e}", reply_markup=KEYBOARD)
+
+def _execute_remote_mitigate(bot_token, chat_id, action_type, target_resource_id):
+    """MFA 인증이 통과된 상태로 API Gateway의 위험 완화(trigger_mitigation) API를 원격 기동합니다."""
+    global API_TOKEN
+    url = f"{_resolve_api_url()}/api/v1/actions/trigger_mitigation"
+    payload = {
+        "action_type": action_type,
+        "target_resource_id": target_resource_id,
+        "mitigation_details": {"triggered_by": "telegram_bot"}
+    }
+    headers = {
+        "Authorization": f"Bearer {API_TOKEN}",
+        "X-2FA-Authenticated": "true"  # 이중 승인 증명 헤더 탑재
+    }
+    try:
+        import requests
+        resp = requests.post(url, json=payload, headers=headers, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            msg = f"🛡️ [위험 완화 조치 트리거 완료]\n\n● 상태: {data.get('status')}\n● 트랜잭션 ID: {data.get('transaction_id')}\n● 메시지: {data.get('message')}"
+            send_message(bot_token, chat_id, msg, reply_markup=KEYBOARD)
+        else:
+            send_message(bot_token, chat_id, f"❌ 조치 실패 (API 응답코드: {resp.status_code})\n상세: {resp.text}", reply_markup=KEYBOARD)
+    except Exception as e:
+        send_message(bot_token, chat_id, f"❌ 원격 제어 서버 통신 예외: {e}", reply_markup=KEYBOARD)
+
+def _execute_remote_simulate(bot_token, chat_id, target_context, hypothetical_action):
+    """MFA 인증이 통과된 상태로 API Gateway의 격리 Sandbox 위험 시뮬레이션을 원격 가동하여 투명성 보고서를 회신받습니다."""
+    global API_TOKEN
+    import urllib.parse
+    encoded_ctx = urllib.parse.quote(target_context)
+    encoded_act = urllib.parse.quote(hypothetical_action)
+    url = f"{_resolve_api_url()}/api/v1/user/simulate_risk?target_context={encoded_ctx}&hypothetical_action={encoded_act}"
+    headers = {"Authorization": f"Bearer {API_TOKEN}"}
+    try:
+        import requests
+        resp = requests.get(url, headers=headers, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            msg = f"""⚖️ [격리 Sandbox 위험 시뮬레이션 결과]
+
+● 대상 규제/맥락: {data.get('context')}
+● 위험 등급: {data.get('risk_level')}
+● 추정 잠재 손실: ${data.get('potential_loss_usd'):,.2f}
+● 탐지된 위반 조항: {', '.join(data.get('violation_details', [])) or '없음'}
+● 추천 완화 대응조치: {', '.join(data.get('mitigation_steps', [])) or '정상 절차 준수'}
+
+🛡️ 투명성 보고서 공식:
+{data.get('transparency_report', {}).get('formula')}"""
+            send_message(bot_token, chat_id, msg, reply_markup=KEYBOARD)
+        else:
+            send_message(bot_token, chat_id, f"❌ 시뮬레이션 실패 (API 응답코드: {resp.status_code})\n상세: {resp.text}", reply_markup=KEYBOARD)
+    except Exception as e:
+        send_message(bot_token, chat_id, f"❌ 원격 제어 서버 통신 예외: {e}", reply_markup=KEYBOARD)
+
+# 📱 9대 핵심 제어 이모지 단축 키보드 레이아웃 개편 (보안 관제탑 추가)
 KEYBOARD = {
     "keyboard": [
         [{"text": "🎯 트렌드 분석"}, {"text": "🔭 경쟁사 분석"}],
         [{"text": "✍️ 블로그 칼럼"}, {"text": "📊 플래너 상태"}],
         [{"text": "🎨 비주얼 가이드"}, {"text": "📱 릴스 대본"}],
-        [{"text": "📢 캠페인 일괄 실행"}, {"text": "💬 사장님 피드백"}],
+        [{"text": "🛡️ 원격 보안 관제"}, {"text": "💬 사장님 피드백"}],
         [{"text": "❓ 도움말 안내"}]
     ],
     "resize_keyboard": True,
@@ -179,6 +313,7 @@ KEYBOARD = {
 
 def handle_command(cmd, token, chat_id):
     """명령어와 이모지 단축키 버튼을 맵핑하여 에이전트를 자율 기동시킵니다."""
+    global API_TOKEN, MFA_VERIFIED, PENDING_SECURE_CMD
     import requests
     
     NAVER_WRITER_PATH = os.path.join(HERE, "naver_writer.py")
@@ -191,6 +326,72 @@ def handle_command(cmd, token, chat_id):
     win_kwargs = {}
     if sys.platform == "win32":
         win_kwargs["creationflags"] = 0x00004000 # BELOW_NORMAL_PRIORITY_CLASS
+
+    # 🔒 [MFA OTP 직접 입력 또는 /verify 명령어 감지]
+    otp_match = re.match(r"^/verify\s+(\d{6})$", cmd)
+    if not otp_match and re.match(r"^\d{6}$", cmd):
+        otp_match = re.match(r"^(\d{6})$", cmd)
+        
+    if otp_match:
+        otp_code = otp_match.group(1)
+        send_message(token, chat_id, f"📡 [2FA OTP 검증 시도] OTP 코드 {otp_code}를 API Gateway에 인증하는 중...")
+        
+        # 1. 만약 토큰이 없다면 임시 로그인
+        if not API_TOKEN:
+            if not _api_login(token, chat_id):
+                send_message(token, chat_id, "❌ API Gateway 로그인 실패. 서버 구동 및 네트워크 상태를 확인하십시오.", reply_markup=KEYBOARD)
+                return
+                
+        # 2. OTP 검증 호출
+        if _api_verify_otp(token, chat_id, otp_code):
+            send_message(token, chat_id, "🔒 [MFA 인증 성공] 2차 보안 토큰이 정상 승격 활성화되었습니다!\n원격 보안 명령이 안전하게 기동됩니다.", reply_markup=KEYBOARD)
+            
+            # 3. 보류 중이던 원격 보안 명령이 있다면 연쇄 실행
+            if PENDING_SECURE_CMD:
+                cmd_type = PENDING_SECURE_CMD.get("cmd_type")
+                args = PENDING_SECURE_CMD.get("args", [])
+                PENDING_SECURE_CMD = None # 소모 완료
+                
+                if cmd_type == "kill":
+                    _execute_remote_kill(token, chat_id, *args)
+                elif cmd_type == "mitigate":
+                    _execute_remote_mitigate(token, chat_id, *args)
+                elif cmd_type == "simulate":
+                    _execute_remote_simulate(token, chat_id, *args)
+        else:
+            send_message(token, chat_id, "❌ [MFA 인증 실패] OTP 코드가 일치하지 않거나 만료되었습니다. 다시 시도하십시오.", reply_markup=KEYBOARD)
+        return
+
+    # 🔒 3대 원격 보안 제어 명령어 파싱 및 대조 가드
+    kill_match = re.match(r"^/kill\s+(.+)$", cmd)
+    mitigate_match = re.match(r"^/mitigate\s+(\S+)\s+(\S+)$", cmd)
+    simulate_match = re.match(r"^/simulate\s+(\S+)\s+(\S+)$", cmd)
+    
+    if kill_match or mitigate_match or simulate_match:
+        # 인증 여부 체크
+        if not API_TOKEN or not MFA_VERIFIED:
+            # 보류 명령어로 적재
+            if kill_match:
+                PENDING_SECURE_CMD = {"cmd_type": "kill", "args": [kill_match.group(1).strip()]}
+            elif mitigate_match:
+                PENDING_SECURE_CMD = {"cmd_type": "mitigate", "args": [mitigate_match.group(1), mitigate_match.group(2)]}
+            elif simulate_match:
+                PENDING_SECURE_CMD = {"cmd_type": "simulate", "args": [simulate_match.group(1), simulate_match.group(2)]}
+                
+            # 임시 로그인 시도
+            _api_login(token, chat_id)
+            
+            send_message(token, chat_id, "🔒 [MFA 2차 인증 요구]\n이 조치는 최고 권한 세션 및 2FA 인증이 필수로 요구됩니다. 실시간 구글 OTP 6자리를 입력하십시오.\n\n👉 예: `/verify 123456` 또는 단순 `123456` 입력")
+            return
+            
+        # 이미 인증 통과된 상태면 즉시 기동
+        if kill_match:
+            _execute_remote_kill(token, chat_id, kill_match.group(1).strip())
+        elif mitigate_match:
+            _execute_remote_mitigate(token, chat_id, mitigate_match.group(1), mitigate_match.group(2))
+        elif simulate_match:
+            _execute_remote_simulate(token, chat_id, simulate_match.group(1), simulate_match.group(2))
+        return
 
     if cmd in ("/help", "❓ 도움말 안내"):
         help_text = """🤖 [1인 기업 유튜브 에이전트 원격 제어 비서]
@@ -377,6 +578,28 @@ def handle_command(cmd, token, chat_id):
                 send_message(token, chat_id, f"❌ 피드백 피딩 처리 실패 (exit {proc.returncode}).\n에러 요약: {err_msg}", reply_markup=KEYBOARD)
         except Exception as e:
             send_message(token, chat_id, f"❌ 피드백 피딩 처리 도중 예외 발생: {e}", reply_markup=KEYBOARD)
+
+    elif cmd == "🛡️ 원격 보안 관제":
+        security_help = """🛡️ [MFA Guarded 원격 보안 제어 관제탑 조종법]
+
+사장님, 원격 제어 게이트웨이와 텔레그램 채널이 2FA OTP로 철저히 보호되고 있습니다.
+
+👉 아래 템플릿 명령어를 참고하여 전송해 주십시오:
+
+1️⃣ 킬 스위치 (세션 파괴 및 IP 즉시 영구 차단):
+   /kill [세션ID]
+   예: /kill sess_uuid_12345
+
+2️⃣ 위험 완화 조치 (이중 승인 트리거 및 감사 로그 영구 보존):
+   /mitigate [조치타입] [리소스ID]
+   예: /mitigate RESTART server_db_main
+
+3️⃣ Sandbox 위험 및 규제성 사전 시뮬레이션:
+   /simulate [규제/맥락] [행동]
+   예: /simulate gdpr_compliance backup_export_unmasked
+
+💡 모든 보안 명령은 전송 즉시 2차 OTP 인증 확인을 요구하며, 성공 시 백엔드와 연계 기동합니다."""
+        send_message(token, chat_id, security_help, reply_markup=KEYBOARD)
 
     elif cmd in ("/status", "📊 플래너 상태", "/metrics"):
         send_message(token, chat_id, "📊 [데이터 분석] 최근 마케팅 성과 반응 데이터 및 오토 플래너 상태를 정밀 분석하는 중입니다...")
