@@ -43,7 +43,7 @@ def test_trend_sniper_hybrid_rag_feed_success(temp_decisions_file):
     # 임시 decisions.md 내용 검증
     content = temp_decisions_file.read_text(encoding="utf-8")
     assert "### 📡 [RAG Feed] trend_sniper" in content
-    assert "추천 틈새 키워드: `테스트용 AI 2FA 봇`" in content
+    assert "추천 틈새 키워드**: `테스트용 AI 2FA 봇`" in content
     assert "해킹 100% 방어하는 텔레그램 봇 실체" in content
     assert "naver_writer.py 및 reels_planner.py는 본 RAG 피드의 키워드와 테마를 최우선 지침" in content
 
