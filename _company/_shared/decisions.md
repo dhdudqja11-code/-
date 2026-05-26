@@ -442,3 +442,41 @@ _세션: 2026-05-26T11-07_
 - **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
 - **차단 사유**: Failure: ValueError: Invalid transaction ID pattern or corrupt timestamp sequence.
 - **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:42:54
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Input data_source is empty or invalid.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:42:54
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Invalid transaction ID pattern or corrupt timestamp sequence.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:42:55
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Invalid transaction ID pattern or corrupt timestamp sequence.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+
+---
+
+## 🚨 [IAG 자율 규제 제어 지침] - 2026-05-26 20:42:58
+- **위반 유형**: System Exception / Validation Failure / Compliance Guardrail Lockdown
+- **차단 사유**: Failure: ValueError: Invalid transaction ID pattern or corrupt timestamp sequence.
+- **자가 교정 행동 제약**: 향후 데이터 트랜잭션 및 콘텐츠/마케팅 시나리오 생성 시, 본 규제 위반 원인에 기재된 유형을 최우선 인지하여 비인가 의심 코드나 부작용을 일으키는 행동 패턴 생성을 전면 금지하며, 오직 규제 가드레일을 무결하게 통과할 수 있는 정연한 표준화 구조만을 적용해 창작을 완수하십시오.
+
+## [2026-05-26] [자율 사이클 — 2026-05-26] 1인 기업 24시간 운영 중. 회사 목표·각 에이전트의 개인 목표(_
+- 모든 리스크 시뮬레이션 결과는 '불변 감사 로그(Audit Block)' 원칙을 적용한다.
+- 리스크 시뮬레이션 결과는 단순 데이터가 아닌 권위적인 '보고서 형태'로 제시한다.
+- 핵심 제품의 권위성 확보에 집중하여 전체 개발 및 출시 일정을 재편성한다.
+_세션: 2026-05-26T11-37_
