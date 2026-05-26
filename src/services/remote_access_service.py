@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class RemoteAccessService:
+class ComplianceGateway:
     """
     원격 접근 서비스의 메인 진입점. 모든 요청은 이 클래스의 메서드를 통해 처리되어야 합니다.
     새롭게 추가된 Validate 및 Log Gateway가 핵심입니다.
