@@ -2,6 +2,7 @@
 import pytest
 import os
 import sys
+import json
 import unittest.mock as mock
 
 # 봇 도구 폴더를 sys.path에 추가하여 직접 임포트합니다.
@@ -267,4 +268,157 @@ def test_telegram_bot_callback_query_audit_routing():
         assert edit_args[2] == 987
         assert "/api/v1/simulate_risk" in edit_args[3]
         assert "TX_MOCK_" in edit_args[3]
+
+def test_telegram_bot_approve_command_success(tmp_path):
+    """[텔레그램 봇 - 결재 승인] /approve [short_id] 명령어 수신 시 pending 결재 건을 history로 OK 이동시키는지 단언합니다."""
+    # 디렉터리 구성 (HERE = tmp_path/a/b/c)
+    dummy_here = os.path.join(tmp_path, "a", "b", "c")
+    os.makedirs(dummy_here, exist_ok=True)
+    
+    pending_dir = os.path.join(tmp_path, "approvals", "pending")
+    os.makedirs(pending_dir, exist_ok=True)
+    
+    # pending json 파일 생성
+    pending_json_path = os.path.join(pending_dir, "apr-20260526-test.json")
+    pending_data = {
+        "id": "apr-20260526-test",
+        "agentId": "developer",
+        "kind": "deploy",
+        "title": "테스트 배포 결재",
+        "description": "코드 결재 검증용",
+        "createdAt": "2026-05-26T12:00:00.000Z"
+    }
+    with open(pending_json_path, "w", encoding="utf-8") as f:
+        json.dump(pending_data, f, ensure_ascii=False, indent=4)
+        
+    pending_md_path = os.path.join(pending_dir, "apr-20260526-test.md")
+    with open(pending_md_path, "w", encoding="utf-8") as f:
+        f.write("# ⏳ 승인 대기")
+
+    # HERE 경로 모킹
+    original_here = telegram_bot.HERE
+    telegram_bot.HERE = dummy_here
+    
+    try:
+        with mock.patch("telegram_bot.send_message") as mock_send:
+            # /approve test 수행 (test는 apr-20260526-test의 suffix로써 매치됨)
+            telegram_bot.handle_command("/approve test", "fake_token", "fake_chat_id")
+            
+            # pending 파일 삭제 단언
+            assert not os.path.exists(pending_json_path)
+            assert not os.path.exists(pending_md_path)
+            
+            # history 파일 생성 단언
+            history_dir = os.path.join(tmp_path, "approvals", "history")
+            hist_files = os.listdir(history_dir)
+            
+            # _OK_apr-20260526-test.json 형태 파일 존재 확인
+            json_hist_file = [f for f in hist_files if "_OK_apr-20260526-test.json" in f]
+            md_hist_file = [f for f in hist_files if "_OK_apr-20260526-test.md" in f]
+            
+            assert len(json_hist_file) == 1
+            assert len(md_hist_file) == 1
+            
+            # 사장님께 승인 완료 피드백 전송 확인
+            mock_send.assert_called_once()
+            sent_text = mock_send.call_args[0][2]
+            assert "결재 처리 완료 - 승인" in sent_text
+            assert "테스트 배포 결재" in sent_text
+    finally:
+        telegram_bot.HERE = original_here
+
+def test_telegram_bot_reject_command_success(tmp_path):
+    """[텔레그램 봇 - 결재 반려] /reject [short_id] 명령어 수신 시 pending 결재 건을 history로 NO 이동시키는지 단언합니다."""
+    dummy_here = os.path.join(tmp_path, "a", "b", "c")
+    os.makedirs(dummy_here, exist_ok=True)
+    
+    pending_dir = os.path.join(tmp_path, "approvals", "pending")
+    os.makedirs(pending_dir, exist_ok=True)
+    
+    pending_json_path = os.path.join(pending_dir, "apr-20260526-test.json")
+    pending_data = {
+        "id": "apr-20260526-test",
+        "agentId": "developer",
+        "kind": "deploy",
+        "title": "테스트 배포 결재",
+        "description": "코드 결재 검증용",
+        "createdAt": "2026-05-26T12:00:00.000Z"
+    }
+    with open(pending_json_path, "w", encoding="utf-8") as f:
+        json.dump(pending_data, f, ensure_ascii=False, indent=4)
+        
+    pending_md_path = os.path.join(pending_dir, "apr-20260526-test.md")
+    with open(pending_md_path, "w", encoding="utf-8") as f:
+        f.write("# ⏳ 승인 대기")
+
+    original_here = telegram_bot.HERE
+    telegram_bot.HERE = dummy_here
+    
+    try:
+        with mock.patch("telegram_bot.send_message") as mock_send:
+            # /reject test 수행
+            telegram_bot.handle_command("/reject test", "fake_token", "fake_chat_id")
+            
+            assert not os.path.exists(pending_json_path)
+            assert not os.path.exists(pending_md_path)
+            
+            history_dir = os.path.join(tmp_path, "approvals", "history")
+            hist_files = os.listdir(history_dir)
+            
+            json_hist_file = [f for f in hist_files if "_NO_apr-20260526-test.json" in f]
+            md_hist_file = [f for f in hist_files if "_NO_apr-20260526-test.md" in f]
+            
+            assert len(json_hist_file) == 1
+            assert len(md_hist_file) == 1
+            
+            mock_send.assert_called_once()
+            sent_text = mock_send.call_args[0][2]
+            assert "결재 처리 완료 - 반려" in sent_text
+            assert "테스트 배포 결재" in sent_text
+    finally:
+        telegram_bot.HERE = original_here
+
+def test_telegram_bot_campaign_bgm_sending_success():
+    """[텔레그램 봇 - 캠페인 완료 BGM 자동 전송] /campaign 명령어 실행 성공 시 완료 리포트 전송 후 시그니처 BGM mp3 파일이 자동 업로드되는지 단언합니다."""
+    # mock subprocess.run for campaign orchestrator
+    mock_proc = mock.MagicMock()
+    mock_proc.returncode = 0
+    # orchestrator stdout containing JSON block with timestamp
+    mock_proc.stdout = """
+    ==================================================
+    {
+      "timestamp": "20260526_1800",
+      "elapsed_seconds": 15.5,
+      "steps": {
+        "trend_sniper": "Success",
+        "naver_writer": "Success",
+        "visual_director": "Success",
+        "reels_planner": "Success",
+        "naver_publish": {"status": "simulated", "url": ""},
+        "instagram_publish": {"status": "simulated", "url": ""}
+      }
+    }
+    """
+    
+    with mock.patch("subprocess.run", return_value=mock_proc), \
+         mock.patch("os.path.exists", return_value=True) as mock_exists, \
+         mock.patch("telegram_bot.send_message") as mock_send_msg, \
+         mock.patch("telegram_bot.send_audio") as mock_send_audio:
+         
+        telegram_bot.handle_command("/campaign", "fake_token", "fake_chat_id")
+        
+        # 1. 완료 리포트 발송 단언 (연쇄 기동 중 메시지 + 완료 요약 메시지 = 2번 호출됨)
+        assert mock_send_msg.call_count == 2
+        called_texts = [call[0][2] for call in mock_send_msg.call_args_list]
+        assert any("연쇄 기동 중" in txt for txt in called_texts)
+        assert any("AI 1인 기업 일괄 캠페인 병렬 완수" in txt for txt in called_texts)
+        assert any("campaign_20260526_1800" in txt for txt in called_texts)
+        
+        # 2. mp3 스캔 및 텔레그램 업로드 단언
+        mock_send_audio.assert_called_once()
+        audio_args = mock_send_audio.call_args[0]
+        # BGM 파일명 및 캡션 매치 단언
+        assert "05_signature_bgm.mp3" in audio_args[2]
+        assert "Campaign BGM" in audio_args[3]
+
 

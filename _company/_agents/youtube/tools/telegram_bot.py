@@ -100,14 +100,17 @@ def send_message(token, chat_id, text, reply_markup=None):
         if reply_markup:
             payload["reply_markup"] = reply_markup
             
-        requests.post(url, json=payload, timeout=15)
+        r = requests.post(url, json=payload, timeout=15)
+        if r.status_code != 200:
+            print(f"⚠️ 메시지 전송 실패 (HTTP {r.status_code}): {r.text}", file=sys.stderr)
     except Exception as e:
-        print(f"⚠️ 메시지 전송 실패: {e}")
+        print(f"⚠️ 메시지 전송 실패 (예외 발생): {e}", file=sys.stderr)
 
 def send_photo(token, chat_id, photo_path, caption=None):
     """실물 파일 자체를 Multi-part form 스트림 업로드 방식을 이용해 텔레그램으로 전송합니다."""
     import requests
     if not os.path.exists(photo_path):
+        print(f"⚠️ 이미지 전송 실패: 파일 없음 ({photo_path})", file=sys.stderr)
         return False
     try:
         url = f"https://api.telegram.org/bot{token}/sendPhoto"
@@ -116,16 +119,22 @@ def send_photo(token, chat_id, photo_path, caption=None):
             data = {"chat_id": chat_id}
             if caption:
                 data["caption"] = caption
-            requests.post(url, data=data, files=files, timeout=20)
+            r = requests.post(url, data=data, files=files, timeout=20)
+        if r.status_code != 200:
+            print(f"⚠️ 이미지 전송 실패 (HTTP {r.status_code}): {r.text}", file=sys.stderr)
+            send_message(token, chat_id, f"⚠️ 이미지 전송 실패 (에러 코드: {r.status_code})")
+            return False
         return True
     except Exception as e:
-        print(f"⚠️ 이미지 전송 실패: {e}")
+        print(f"⚠️ 이미지 전송 예외 발생: {e}", file=sys.stderr)
+        send_message(token, chat_id, f"⚠️ 이미지 전송 예외 발생: {str(e)[:100]}")
         return False
 
 def send_audio(token, chat_id, audio_path, caption=None):
     """실물 오디오 파일 자체를 Multi-part form 스트림 업로드 방식을 이용해 텔레그램으로 전송합니다."""
     import requests
     if not os.path.exists(audio_path):
+        print(f"⚠️ 오디오 전송 실패: 파일 없음 ({audio_path})", file=sys.stderr)
         return False
     try:
         url = f"https://api.telegram.org/bot{token}/sendAudio"
@@ -134,10 +143,15 @@ def send_audio(token, chat_id, audio_path, caption=None):
             data = {"chat_id": chat_id}
             if caption:
                 data["caption"] = caption
-            requests.post(url, data=data, files=files, timeout=30)
+            r = requests.post(url, data=data, files=files, timeout=30)
+        if r.status_code != 200:
+            print(f"⚠️ 오디오 전송 실패 (HTTP {r.status_code}): {r.text}", file=sys.stderr)
+            send_message(token, chat_id, f"⚠️ 오디오 전송 실패 (에러 코드: {r.status_code})")
+            return False
         return True
     except Exception as e:
-        print(f"⚠️ 오디오 전송 실패: {e}")
+        print(f"⚠️ 오디오 전송 예외 발생: {e}", file=sys.stderr)
+        send_message(token, chat_id, f"⚠️ 오디오 전송 예외 발생: {str(e)[:100]}")
         return False
 
 def get_new_report_section(file_path, last_size):
@@ -414,6 +428,129 @@ def answer_callback_query(token, callback_query_id, text=None):
     except Exception as e:
         print(f"⚠️ 콜백 응답 실패: {e}")
 
+def handle_approval_command(token, chat_id, cmd, short_id, is_approve):
+    """/approve 또는 /reject 명령을 받아 pending 결재를 history로 마이그레이션합니다."""
+    pending_dir = os.path.abspath(os.path.join(HERE, "..", "..", "..", "approvals", "pending"))
+    history_dir = os.path.abspath(os.path.join(HERE, "..", "..", "..", "approvals", "history"))
+    
+    if not os.path.exists(pending_dir):
+        send_message(token, chat_id, "⚠️ 대기 중인 결재 폴더(approvals/pending)가 존재하지 않습니다.", reply_markup=KEYBOARD)
+        return
+        
+    # pending 폴더 스캔
+    matched_file = None
+    target_action_id = None
+    try:
+        files = os.listdir(pending_dir)
+    except Exception as e:
+        send_message(token, chat_id, f"⚠️ pending 폴더 스캔 오류: {e}", reply_markup=KEYBOARD)
+        return
+        
+    # json 파일 중 short_id와 매칭되는 것 탐색
+    for f in files:
+        if not f.endswith(".json"):
+            continue
+        base_name = f[:-5] # .json 제외
+        # action_id가 short_id와 같거나 short_id로 끝나는지 확인
+        if base_name == short_id or base_name.endswith(short_id):
+            matched_file = f
+            target_action_id = base_name
+            break
+            
+    if not matched_file:
+        send_message(token, chat_id, f"⚠️ 식별 코드 '{short_id}'에 매칭되는 대기 중인 결재 건을 찾을 수 없습니다.", reply_markup=KEYBOARD)
+        return
+        
+    # pending json 읽기
+    json_path = os.path.join(pending_dir, matched_file)
+    md_path = os.path.join(pending_dir, f"{target_action_id}.md")
+    
+    try:
+        with open(json_path, "r", encoding="utf-8") as f_json:
+            pending_data = json.load(f_json)
+    except Exception as e:
+        send_message(token, chat_id, f"⚠️ 결재 JSON 파일 로드 실패: {e}", reply_markup=KEYBOARD)
+        return
+        
+    # history 폴더 생성
+    os.makedirs(history_dir, exist_ok=True)
+    
+    # 타임스탬프 구하고 경로 계산
+    import datetime
+    # 100% UTC 기반으로 통일
+    now_utc = datetime.datetime.now(datetime.UTC)
+    ts_str = now_utc.strftime("%Y-%m-%dT%H-%M")
+    decision_str = "OK" if is_approve else "NO"
+    
+    hist_json_name = f"{ts_str}_{decision_str}_{target_action_id}.json"
+    hist_md_name = f"{ts_str}_{decision_str}_{target_action_id}.md"
+    
+    hist_json_path = os.path.join(history_dir, hist_json_name)
+    hist_md_path = os.path.join(history_dir, hist_md_name)
+    
+    # 결재 MD 파일 내용 구성
+    title = pending_data.get("title", "알 수 없는 결재")
+    agent_id = pending_data.get("agentId", "unknown")
+    kind = pending_data.get("kind", "unknown")
+    created_at = pending_data.get("createdAt", "unknown")
+    description = pending_data.get("description", "상세 설명 없음")
+    
+    now_iso = now_utc.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+    decision_emoji = "✅ 승인" if is_approve else "❌ 반려"
+    result_code = "OK" if is_approve else "NO"
+    
+    md_content = f"""# ⏳ 승인 대기 — {title}
+
+- **에이전트:** {agent_id}
+- **종류:** `{kind}`
+- **요청 시각:** {created_at}
+- **id:** `{target_action_id}`
+
+### 상세 업무 설명
+{description}
+
+---
+
+## 결정: **{decision_emoji}**
+- 시각: {now_iso}
+- 사유: _(텔레그램 원격 결재)_
+- 실행 결과: {result_code}
+
+```
+(no executor for {kind} — approval recorded, manual follow-up)
+```
+"""
+    
+    try:
+        # history json 저장
+        with open(hist_json_path, "w", encoding="utf-8") as f_hist_json:
+            json.dump(pending_data, f_hist_json, ensure_ascii=False, indent=4)
+            
+        # history md 저장
+        with open(hist_md_path, "w", encoding="utf-8") as f_hist_md:
+            f_hist_md.write(md_content)
+            
+        # pending 파일 삭제
+        if os.path.exists(json_path):
+            os.remove(json_path)
+        if os.path.exists(md_path):
+            os.remove(md_path)
+            
+        action_name = "승인" if is_approve else "반려"
+        msg = f"""📱 [결재 처리 완료 - {action_name}]
+
+사장님, 모바일 원격 결재 처리가 성공적으로 기록되었습니다.
+
+● 결재 제목: {title}
+● 업무 식별 ID: {target_action_id}
+● 처리 결과: {decision_emoji} ({result_code})
+● 처리 시각: {now_iso}
+
+해당 결재 건은 approvals/history/ 영구 저장소로 안전하게 이전되었습니다."""
+        send_message(token, chat_id, msg, reply_markup=KEYBOARD)
+    except Exception as e:
+        send_message(token, chat_id, f"⚠️ 결재 마이그레이션 중 오류 발생: {e}", reply_markup=KEYBOARD)
+
 def _query_audit_logs(mode, offset=0, limit=5):
     """SQLite3 gateway_audit.db 감사 데이터베이스에 안전하게 연결하여 감사 블록 레코드를 조회합니다."""
     import sqlite3
@@ -658,6 +795,16 @@ def handle_command(cmd, token, chat_id):
             send_message(token, chat_id, "❌ [MFA 인증 실패] OTP 코드가 일치하지 않거나 만료되었습니다. 다시 시도하십시오.", reply_markup=KEYBOARD)
         return
 
+    # 📱 결재 승인 및 반려 명령어 파싱 및 처리
+    approve_match = re.match(r"^/approve\s+(.+)$", cmd)
+    reject_match = re.match(r"^/reject\s+(.+)$", cmd)
+    if approve_match:
+        handle_approval_command(token, chat_id, cmd, approve_match.group(1).strip(), is_approve=True)
+        return
+    elif reject_match:
+        handle_approval_command(token, chat_id, cmd, reject_match.group(1).strip(), is_approve=False)
+        return
+
     # 🔒 3대 원격 보안 제어 명령어 파싱 및 대조 가드
     kill_match = re.match(r"^/kill\s+(.+)$", cmd)
     mitigate_match = re.match(r"^/mitigate\s+(\S+)\s+(\S+)$", cmd)
@@ -867,6 +1014,14 @@ def handle_command(cmd, token, chat_id):
 
 🤖 감사 로그 및 실시간 트래픽 데이터는 로컬 SQLite DB에 완벽히 보존되었습니다. 세부 글/대본 전문을 보시려면 이모지 제어반을 이용하십시오!"""
                 send_message(token, chat_id, summary_msg, reply_markup=KEYBOARD)
+                
+                # 캠페인 전용 시그니처 BGM 실물 mp3 자동 전송
+                if campaign_id != "N/A":
+                    bgm_path = os.path.abspath(os.path.join(HERE, "..", "..", "..", "marketing_history", f"campaign_{campaign_id}", "05_signature_bgm.mp3"))
+                    if os.path.exists(bgm_path):
+                        send_audio(token, chat_id, bgm_path, "🎵 [Premium Campaign BGM] 이번 캠페인 기동으로 작곡된 전용 시그니처 BGM 테마곡입니다.")
+                    else:
+                        print(f"⚠️ 캠페인 BGM 파일을 찾을 수 없습니다: {bgm_path}", file=sys.stderr)
             else:
                 err_msg = proc.stderr.strip()[-300:] if proc.stderr else "상세 에러 내용 없음"
                 send_message(token, chat_id, f"❌ 캠페인 오케스트레이터 가동 실패 (exit {proc.returncode}).\n에러 요약: {err_msg}", reply_markup=KEYBOARD)

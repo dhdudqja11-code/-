@@ -108,3 +108,26 @@ def test_telegram_bot_send_audio(tmp_path):
         assert called_kwargs["data"]["chat_id"] == "mock_chat_id"
         assert called_kwargs["data"]["caption"] == "Premium procedural BGM"
         assert "audio" in called_kwargs["files"]
+
+def test_sound_generator_double_sending_prevention():
+    """Verify that music_generate does not send audio to Telegram when CAMP_ORCHESTRATOR_RUNNING is set to '1'."""
+    with mock.patch.dict(os.environ, {"CAMP_ORCHESTRATOR_RUNNING": "1"}), \
+         mock.patch("music_generate._api_send_audio_to_telegram") as mock_send:
+         
+        mock_setup = {"INSTALLED_MODEL": "Simulated BGM Engine"}
+        mock_gen_cfg = {"PROMPT": "test", "DURATION_SEC": 5, "OUTPUT_DIR": "dummy_out"}
+        
+        def mock_load(p):
+            if "setup" in p: return mock_setup
+            return mock_gen_cfg
+            
+        with mock.patch("music_generate._load", side_effect=mock_load), \
+             mock.patch("music_generate._generate_simulated", return_value=(True, "dummy_out/bgm_test.mp3")), \
+             mock.patch("os.path.getsize", return_value=100), \
+             mock.patch("builtins.open", mock.mock_open()):
+             
+            music_generate.main()
+            
+            # Assert that the individual _api_send_audio_to_telegram was NOT called
+            mock_send.assert_not_called()
+

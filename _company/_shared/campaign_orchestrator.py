@@ -59,6 +59,8 @@ def main():
     import time
     from concurrent.futures import ThreadPoolExecutor, as_completed
     
+    os.environ["CAMP_ORCHESTRATOR_RUNNING"] = "1"
+    
     start_time = time.time()
     timestamp = time.strftime('%Y%m%d_%H%M')
     campaign_dir_name = f"campaign_{timestamp}"

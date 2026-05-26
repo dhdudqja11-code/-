@@ -275,8 +275,11 @@ def main():
     print(f"  💬 프롬프트: {prompt}")
     print(f"  🎬 영상에 합치려면: 같은 폴더의 'music_to_video.py' 실행")
 
-    # 텔레그램으로 즉시 자동 발송 시도
-    _api_send_audio_to_telegram(final_path, prompt)
+    # 텔레그램으로 즉시 자동 발송 시도 (오케스트레이터 일괄 캠페인 실행 시에는 중복 전송 방지를 위해 생략)
+    if os.environ.get("CAMP_ORCHESTRATOR_RUNNING") != "1":
+        _api_send_audio_to_telegram(final_path, prompt)
+    else:
+        _log("🔇 [CAMP_ORCHESTRATOR_RUNNING Detected] 오케스트레이터 연쇄 캠페인 작동 중이므로 개별 직접 전송은 건너뜁니다.", "info")
 
     # 다음 도구가 자동으로 사용
     cfg["LAST_OUTPUT"] = final_path

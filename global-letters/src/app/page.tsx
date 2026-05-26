@@ -136,7 +136,14 @@ const translations = {
     pdfErrorDetail: "PDF 생성 중 오류가 발생했습니다.\n\n오류 내용: ",
     payPalError: "PDF 인쇄 라이브러리(Pro) 로드 실패: ",
     pdfLibError: "PDF 구성 파일(jsPDF)이 아직 로드되지 않았습니다.",
-    pdfFilename: "마음을_묻다_위로엽서.pdf"
+    pdfFilename: "마음을_묻다_위로엽서.pdf",
+    dearRecipient: "소중한 마음",
+    dearRecipientSuffix: "님",
+    envelopeSender: "보낸 이: 오영범 마스터",
+    envelopeIncoming: "💌 당신을 위한 위로의 편지가 도착했습니다.",
+    sealHelp: "왁스 실을 클릭하여 열기",
+    storyLabel: "당신의 이야기를 들려주세요 (자유 형식)",
+    storyPlaceholder: "마음에 담아둔 이야기를 편하게 적어주세요..."
   },
   en: {
     appTitle: "Ask Your Heart",
@@ -229,7 +236,14 @@ const translations = {
     pdfErrorDetail: "An error occurred while generating the PDF.\n\nError: ",
     payPalError: "Failed to load PDF print library (Pro): ",
     pdfLibError: "PDF library (jsPDF) is not loaded yet.",
-    pdfFilename: "ask-your-heart-letter.pdf"
+    pdfFilename: "ask-your-heart-letter.pdf",
+    dearRecipient: "Someone Special",
+    dearRecipientSuffix: "",
+    envelopeSender: "Sender: Master O.Y.B",
+    envelopeIncoming: "💌 A comforting letter has arrived for you.",
+    sealHelp: "Click seal to open",
+    storyLabel: "Please share your story (Free format)",
+    storyPlaceholder: "Feel free to write what's on your mind..."
   }
 };
 
@@ -721,13 +735,13 @@ export default function Home() {
 
                       <div>
                         <label className="block text-slate-700 font-serif mb-2 font-bold">
-                          {isKorean ? "당신의 이야기를 들려주세요 (자유 형식)" : "Please share your story (Free format)"}
+                          {t.storyLabel}
                         </label>
                         <textarea
                           rows={4}
                           value={userStory}
                           onChange={(e) => setUserStory(e.target.value)}
-                          placeholder={isKorean ? "마음에 담아둔 이야기를 편하게 적어주세요..." : "Feel free to write what's on your mind..."}
+                          placeholder={t.storyPlaceholder}
                           className="w-full rounded-xl border border-slate-200 bg-white p-4 font-serif outline-none focus:ring-2 focus:ring-amber-300"
                         />
                       </div>
@@ -1032,7 +1046,7 @@ export default function Home() {
                 {!envelopeOpen && (
                   <div className="w-full flex flex-col items-center justify-center py-12 md:py-20 animate-fade-in">
                     <p className="text-amber-400 font-serif text-lg mb-6 animate-pulse tracking-wide text-center">
-                      {isKorean ? "💌 당신을 위한 위로의 편지가 도착했습니다." : "💌 A comforting letter has arrived for you."}
+                      {t.envelopeIncoming}
                     </p>
                     
                     <div className="envelope-container w-full max-w-[480px] px-4">
@@ -1096,10 +1110,10 @@ export default function Home() {
                         >
                           <p className="text-[10px] tracking-widest uppercase opacity-50 mb-1" style={{ fontSize: "10px", letterSpacing: "0.1em", opacity: 0.5, marginBottom: "4px" }}>Ask Your Heart</p>
                           <h3 className="text-xl md:text-2xl font-bold tracking-tight font-serif text-slate-800" style={{ fontSize: "20px", fontWeight: "bold", color: "#1e293b" }}>
-                            {formData.q1_name || (isKorean ? "소중한 마음" : "Someone Special")} {isKorean ? "님" : ""}
+                            {formData.q1_name || t.dearRecipient}{t.dearRecipientSuffix}
                           </h3>
                           <p className="text-[9px] opacity-40 mt-3 tracking-wider" style={{ fontSize: "9px", opacity: 0.4, marginTop: "12px", letterSpacing: "0.05em" }}>
-                            {isKorean ? "보낸 이: 오영범 마스터" : "Sender: Master O.Y.B"}
+                            {t.envelopeSender}
                           </p>
                         </div>
 
@@ -1173,7 +1187,7 @@ export default function Home() {
                               marginTop: "4px"
                             }}
                           >
-                            {isKorean ? "왁스 실을 클릭하여 열기" : "Click seal to open"}
+                            {t.sealHelp}
                           </span>
                         </div>
                       </div>
@@ -1335,19 +1349,19 @@ export default function Home() {
                     ) : (
                       <div className="w-full flex flex-col items-center animate-fade-in mb-8 px-4 sm:px-0">
                         {/* 프리미엄 웹 뷰어 컨테이너 (Premium Handcrafted Letter Sheet) */}
-                        <div className="w-full max-w-2xl deckled-letter-paper rounded-[32px] p-10 md:p-16 mb-8 text-left overflow-hidden relative">
+                        <div className="w-full max-w-2xl deckled-letter-paper rounded-[32px] p-5 sm:p-10 md:p-16 mb-8 text-left overflow-hidden relative">
                           
                           {/* Vintage Postage Stamp (Top-Right Decor) */}
-                          <div className="absolute top-6 right-6 z-20 pointer-events-none no-print">
-                            <div className="vintage-stamp">
+                          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 pointer-events-none no-print">
+                            <div className="vintage-stamp shadow-sm">
                               <span className="text-[7px] font-sans font-bold text-[#b91c1c] tracking-widest uppercase">KOREA</span>
                               <div className="text-sm my-1 text-slate-600 font-serif">心</div>
                               <span className="text-[6px] font-sans text-slate-400">2026</span>
                             </div>
                           </div>
 
-                          <div className="text-center mb-14 border-b border-slate-200/60 pb-10">
-                            <h1 className="text-3xl md:text-5xl font-serif text-slate-900 mb-4 tracking-tight leading-tight">{letterData?.cover?.title || t.freeCardLabel}</h1>
+                          <div className="text-center mb-8 md:mb-14 border-b border-slate-200/60 pb-6 md:pb-10">
+                            <h1 className="text-2xl sm:text-3xl md:text-5xl font-serif text-slate-900 mb-4 tracking-tight leading-tight">{letterData?.cover?.title || t.freeCardLabel}</h1>
                             <p className="mx-auto max-w-xl text-base md:text-lg text-slate-500 font-serif leading-relaxed">{letterData?.cover?.heart_name}</p>
                           </div>
 
@@ -1357,7 +1371,7 @@ export default function Home() {
                                 <p key={`web-para-${idx}`} className="mb-8 first:mt-0 text-justify tracking-[0.01em]">{para}</p>
                               ))}
                               
-                              <div className="mt-16 bg-white/90 backdrop-blur-[1px] p-8 rounded-[32px] border border-amber-100/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_25px_60px_rgba(15,23,42,0.08)]">
+                              <div className="mt-16 bg-white/90 backdrop-blur-[1px] p-5 sm:p-8 rounded-2xl sm:rounded-[32px] border border-amber-100/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_25px_60px_rgba(15,23,42,0.08)]">
                                 <h3 className="text-2xl mb-6 font-serif text-slate-900 font-semibold border-b border-amber-100 pb-3 inline-block">오래 간직할 문장</h3>
                                 {letterData?.page_sentences?.map((sentence, idx) => (
                                   <p key={`web-s-${idx}`} className="mb-4 text-slate-600 text-[0.98rem] leading-8">"{sentence}"</p>
@@ -1379,10 +1393,10 @@ export default function Home() {
                           ) : (
                             <div className="font-serif text-slate-700 space-y-16">
                               {letterData.recovery_days.map((dayData, idx) => (
-                                <div key={`web-recovery-${idx}`} className="mb-16 last:mb-0 rounded-[32px] border border-slate-200/70 bg-white/90 p-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)]">
+                                <div key={`web-recovery-${idx}`} className="mb-16 last:mb-0 rounded-2xl sm:rounded-[32px] border border-slate-200/70 bg-white/90 p-5 sm:p-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)]">
                                   <h2 className="text-2xl md:text-3xl font-serif text-slate-900 mb-6 border-b border-slate-200/60 pb-3 inline-block">{dayData.day}일차 회복 편지</h2>
                                   <p className="leading-relaxed text-[1.01rem] md:text-lg whitespace-pre-wrap mb-10 text-slate-700">{dayData.letter}</p>
-                                  <div className="bg-slate-50/95 p-6 rounded-[28px] border border-slate-200 shadow-[0_10px_40px_rgba(15,23,42,0.06)]">
+                                  <div className="bg-slate-50/95 p-4 sm:p-6 rounded-2xl sm:rounded-[28px] border border-slate-200 shadow-[0_10px_40px_rgba(15,23,42,0.06)]">
                                     <h3 className="text-lg md:text-xl font-serif text-slate-900 mb-3 font-semibold">{t.premiumActionHeader}</h3>
                                     <p className="text-slate-600 text-[0.98rem] leading-7">{dayData.action}</p>
                                   </div>
