@@ -14,6 +14,57 @@ logger.setLevel(logging.INFO)
 
 class RemoteAccessService:
     """
+    원격 접근 서비스의 메인 진입점. 모든 요청은 이 클래스의 메서드를 통해 처리되어야 합니다.
+    새롭게 추가된 Validate 및 Log Gateway가 핵심입니다.
+    """
+
+    def __init__(self, audit_log_manager):
+        # 의존성 주입 (Dependency Injection)을 통해 감사 로깅 시스템 사용
+        self._audit_logger = audit_log_manager
+        # Core Logic은 분리하여 관리하는 것이 좋습니다.
+        self._core_executor = self._execute_remote_command
+
+    def _validate_request(self, user_id: str, command: str, params: dict):
+        """[VALIDATION LAYER] 요청 파라미터와 권한을 검사합니다."""
+        if not all([user_id, command]):
+            raise PermissionError("필수 사용자 ID 또는 명령이 누락되었습니다.")
+        # 복잡한 스키마 유효성 검증 로직 추가 (예: params에 반드시 'scope'가 있어야 함)
+        if "key" in params and not isinstance(params["key"], str):
+            raise TypeError("Key 파라미터는 문자열이어야 합니다.")
+
+    def process_request(self, user_id: str, command: str, params: dict = None) -> dict:
+        """[GATEWAY ENTRY POINT] 모든 요청의 진입점. 유효성 검사 및 로깅을 강제합니다."""
+        params = params or {}
+        transaction_result = {"status": "failure", "details": ""}
+
+        # 1. Compliance Gateway & Validation Layer 실행 (가장 먼저)
+        try:
+            self._validate_request(user_id, command, params)
+            # 만약 여기서 추가적인 권한 체크(예: Role-Based Access Control)가 필요하다면 구현합니다.
+        except (PermissionError, TypeError) as e:
+            error_details = str(e)
+            transaction_result["status"] = "failed"
+            transaction_result["details"] = f"Validation Failed: {error_details}"
+            # Validation 실패는 Audit Log에 기록되어야 합니다.
+            self._audit_logger.log_attempt(user_id, command, params, success=False, reason=error_details)
+            return transaction_result
+
+        # 2. 핵심 비즈니스 로직 실행 (Core Execution)
+        try:
+            # Core Executor를 호출하며, 이 시점에는 이미 검증이 완료되었음을 전제로 합니다.
+            core_result = self._core_executor(user_id, command, params)
+            transaction_result["status"] = "success"
+            transaction_result["data"] = core_result
+        except Exception as e:
+            error_details = str(e)
+            transaction_result["status"] = "failed"
+            transaction_result["details"] = f"Execution Error: {error_details}"
+
+        # 3. Immutable Audit Log 기록 (마지막 단계)
+        self._audit_logger.log_attempt(user_id, command, params, success=transaction_result["status"] == "success", result=transaction_result)
+
+        return transaction_result
+    """
     원격 접근 요청을 받고, 모든 핵심 비즈니스 트랜잭션이 거쳐야 하는 3단계 게이트웨이를 강제하는 서비스 레이어입니다.
     실제 원격 제어 로직은 이 구조에 주입될 예정이며, 현재는 골격(Skeleton)만 구현합니다.
     """
