@@ -1,16 +1,20 @@
 # -*- coding: utf-8 -*-
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 import uuid
 import os
 import sys
+import subprocess
+import time
 from typing import Dict, Any, List
 
 # 로컬 auth_service 임포트
 try:
-    from auth_service import get_current_user, UserPayload
+    from auth_service import get_current_user, UserPayload, security, decode_jwt, create_access_token
 except ImportError:
-    from .auth_service import get_current_user, UserPayload
+    from .auth_service import get_current_user, UserPayload, security, decode_jwt, create_access_token
 
 # src/services 절대 경로 추가하여 LegalReportGenerator 주입 (의존성 무결성 확보)
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -19,6 +23,41 @@ if WORKSPACE not in sys.path:
     sys.path.append(WORKSPACE)
 
 from src.services.legal_report_generator import LegalReportGenerator
+
+# ------------------- [0. Pure-Python TOTP Service] ------------------- #
+import hmac
+import hashlib
+import base64
+import struct
+
+class TOTPService:
+    @staticmethod
+    def _base32_decode(secret: str) -> bytes:
+        secret = secret.strip().replace(" ", "").upper()
+        missing_padding = len(secret) % 8
+        if missing_padding:
+            secret += "=" * (8 - missing_padding)
+        return base64.b32decode(secret)
+
+    @classmethod
+    def verify_totp_code(cls, secret: str, code: str, window: int = 1) -> bool:
+        if not code or len(code) != 6 or not code.isdigit():
+            return False
+        current_time = int(time.time())
+        for offset_step in range(-window, window + 1):
+            target_time = current_time + (offset_step * 30)
+            counter = int(target_time / 30)
+            msg = struct.pack(">Q", counter)
+            key = cls._base32_decode(secret)
+            digest = hmac.new(key, msg, hashlib.sha1).digest()
+            offset = digest[-1] & 0x0F
+            code_bytes = digest[offset:offset + 4]
+            code_int = struct.unpack(">I", code_bytes)[0] & 0x7FFFFFFF
+            otp = code_int % 1_000_000
+            if f"{otp:06d}" == code:
+                return True
+        return False
+
 
 # ------------------- [1. 데이터 모델 정의] ------------------- #
 class MiniROIRequest(BaseModel):
@@ -42,6 +81,15 @@ class AuditBlock(BaseModel):
     transaction_id: str
     audit_details: Dict[str, Any]
     message: str
+
+class DashboardLoginRequest(BaseModel):
+    """대시보드 로그인 요청 스키마."""
+    username: str
+    password: str
+
+class DashboardMFAVerifyRequest(BaseModel):
+    """대시보드 2FA OTP 인증 검증 요청 스키마."""
+    otp_code: str
 
 # ------------------- [2. SQLite3 영구 SSoT 감사 저장소 구축] ------------------- #
 import sqlite3
@@ -462,3 +510,247 @@ async def post_planner_resume(auth_user: UserPayload = Depends(get_current_user)
     PLANNER_SUSPENDED = False
     send_telegram_alert("✅ [IAG 가드레일 해제 완료]\n자율 플래너가 정상 가동 상태로 복귀했습니다!")
     return {"success": True, "message": "Planner successfully resumed."}
+
+# ------------------- [5. 대시보드 API 엔드포인트 및 StaticFiles 마운트] ------------------- #
+
+@app.post("/auth/login")
+async def dashboard_login(request: DashboardLoginRequest):
+    """대시보드 로그인 및 2차인증 챌린지용 임시 Bearer 토큰 생성."""
+    if request.username != "admin" or request.password != "admin_pass":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password."
+        )
+    # create access token that is initially inactive (active: False) until MFA verified
+    token_payload = {
+        "sub": "USER_admin",
+        "roles": ["ROLE_ADMIN"],
+        "active": False
+    }
+    access_token = create_access_token(token_payload)
+    return {"access_token": access_token, "token_type": "bearer", "expires_in": 1800}
+
+@app.post("/auth/mfa/verify")
+async def verify_mfa_otp_dashboard(req: DashboardMFAVerifyRequest, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """구글 OTP 번호를 제출받아 Bearer 토큰의 active 클레임을 True로 세션 승격시킵니다."""
+    token = credentials.credentials
+    payload = await decode_jwt(token)
+    
+    admin_secret = "JBSWY3DPEHPK3PXP"
+    is_valid = TOTPService.verify_totp_code(admin_secret, req.otp_code)
+    
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="MFA OTP verification failed. Invalid code."
+        )
+        
+    token_payload = {
+        "sub": payload.user_id,
+        "roles": payload.roles,
+        "active": True
+    }
+    new_token = create_access_token(token_payload)
+    return {
+        "success": True,
+        "access_token": new_token,
+        "message": "MFA 2차 OTP 인증에 성공하였습니다. 세션이 안전하게 활성화되었습니다."
+    }
+
+@app.get("/api/v1/dashboard/stats")
+async def get_dashboard_stats():
+    """대시보드 현황판에 필요한 실시간 메트릭 및 자율 에이전트 지표들을 SQLite와 파일에서 실시간 집계합니다."""
+    success_blocks = 0
+    failure_blocks = 0
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT status, COUNT(*) as cnt FROM audit_blocks GROUP BY status")
+        rows = cursor.fetchall()
+        for r in rows:
+            if r["status"] == "SUCCESS":
+                success_blocks = r["cnt"]
+            elif r["status"] == "FAILURE":
+                failure_blocks = r["cnt"]
+        conn.close()
+    except Exception as e:
+        print(f"Error reading audit stats: {e}")
+
+    total_campaigns = 0
+    naver_views = 0
+    insta_views = 0
+    cumulative_likes = 0
+    cumulative_comments = 0
+    
+    marketing_db_path = os.path.join(WORKSPACE, "_company", "_shared", "marketing.db")
+    if os.path.exists(marketing_db_path):
+        try:
+            m_conn = sqlite3.connect(marketing_db_path)
+            m_conn.row_factory = sqlite3.Row
+            m_cursor = m_conn.cursor()
+            
+            m_cursor.execute("SELECT COUNT(*) as cnt FROM campaigns")
+            total_campaigns = m_cursor.fetchone()["cnt"]
+            
+            m_cursor.execute("SELECT SUM(views) as total_v, SUM(likes) as total_l, SUM(comments) as total_c FROM posts_metrics WHERE platform='naver'")
+            row = m_cursor.fetchone()
+            if row and row["total_v"] is not None:
+                naver_views = row["total_v"]
+                cumulative_likes += row["total_l"] or 0
+                cumulative_comments += row["total_c"] or 0
+                
+            m_cursor.execute("SELECT SUM(views) as total_v, SUM(likes) as total_l, SUM(comments) as total_c FROM posts_metrics WHERE platform='instagram'")
+            row = m_cursor.fetchone()
+            if row and row["total_v"] is not None:
+                insta_views = row["total_v"]
+                cumulative_likes += row["total_l"] or 0
+                cumulative_comments += row["total_c"] or 0
+                
+            m_conn.close()
+        except Exception as e:
+            print(f"Error reading marketing stats: {e}")
+
+    planner_state = {"status": "IDLE", "loop_count": 0, "next_run_time": "N/A"}
+    planner_state_path = os.path.join(WORKSPACE, "_company", "_agents", "youtube", "tools", "planner_state.json")
+    if os.path.exists(planner_state_path):
+        try:
+            with open(planner_state_path, "r", encoding="utf-8") as f:
+                planner_state = json.load(f)
+        except Exception:
+            pass
+
+    return {
+        "success_blocks": success_blocks,
+        "failure_blocks": failure_blocks,
+        "total_campaigns": total_campaigns,
+        "cumulative_views": naver_views + insta_views,
+        "naver_views": naver_views,
+        "instagram_views": insta_views,
+        "cumulative_likes": cumulative_likes,
+        "cumulative_comments": cumulative_comments,
+        "planner_state": planner_state,
+        "planner_suspended": PLANNER_SUSPENDED
+    }
+
+@app.get("/api/v1/dashboard/audit_logs")
+async def get_dashboard_audit_logs():
+    """대시보드 실시간 로그 갱신 및 해시 연쇄 시각화 전용 감사 데이터 반환."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM audit_blocks ORDER BY id ASC LIMIT 20")
+        rows = cursor.fetchall()
+        logs = []
+        for r in rows:
+            try:
+                payload_dict = json.loads(r["audit_payload"])
+            except Exception:
+                payload_dict = {}
+            logs.append({
+                "status": r["status"],
+                "timestamp_utc": r["timestamp_utc"],
+                "transaction_id": r["transaction_id"],
+                "message": r["message"],
+                "audit_details": {
+                    "source_api": r["source_api"],
+                    "initiator_user_id": r["initiator_user_id"],
+                    "result_summary": r["result_summary"],
+                    "audit_payload": payload_dict
+                }
+            })
+        return logs
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+@app.get("/api/v1/dashboard/campaigns")
+async def get_dashboard_campaigns():
+    """캠페인 포트폴리오 로드."""
+    marketing_db_path = os.path.join(WORKSPACE, "_company", "_shared", "marketing.db")
+    if not os.path.exists(marketing_db_path):
+        return []
+    try:
+        m_conn = sqlite3.connect(marketing_db_path)
+        m_conn.row_factory = sqlite3.Row
+        m_cursor = m_conn.cursor()
+        m_cursor.execute("SELECT * FROM campaigns ORDER BY id DESC LIMIT 10")
+        rows = [dict(r) for r in m_cursor.fetchall()]
+        m_conn.close()
+        return rows
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/dashboard/trigger_campaign")
+async def trigger_campaign_endpoint(auth_user: UserPayload = Depends(get_current_user)):
+    """(2FA Guarded) 사장님 대시보드 원클릭 캠페인 수동 일괄 실행 트리거."""
+    if not auth_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="MFA verification required."
+        )
+
+    orchestrator_path = os.path.join(WORKSPACE, "_company", "_shared", "campaign_orchestrator.py")
+    if not os.path.exists(orchestrator_path):
+        raise HTTPException(status_code=404, detail="Orchestrator script not found.")
+
+    win_kwargs = {}
+    if sys.platform == "win32":
+        win_kwargs["creationflags"] = 0x00004000
+
+    try:
+        print("⚡ [Dashboard API] Launching campaign_orchestrator.py subprocess...")
+        start_time = time.time()
+        
+        proc = subprocess.run(
+            [sys.executable, orchestrator_path],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=180,
+            **win_kwargs
+        )
+        
+        elapsed = time.time() - start_time
+        
+        if proc.returncode != 0:
+            print(f"❌ Subprocess failed: {proc.stderr}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Campaign Orchestration failed: {proc.stderr[-300:]}"
+            )
+            
+        lines = proc.stdout.splitlines()
+        json_lines = []
+        start_json = False
+        for line in lines:
+            if line.strip() == "{":
+                start_json = True
+            if start_json:
+                json_lines.append(line)
+            if line.strip() == "}":
+                break
+                
+        campaign_info = {}
+        if json_lines:
+            try:
+                campaign_info = json.loads("\n".join(json_lines))
+            except Exception:
+                pass
+                
+        return {
+            "success": True,
+            "timestamp": campaign_info.get("timestamp", time.strftime('%Y%m%d_%H%M')),
+            "elapsed_seconds": round(elapsed, 2),
+            "output_summary": proc.stdout[:1000]
+        }
+        
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=504, detail="Campaign Orchestration subprocess timed out.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# 정적 파일 마운트 (index.html이 /dashboard 접속 시 즉시 로딩되도록 html=True 세팅)
+static_dir = os.path.join(HERE, "static")
+if os.path.exists(static_dir):
+    app.mount("/dashboard", StaticFiles(directory=static_dir, html=True), name="static")

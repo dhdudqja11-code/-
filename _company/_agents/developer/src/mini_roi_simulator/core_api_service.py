@@ -74,7 +74,7 @@ def simulate_risk(input_data: Dict[str, Any]) -> Dict[str, Any]:
 
     # 1. 입력 유효성 검증 (Edge Case Handling)
     if not input_data or 'data_points' not in input_data:
-        raise ValueError("Input data must contain 'data_points'. Cannot run simulation.")
+        raise ValueError("Input data points cannot be found. Cannot run simulation.")
 
     data_points = input_data['data_points']
     
@@ -118,7 +118,7 @@ def simulate_risk_api(input_data: Dict[str, Any]) -> Dict[str, Any]:
         simulation_result, success = simulate_risk(input_data=input_data)
 
         if not success:
-            return {"success": False, "message": "Simulation failed due to critical system error. Check logs for details."}
+            return {"success": False, "message": f"Internal Server Error: {simulation_result.get('details', {}).get('message', 'Unknown failure')}"}
 
         return {
             "success": True,

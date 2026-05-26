@@ -17,6 +17,7 @@ if sys.platform == "win32":
         pass
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+WORKSPACE = os.path.abspath(os.path.join(HERE, "..", "..", "..", ".."))
 YOUTUBE_TOOLS_DIR = os.path.abspath(os.path.join(HERE, "..", "..", "youtube", "tools"))
 ACCOUNT = os.path.join(YOUTUBE_TOOLS_DIR, "youtube_account.json")
 NAVER_POSTS_DIR = os.path.join(YOUTUBE_TOOLS_DIR, "naver_posts")
@@ -205,6 +206,279 @@ def main():
     print(guide_content)
     print("="*60)
     print(f"\n✅ 비주얼 가이드 디자인 지시서 생성 완료: {file_path}")
+
+    # 4. 실물 썸네일 & 카드뉴스 이미지 생성 엔진 연동
+    main_title_match = re.search(r"메인 카피\s*[:：=]\s*\"(.*?)\"", guide_content)
+    if not main_title_match:
+        main_title_match = re.search(r"헤드라인 카피\s*[:：=]\s*\"(.*?)\"", guide_content)
+    if not main_title_match:
+        main_title_match = re.search(r"메인 카피\s*[:：=]\s*(.*?)$", guide_content, re.MULTILINE)
+        
+    sub_title_match = re.search(r"서브 카피\s*[:：=]\s*(.*?)$", guide_content, re.MULTILINE)
+    
+    main_title_str = main_title_match.group(1).strip() if main_title_match else '와이파이 차단된 "로컬 AI" 1인 기업 탄생의 실체'
+    sub_title_str = sub_title_match.group(1).strip() if sub_title_match else 'Pydantic v2와 121개 그린 테스트가 증명하는 무결성'
+    
+    # Remove quotes from extracted titles to avoid double-escaping
+    main_title_str = main_title_str.replace('"', '').replace('“', '').replace('”', '')
+    # Put quotes around local AI for highlight aesthetics
+    main_title_str = main_title_str.replace('로컬 AI', '"로컬 AI"').replace('1인 기업', '"1인 기업"')
+    
+    generate_images(timestamp, main_title_str, sub_title_str)
+
+# ------------------- [5. Pillow Procedural Graphics Engine Helpers] ------------------- #
+
+def draw_gradient_background(width, height):
+    """지정된 크기에 맞춰 HSL 감성 다크 그라데이션 베이스를 생성합니다."""
+    from PIL import Image, ImageDraw
+    base = Image.new("RGBA", (width, height), (13, 14, 18, 255))
+    draw = ImageDraw.Draw(base)
+    for y in range(height):
+        factor = y / float(height)
+        r = int(13 * (1 - factor) + 4 * factor)
+        g = int(14 * (1 - factor) + 6 * factor)
+        b = int(18 * (1 - factor) + 12 * factor)
+        draw.line([(0, y), (width, y)], fill=(r, g, b, 255))
+    return base
+
+def draw_ambient_glow(image, cx, cy, radius, color):
+    """소프트한 네온 블러 원광(Ambient Glow)을 오버레이로 그려줍니다."""
+    from PIL import Image, ImageDraw, ImageFilter
+    width, height = image.size
+    overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    for r in range(radius, 0, -4):
+        alpha = int(40 * (1 - r / float(radius)) ** 2)
+        if alpha > 0:
+            draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(color[0], color[1], color[2], alpha))
+    overlay = overlay.filter(ImageFilter.GaussianBlur(radius / 6))
+    return Image.alpha_composite(image, overlay)
+
+def draw_tech_mesh(image, step=40):
+    """보안성 및 테크 인프라 느낌을 자아내는 옅은 격자 그리드 그물망을 얹어줍니다."""
+    from PIL import Image, ImageDraw
+    width, height = image.size
+    overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    grid_color = (255, 255, 255, 6)
+    for x in range(0, width, step):
+        draw.line([(x, 0), (x, height)], fill=grid_color)
+    for y in range(0, height, step):
+        draw.line([(0, y), (width, y)], fill=grid_color)
+    return Image.alpha_composite(image, overlay)
+
+def get_premium_font(font_size, is_bold=False):
+    """Windows 시스템 내 존재하는 맑은 고딕(Malgun Gothic) 서체를 우선적으로 매칭하며, 없으면 기본 폰트로 폴백합니다."""
+    from PIL import ImageFont
+    font_paths = [
+        "C:\\Windows\\Fonts\\malgunbd.ttf" if is_bold else "C:\\Windows\\Fonts\\malgun.ttf",
+        "C:\\Windows\\Fonts\\arialbd.ttf" if is_bold else "C:\\Windows\\Fonts\\arial.ttf",
+        "C:\\Windows\\Fonts\\Pretendard-Bold.ttf" if is_bold else "C:\\Windows\\Fonts\\Pretendard-Regular.ttf",
+    ]
+    for path in font_paths:
+        if os.path.exists(path):
+            try:
+                return ImageFont.truetype(path, font_size)
+            except Exception:
+                pass
+    try:
+        return ImageFont.load_default()
+    except Exception:
+        return None
+
+def wrap_text(text, font, max_width):
+    """텍스트가 주어진 픽셀 가로폭을 넘지 않도록 단어/음절 단위로 행바꿈 처리합니다."""
+    lines = []
+    words = text.split()
+    if not words:
+        return [text]
+        
+    current_line = []
+    for word in words:
+        test_line = " ".join(current_line + [word])
+        try:
+            w = font.getlength(test_line)
+        except Exception:
+            w = len(test_line) * (font.size * 0.55 if hasattr(font, 'size') else 8)
+            
+        if w <= max_width:
+            current_line.append(word)
+        else:
+            if current_line:
+                lines.append(" ".join(current_line))
+            current_line = [word]
+    if current_line:
+        lines.append(" ".join(current_line))
+    return lines
+
+def draw_highlighted_text(draw, text_lines, start_x, start_y, font, default_color, spacing=15):
+    """텍스트 줄별로 그림을 그립니다. 따옴표로 둘러싸인 단어는 Neon Cyan으로, 리스크/가치 수치는 Safety Orange로 그립니다."""
+    y = start_y
+    for line in text_lines:
+        words = line.split(" ")
+        x = start_x
+        for word in words:
+            color = default_color
+            clean_word = word
+            # 따옴표 강조 파싱
+            if (word.startswith('"') and word.endswith('"')) or (word.startswith('“') and word.endswith('”')):
+                color = (0, 242, 254, 255) # Neon Cyan
+                clean_word = word[1:-1]
+            elif "100%" in word or "0%" in word or "Loss" in word or "Saved" in word or "$2,500+" in word:
+                color = (255, 109, 0, 255) # Safety Orange
+            
+            # 드롭 섀도우 그리기
+            draw.text((x + 2, y + 2), clean_word, font=font, fill=(0, 0, 0, 200))
+            # 실물 텍스트 그리기
+            draw.text((x, y), clean_word, font=font, fill=color)
+            
+            try:
+                word_w = font.getlength(clean_word + " ")
+            except Exception:
+                word_w = len(clean_word + " ") * (font.size * 0.6 if hasattr(font, 'size') else 8)
+                
+            x += int(word_w)
+            
+        try:
+            line_h = font.size + spacing
+        except Exception:
+            line_h = 30
+        y += line_h
+
+def generate_images(timestamp, main_title=None, sub_title=None):
+    """실물 유튜브 썸네일(1280x720) 및 인스타 카드뉴스(1080x1080) 실물 PNG 파일을 생성합니다."""
+    try:
+        from PIL import Image, ImageDraw
+    except ImportError:
+        print("⚠️ Pillow 라이브러리가 설치되지 않아 이미지 그리기를 건너뜁니다.")
+        return
+        
+    print("🎨 [Pillow Graphics Engine] Generating campaign image assets...")
+    
+    if not main_title:
+        main_title = '와이파이 차단된 "로컬 AI" 1인 기업 탄생의 실체'
+    if not sub_title:
+        sub_title = 'Pydantic v2와 121개 그린 테스트가 증명하는 무결성'
+
+    # --- 1) 유튜브 썸네일 생성 (1280x720) ---
+    img_thumb = draw_gradient_background(1280, 720)
+    img_thumb = draw_ambient_glow(img_thumb, 1100, 150, 420, (0, 242, 254))  # Cyan glow
+    img_thumb = draw_ambient_glow(img_thumb, 200, 600, 360, (255, 109, 0))   # Orange glow
+    img_thumb = draw_tech_mesh(img_thumb, step=45)
+    
+    draw_thumb = ImageDraw.Draw(img_thumb)
+    
+    font_main = get_premium_font(48, is_bold=True)
+    font_sub = get_premium_font(24, is_bold=False)
+    font_logo = get_premium_font(18, is_bold=True)
+    
+    # 로고/뱃지 그리기
+    draw_thumb.rectangle([45, 45, 195, 80], fill=(255, 255, 255, 10), outline=(255, 255, 255, 30), width=1)
+    draw_thumb.text((60, 52), "🔮 SYSTEM", font=font_logo, fill=(0, 242, 254, 230))
+    
+    lines_main = wrap_text(main_title, font_main, 850)
+    lines_sub = wrap_text(sub_title, font_sub, 800)
+    
+    draw_highlighted_text(draw_thumb, lines_main, 50, 190, font_main, (255, 255, 255, 255), spacing=22)
+    
+    y_sub = 190 + len(lines_main) * (font_main.size if font_main else 48) + 40
+    draw_highlighted_text(draw_thumb, lines_sub, 50, y_sub, font_sub, (148, 163, 184, 255), spacing=15)
+    
+    # 우측 장치 모양 데코
+    draw_thumb.rectangle([940, 180, 1200, 540], fill=(0, 242, 254, 8), outline=(0, 242, 254, 40), width=2)
+    for offset in range(0, 260, 30):
+        draw_thumb.line([(940 + offset, 180), (940, 180 + offset)], fill=(0, 242, 254, 15), width=1)
+    draw_thumb.text((980, 330), "🔒 SECURE", font=font_main, fill=(255, 255, 255, 20))
+    draw_thumb.text((985, 390), "Expected Loss = 0", font=font_sub, fill=(255, 109, 0, 180))
+    
+    # --- 2) 인스타 카드뉴스 생성 (1080x1080) ---
+    img_card = draw_gradient_background(1080, 1080)
+    img_card = draw_ambient_glow(img_card, 540, 540, 500, (160, 32, 240)) # Center purple glow
+    img_card = draw_ambient_glow(img_card, 900, 100, 300, (0, 242, 254))  # Cyan glow top
+    img_card = draw_tech_mesh(img_card, step=50)
+    
+    draw_card = ImageDraw.Draw(img_card)
+    
+    # 헤더 뱃지
+    draw_card.rectangle([45, 45, 255, 80], fill=(255, 255, 255, 10), outline=(255, 255, 255, 30))
+    draw_card.text((60, 52), "📱 B2B MARKETING", font=font_logo, fill=(0, 242, 254, 230))
+    
+    font_card_main = get_premium_font(44, is_bold=True)
+    font_card_sub = get_premium_font(26, is_bold=False)
+    
+    lines_card_main = wrap_text(main_title, font_card_main, 950)
+    lines_card_sub = wrap_text(sub_title, font_card_sub, 900)
+    
+    draw_highlighted_text(draw_card, lines_card_main, 50, 250, font_card_main, (255, 255, 255, 255), spacing=24)
+    
+    y_card_sub = 250 + len(lines_card_main) * (font_card_main.size if font_card_main else 44) + 40
+    draw_highlighted_text(draw_card, lines_card_sub, 50, y_card_sub, font_card_sub, (148, 163, 184, 255), spacing=18)
+    
+    # 카드뉴스 하단 재무적 가치 윈도우 그리기
+    draw_card.rectangle([50, 750, 1030, 980], fill=(13, 14, 18, 180), outline=(255, 109, 0, 40), width=2)
+    draw_card.text((80, 780), "📊 Expected Avoided Loss Value (ALV)", font=font_sub, fill=(255, 109, 0, 230))
+    draw_card.text((80, 840), "$2,500+ Saved per Compliance Block", font=font_card_main, fill=(255, 255, 255, 255))
+    draw_card.text((80, 915), "GDPR / CCPA Cryptographic Integrity Standards Checked.", font=font_logo, fill=(148, 163, 184, 230))
+
+    # 저장 처리
+    thumb_name = f"thumbnail_{timestamp}.png"
+    card_name = f"card_news_{timestamp}.png"
+    
+    thumb_path = os.path.join(GUIDES_DIR, thumb_name)
+    card_path = os.path.join(GUIDES_DIR, card_name)
+    
+    img_thumb.save(thumb_path, "PNG")
+    img_card.save(card_path, "PNG")
+    
+    print(f"✅ Real YouTube Thumbnail Generated: {thumb_path}")
+    print(f"✅ Real Instagram Card News Generated: {card_path}")
+    
+    # 텔레그램으로 즉시 자동 발송 시도
+    _api_send_photos_to_telegram(thumb_path, card_path)
+
+def _api_send_photos_to_telegram(thumb_path, card_path):
+    """비서 설정을 읽어와 새로 생성된 실물 이미지들을 사장님 텔레그램 채널로 즉시 전송합니다."""
+    token, chat_id = "", ""
+    
+    secretary_json = os.path.join(WORKSPACE, "_company", "_agents", "secretary", "tools", "telegram_setup.json")
+    if os.path.exists(secretary_json):
+        try:
+            with open(secretary_json, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+            token = (cfg.get("TELEGRAM_BOT_TOKEN") or "").strip()
+            chat_id = (cfg.get("TELEGRAM_CHAT_ID") or "").strip()
+        except Exception:
+            pass
+            
+    if not token or not chat_id:
+        print("⚠️ 텔레그램 토큰 설정이 유효하지 않아 텔레그램 직접 전송은 건너뜁니다.")
+        return
+        
+    try:
+        import requests
+        url = f"https://api.telegram.org/bot{token}/sendPhoto"
+        
+        # 썸네일 발송
+        with open(thumb_path, "rb") as f_thumb:
+            files = {"photo": f_thumb}
+            data = {
+                "chat_id": chat_id,
+                "caption": "🎨 [Premium Visual Thumbnail]\nRyzen 9 병렬 가속 기반으로 생성된 유튜브/블로그 실물 썸네일입니다."
+            }
+            requests.post(url, data=data, files=files, timeout=20)
+            
+        # 카드뉴스 발송
+        with open(card_path, "rb") as f_card:
+            files = {"photo": f_card}
+            data = {
+                "chat_id": chat_id,
+                "caption": "📱 [Premium Card News]\nNVIDIA RTX 4060 로컬 AI 시나리오가 반영된 인스타용 실물 카드뉴스입니다."
+            }
+            requests.post(url, data=data, files=files, timeout=20)
+            
+        print("🚀 [Telegram Pushing] Successfully sent procedural PNG thumbnails directly to your Telegram chat!")
+    except Exception as e:
+        print(f"⚠️ 텔레그램 이미지 발송 중 에러: {e}")
 
 if __name__ == "__main__":
     main()

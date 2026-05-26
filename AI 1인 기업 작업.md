@@ -376,13 +376,15 @@ flowchart TD
 ### 3) 2FA OTP 세션 보안 검문 및 잠재적 latent 버그 디버깅
 - **설명**: 민감한 감사 로그를 조회하는 작업인 만큼, 기존 킬 스위치와 동일하게 구글 OTP 2차 인증을 통과한 활성 세션에만 검색 접근 권한을 개방하도록 MFA 가드를 연계했습니다. 또한, OTP 인증 성공 시 기존 봇 코드에서 호출은 하고 있었으나 정작 정의가 빠져 있어 작동 시 NameError 크래시를 유발할 수 있었던 `_execute_remote_resume` 함수를 전격 선언/구현하여 락다운 해제 기능도 완벽히 보증했습니다.
 
-### 4) 신규 텔레그램 E2E 단위 테스트 3종 추가 및 전사 139개 테스트 Perfect Green 완수
+### 4) 신규 텔레그램 E2E 단위 테스트 3종 추가, 개발자 코어 테스트 복구 및 전사 143개 테스트 Perfect Green 완수
 - **설명**: `test_telegram_bot_integration.py` 내에 MFA 차단 및 챌린지 요구 단언(`test_telegram_bot_audit_mfa_gating`), 인라인 키보드 렌더링 검증(`test_telegram_bot_audit_inline_keyboard_rendering`), 콜백 쿼리 유입 시 answer/query/editMessageText 무결성 모킹 단언(`test_telegram_bot_callback_query_audit_routing`) 3종의 E2E 단위 테스트를 완비했습니다.
-- **Perfect Green 실증 결과 (전체 139개 통과 완료)**:
+- **개발자 코어 시뮬레이션 복구**: `_company/_agents/developer`의 핵심 리스크 시뮬레이터 unit 테스트 4종(`test_mini_roi_simulator.py`) 중 예외 메시지 불일치 및 controlled system error 파싱 불일치로 실패하던 2개 버그를 `core_api_service.py` 리팩토링을 통해 전격 복구 및 성공 처리했습니다.
+- **Perfect Green 실증 결과 (전체 143개 통과 완료)**:
   - **비즈니스 & 마케팅 오케스트레이션 테스트 (`pytest tests/`)**: **92개** PASSED 🟢 (3개 추가)
   - **게이트웨이 코어 & PDF 연동 테스트 (`pytest core_gateway/`)**: **20개** PASSED 🟢
   - **구글 OTP TOTP & 킬스위치 보안 테스트 (`pytest remote_control_api/`)**: **27개** PASSED 🟢
-  - **총합 139개 테스트 케이스 전원 100% 무결점 Perfect Green 통과**를 최종 인증 및 확인했습니다!
+  - **개발자 에이전트 리스크 시뮬레이터 테스트 (`pytest _company/_agents/developer/tests/`)**: **4개** PASSED 🟢
+  - **총합 143개 테스트 케이스 전원 100% 무결점 Perfect Green 통과**를 최종 인증 및 확인했습니다!
 
 ---
 

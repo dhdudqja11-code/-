@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 1인 기업 : Mission Control Center</title>
+    <!-- Google Fonts: Outfit (주문체) & JetBrains Mono (코딩체) -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- 🌌 Ambient Background Glows -->
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+
+    <div class="container">
+        
+        <!-- 👑 TOP HEADER BAR -->
+        <header class="app-header glass">
+            <div class="header-left">
+                <div class="logo-area">
+                    <span class="logo-icon">🔮</span>
+                    <div>
+                        <h1>Mission Control Center</h1>
+                        <p class="subtitle">AI 1-Person Enterprise Autonomous System</p>
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="gpu-badge badge glass">
+                    <span class="badge-dot pulse-cyan"></span>
+                    <span class="badge-text">RTX 4060 GPU / Ryzen 9 8945HS</span>
+                </div>
+                <div id="system-status" class="status-badge badge glass locked">
+                    <span class="badge-dot"></span>
+                    <span class="badge-text">LOADING...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 📊 METRICS & GAUGES ROW -->
+        <section class="metrics-grid">
+            
+            <!-- Card 1: Avoided Loss Value (ALV) -->
+            <div class="metric-card glass clickable" id="card-alv">
+                <div class="card-header">
+                    <span class="card-title">재무적 위험 회피 가치 (ALV)</span>
+                    <span class="card-icon">💸</span>
+                </div>
+                <div class="alv-gauge-container">
+                    <svg class="alv-svg" viewBox="0 0 100 100">
+                        <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
+                        <circle class="gauge-fill" id="alv-fill" cx="50" cy="50" r="40"></circle>
+                    </svg>
+                    <div class="gauge-overlay">
+                        <span class="gauge-val" id="alv-value">$0.00</span>
+                        <span class="gauge-lbl">Cumulative Savings</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <span class="trend-indicator text-cyan">▲ 100% Secure</span>
+                    <span>GDPR / CCPA Standards</span>
+                </div>
+            </div>
+
+            <!-- Card 2: Cumulative Views -->
+            <div class="metric-card glass">
+                <div class="card-header">
+                    <span class="card-title">누적 마케팅 조회 반응</span>
+                    <span class="card-icon">📈</span>
+                </div>
+                <div class="metric-value-area">
+                    <h2 class="metric-big-num" id="total-views">0</h2>
+                    <p class="metric-detail-txt">
+                        Naver Blog: <span id="naver-views" class="bold">0</span> v | 
+                        Instagram Reels: <span id="insta-views" class="bold">0</span> v
+                    </p>
+                </div>
+                <div class="card-footer">
+                    <span class="trend-indicator text-cyan" id="metric-engagement">Likes: 0 | Comments: 0</span>
+                </div>
+            </div>
+
+            <!-- Card 3: Compliant Operations Rate -->
+            <div class="metric-card glass">
+                <div class="card-header">
+                    <span class="card-title">전사 규제 준수 무결성</span>
+                    <span class="card-icon">🛡️</span>
+                </div>
+                <div class="metric-value-area">
+                    <h2 class="metric-big-num text-cyan" id="compliance-rate">100.0%</h2>
+                    <p class="metric-detail-txt">
+                        Success Blocks: <span id="success-blocks" class="bold text-cyan">0</span> | 
+                        Failure Logs: <span id="failure-blocks" class="bold text-ruby">0</span>
+                    </p>
+                </div>
+                <div class="card-footer">
+                    <span class="trend-indicator text-cyan">SSoT DB Synchronized</span>
+                </div>
+            </div>
+
+            <!-- Card 4: AutoPlanner Daemon Status -->
+            <div class="metric-card glass">
+                <div class="card-header">
+                    <span class="card-title">24H 자율 플래너 작동현황</span>
+                    <span class="card-icon">⚡</span>
+                </div>
+                <div class="metric-value-area">
+                    <h2 class="metric-big-num" id="planner-status">IDLE</h2>
+                    <p class="metric-detail-txt" id="planner-next-run">Next: Waiting for launch...</p>
+                </div>
+                <div class="card-footer" id="planner-footer">
+                    <span>Daemon Cycle: 6 Hours</span>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- 🔗 IMMUTABLE HASH CHAIN VISUALIZER (SSoT BLOCKCHAIN) -->
+        <section class="blockchain-section glass">
+            <div class="section-header">
+                <h2>🔗 Immutable Audit Gate (IAG) 암호 감사 체인 시각화</h2>
+                <div class="legend">
+                    <span class="legend-item"><span class="dot dot-cyan"></span>SUCCESS</span>
+                    <span class="legend-item"><span class="dot dot-ruby"></span>FAILURE</span>
+                </div>
+            </div>
+            <div class="blockchain-wrapper">
+                <div class="blockchain-container" id="blockchain-chain">
+                    <!-- Javascript will dynamically inject the linked blocks here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 🕹️ MISSION CONTROL CONSOLE & CAMPAIGN LOGS -->
+        <div class="dashboard-grid">
+            
+            <!-- Left Console: Administrative Controls -->
+            <div class="console-panel glass">
+                <h3>🕹️ 전사 시스템 제어 콘솔 (Control Panel)</h3>
+                
+                <div class="control-card-grid">
+                    
+                    <button class="control-btn trigger-btn" id="btn-trigger-campaign">
+                        <span class="btn-icon">📢</span>
+                        <div class="btn-texts">
+                            <span class="btn-title">캠페인 일괄 실행</span>
+                            <span class="btn-sub">Orchestrator Run</span>
+                        </div>
+                    </button>
+                    
+                    <button class="control-btn resume-btn" id="btn-resume-planner">
+                        <span class="btn-icon">🔑</span>
+                        <div class="btn-texts">
+                            <span class="btn-title">가드레일 잠금 해제</span>
+                            <span class="btn-sub">MFA OTP Resume</span>
+                        </div>
+                    </button>
+
+                    <button class="control-btn document-btn" id="btn-download-pdf">
+                        <span class="btn-icon">📄</span>
+                        <div class="btn-texts">
+                            <span class="btn-title">PDF 감사 증명서 출력</span>
+                            <span class="btn-sub">ReportLab Document</span>
+                        </div>
+                    </button>
+
+                    <button class="control-btn info-btn" id="btn-refresh">
+                        <span class="btn-icon">🔄</span>
+                        <div class="btn-texts">
+                            <span class="btn-title">실시간 스캔 갱신</span>
+                            <span class="btn-sub">Refresh Dashboard</span>
+                        </div>
+                    </button>
+
+                </div>
+
+                <div class="feedback-terminal glass">
+                    <div class="terminal-header">
+                        <span class="term-dot"></span>
+                        <span class="term-dot"></span>
+                        <span class="term-dot"></span>
+                        <span class="term-title">System Feedback Console</span>
+                    </div>
+                    <div class="terminal-body" id="terminal-output">
+                        <div class="term-line text-cyan">> Welcome to AI Mission Control Center Dashboard.</div>
+                        <div class="term-line">> Database connected: gateway_audit.db, marketing.db</div>
+                        <div class="term-line">> Standard Windows BELOW_NORMAL_PRIORITY_CLASS scheduler cooling guard active.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Console: Recent Marketing Campaigns -->
+            <div class="console-panel glass">
+                <h3>🚀 최근 마케팅 캠페인 포트폴리오</h3>
+                <div class="campaigns-table-container">
+                    <table class="styled-table">
+                        <thead>
+                            <tr>
+                                <th>캠페인 ID</th>
+                                <th>가동 상태</th>
+                                <th>네이버 발행</th>
+                                <th>인스타 발행</th>
+                                <th>포트폴리오 경로</th>
+                            </tr>
+                        </thead>
+                        <tbody id="campaigns-table-body">
+                            <tr>
+                                <td colspan="5" class="text-center">조회된 캠페인 기록이 존재하지 않습니다.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 📑 DETAILED COMPLIANCE AUDIT LOGS -->
+        <section class="audit-log-section glass">
+            <h3>📑 Immutable Audit Block 상세 로그 (gateway_audit.db)</h3>
+            <div class="audit-logs-container">
+                <div class="audit-logs-header">
+                    <span>이벤트 시간 (UTC)</span>
+                    <span>API 엔드포인트</span>
+                    <span>트랜잭션 고유 ID</span>
+                    <span>상태</span>
+                    <span>결과 요약</span>
+                </div>
+                <div class="audit-logs-list" id="audit-logs-list-body">
+                    <!-- Logs will be loaded dynamically here -->
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- 🔒 2FA GOOGLE OTP VERIFICATION GLASS MODAL -->
+    <div class="modal-overlay" id="otp-modal">
+        <div class="modal-card glass scale-up">
+            <div class="modal-header">
+                <span class="modal-logo">🔒</span>
+                <h2>2FA 최고 권한 보안 검문</h2>
+                <p>보안 통제 구역 접근 또는 긴급 복구를 위해 모바일 구글 Authenticator 앱의 6자리 OTP 코드를 기입해 주십시오.</p>
+            </div>
+            <div class="modal-body">
+                <div class="otp-input-area">
+                    <input type="text" id="otp-code-input" class="otp-input" placeholder="000000" maxlength="6" autofocus>
+                </div>
+                <p id="otp-error-msg" class="text-ruby text-center hide">❌ 올바르지 않은 인증코드입니다. 다시 확인해 주십시오.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel-btn" id="btn-cancel-otp">취소</button>
+                <button class="modal-btn confirm-btn" id="btn-confirm-otp">승인 검증</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="app.js" type="module"></script>
+</body>
+</html>

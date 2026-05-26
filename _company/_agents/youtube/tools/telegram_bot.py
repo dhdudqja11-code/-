@@ -104,6 +104,42 @@ def send_message(token, chat_id, text, reply_markup=None):
     except Exception as e:
         print(f"⚠️ 메시지 전송 실패: {e}")
 
+def send_photo(token, chat_id, photo_path, caption=None):
+    """실물 파일 자체를 Multi-part form 스트림 업로드 방식을 이용해 텔레그램으로 전송합니다."""
+    import requests
+    if not os.path.exists(photo_path):
+        return False
+    try:
+        url = f"https://api.telegram.org/bot{token}/sendPhoto"
+        with open(photo_path, "rb") as f:
+            files = {"photo": f}
+            data = {"chat_id": chat_id}
+            if caption:
+                data["caption"] = caption
+            requests.post(url, data=data, files=files, timeout=20)
+        return True
+    except Exception as e:
+        print(f"⚠️ 이미지 전송 실패: {e}")
+        return False
+
+def send_audio(token, chat_id, audio_path, caption=None):
+    """실물 오디오 파일 자체를 Multi-part form 스트림 업로드 방식을 이용해 텔레그램으로 전송합니다."""
+    import requests
+    if not os.path.exists(audio_path):
+        return False
+    try:
+        url = f"https://api.telegram.org/bot{token}/sendAudio"
+        with open(audio_path, "rb") as f:
+            files = {"audio": f}
+            data = {"chat_id": chat_id}
+            if caption:
+                data["caption"] = caption
+            requests.post(url, data=data, files=files, timeout=30)
+        return True
+    except Exception as e:
+        print(f"⚠️ 오디오 전송 실패: {e}")
+        return False
+
 def get_new_report_section(file_path, last_size):
     """실행 후 새롭게 추가된 마크다운 리포트만 파싱해서 전송합니다."""
     if not os.path.exists(file_path):
@@ -163,6 +199,40 @@ def get_latest_reels_script():
             return f.read()
     except Exception as e:
         return f"[최신 대본 로드 에러]: {e}"
+
+def get_latest_visual_assets():
+    """visual_guides 폴더에서 가장 최근에 저장된 실물 썸네일 및 카드뉴스 이미지 경로를 반환합니다."""
+    guides_dir = os.path.abspath(os.path.join(HERE, "..", "..", "designer", "tools", "visual_guides"))
+    if not os.path.exists(guides_dir):
+        return None, None
+    try:
+        files = [os.path.join(guides_dir, f) for f in os.listdir(guides_dir) if f.endswith(".png")]
+        if not files:
+            return None, None
+            
+        # 썸네일들과 카드뉴스들을 구분하여 가장 최신의 것을 매칭
+        thumbnails = [f for f in files if "thumbnail_" in f]
+        card_news = [f for f in files if "card_news_" in f]
+        
+        latest_thumb = max(thumbnails, key=os.path.getmtime) if thumbnails else None
+        latest_card = max(card_news, key=os.path.getmtime) if card_news else None
+        
+        return latest_thumb, latest_card
+    except Exception:
+        return None, None
+
+def get_latest_bgm_assets():
+    """connect-ai-music/output 폴더에서 가장 최근에 저장된 BGM mp3 파일 경로를 반환합니다."""
+    music_dir = os.path.expanduser("~/connect-ai-music/output")
+    if not os.path.exists(music_dir):
+        return None
+    try:
+        files = [os.path.join(music_dir, f) for f in os.listdir(music_dir) if f.endswith(".mp3")]
+        if not files:
+            return None
+        return max(files, key=os.path.getmtime)
+    except Exception:
+        return None
 
 # 💡 [MFA API 게이트웨이 연동 상태값]
 REMOTE_API_URL = "http://127.0.0.1:8000"
@@ -507,14 +577,15 @@ def handle_callback_query(callback_data, callback_id, message_id, token, chat_id
         reply_markup = {"inline_keyboard": keyboard}
         edit_message_text(token, chat_id, message_id, text, reply_markup=reply_markup)
 
-# 📱 10대 핵심 제어 이모지 단축 키보드 레이아웃 개편 (감사 로그 및 보안 관제탑 추가)
+# 📱 10대 핵심 제어 이모지 단축 키보드 레이아웃 개편 (BGM 및 감사 로그 추가)
 KEYBOARD = {
     "keyboard": [
         [{"text": "🎯 트렌드 분석"}, {"text": "🔭 경쟁사 분석"}],
         [{"text": "✍️ 블로그 칼럼"}, {"text": "📊 플래너 상태"}],
         [{"text": "🎨 비주얼 가이드"}, {"text": "📱 릴스 대본"}],
-        [{"text": "🛡️ 원격 보안 관제"}, {"text": "📊 감사 로그"}],
-        [{"text": "💬 사장님 피드백"}, {"text": "❓ 도움말 안내"}]
+        [{"text": "🎵 BGM 생성"}, {"text": "📊 감사 로그"}],
+        [{"text": "🛡️ 원격 보안 관제"}, {"text": "💬 사장님 피드백"}],
+        [{"text": "❓ 도움말 안내"}]
     ],
     "resize_keyboard": True,
     "one_time_keyboard": False
@@ -528,6 +599,7 @@ def handle_command(cmd, token, chat_id):
     NAVER_WRITER_PATH = os.path.join(HERE, "naver_writer.py")
     VISUAL_DIRECTOR_PATH = os.path.abspath(os.path.join(HERE, "..", "..", "designer", "tools", "visual_director.py"))
     REELS_PLANNER_PATH = os.path.abspath(os.path.join(HERE, "..", "..", "instagram", "tools", "reels_planner.py"))
+    MUSIC_GENERATOR_PATH = os.path.abspath(os.path.join(HERE, "..", "..", "editor", "tools", "music_generate.py"))
     ORCHESTRATOR_PATH = os.path.abspath(os.path.join(HERE, "..", "..", "..", "_shared", "campaign_orchestrator.py"))
     FEEDER_PATH = os.path.abspath(os.path.join(HERE, "..", "..", "..", "_shared", "feedback_feeder.py"))
 
@@ -639,6 +711,7 @@ def handle_command(cmd, token, chat_id):
 📊 [플래너 상태] : 24시간 오토 플래너(auto_planner.py) 구동 상황 실시간 요약 조회.
 🎨 [비주얼 가이드] : 비주얼 디렉터(visual_director.py) 즉시 실행 및 디자인 지시서 회신.
 📱 [릴스 대본] : 릴스 플래너(reels_planner.py) 즉시 실행 및 숏폼 비디오 스크립트 회신.
+🎵 [BGM 생성] : 루나(Luna) 에이전트의 사운드 엔진(music_generate.py) 즉시 가동 및 음원 피딩.
 📢 [캠페인 일괄 실행] : 마케팅 파이프라인(유튜브트렌드->블로그->비주얼->릴스대본->발행) 자동 완성.
 💬 [사장님 피드백] : 에이전트들의 성능 교정을 위한 지시 로그(decisions.md) 실시간 피딩.
 ❓ [도움말 안내] : 현재 가이드라인 및 조종법 안내."""
@@ -704,6 +777,13 @@ def handle_command(cmd, token, chat_id):
                 if not guide:
                     guide = "✅ 비주얼 가이드 생성 완료! designer/tools/visual_guides/ 폴더에서 마크다운 파일을 확인하십시오."
                 send_message(token, chat_id, f"🎨 [프리미엄 비주얼 가이드 라인 기획 완료]\n\n{guide}", reply_markup=KEYBOARD)
+                
+                # 실물 이미지(썸네일 & 카드뉴스) 자동 전송
+                latest_thumb, latest_card = get_latest_visual_assets()
+                if latest_thumb:
+                    send_photo(token, chat_id, latest_thumb, "🎨 [YouTube Thumbnail] 생성된 프리미엄 썸네일 실물 이미지입니다.")
+                if latest_card:
+                    send_photo(token, chat_id, latest_card, "📱 [Instagram Card News] 생성된 프리미엄 카드뉴스 실물 이미지입니다.")
             else:
                 err_msg = proc.stderr.strip()[-300:] if proc.stderr else "상세 에러 내용 없음"
                 send_message(token, chat_id, f"❌ 비주얼 디렉터 가동 실패 (exit {proc.returncode}).\n에러 요약: {err_msg}", reply_markup=KEYBOARD)
@@ -725,6 +805,22 @@ def handle_command(cmd, token, chat_id):
                 send_message(token, chat_id, f"❌ 릴스 플래너 가동 실패 (exit {proc.returncode}).\n에러 요약: {err_msg}", reply_markup=KEYBOARD)
         except Exception as e:
             send_message(token, chat_id, f"❌ 릴스 플래너 실행 도중 장애 발생: {e}", reply_markup=KEYBOARD)
+
+    elif cmd in ("/music", "🎵 BGM 생성"):
+        send_message(token, chat_id, "📡 [에이전트 기동] 루나(Luna) 에이전트의 사운드 엔진(music_generate.py)을 즉시 실행합니다. 약 10~30초 소요됩니다...")
+        
+        try:
+            proc = subprocess.run([sys.executable, MUSIC_GENERATOR_PATH], capture_output=True, encoding="utf-8", timeout=240, **win_kwargs)
+            if proc.returncode == 0:
+                send_message(token, chat_id, "✅ BGM 음원 생성 완료! 모바일에 즉시 다운로드하여 재생하실 수 있습니다.", reply_markup=KEYBOARD)
+                latest_audio = get_latest_bgm_assets()
+                if latest_audio:
+                    send_audio(token, chat_id, latest_audio, "🎵 [Luna Procedural BGM] 캠페인 시그니처 BGM입니다.")
+            else:
+                err_msg = proc.stderr.strip()[-300:] if proc.stderr else "상세 에러 내용 없음"
+                send_message(token, chat_id, f"❌ 사운드 엔진 가동 실패 (exit {proc.returncode}).\n에러 요약: {err_msg}", reply_markup=KEYBOARD)
+        except Exception as e:
+            send_message(token, chat_id, f"❌ 사운드 엔진 실행 도중 장애 발생: {e}", reply_markup=KEYBOARD)
 
     elif cmd in ("/campaign", "📢 캠페인 일괄 실행"):
         send_message(token, chat_id, "⚡ [Ryzen 9 병렬 가동] 1인 기업 자동 마케팅 캠페인 파이프라인 연쇄 기동 중 (8코어 16스레드 Concurrent 최적화 모드)... 약 15~25초 소요됩니다.")

@@ -22,6 +22,7 @@ HISTORY_DIR = os.path.join(COMPANY_ROOT, "marketing_history")
 YOUTUBE_TOOLS = os.path.join(COMPANY_ROOT, "_agents", "youtube", "tools")
 DESIGNER_TOOLS = os.path.join(COMPANY_ROOT, "_agents", "designer", "tools")
 INSTAGRAM_TOOLS = os.path.join(COMPANY_ROOT, "_agents", "instagram", "tools")
+EDITOR_TOOLS = os.path.join(COMPANY_ROOT, "_agents", "editor", "tools")
 
 sys.path.append(HERE)
 
@@ -105,17 +106,18 @@ def main():
     except Exception as ce:
         print(f"⚠️ RAG 메모리 압축 가동 실패: {ce}")
 
-    # Step 2, 3, 4: 블로그 집필, 비주얼 가이드 설계, Reels 대본 기획 -> 병렬(Parallel) 기동
-    print("\n⚡ Step 2, 3, 4: 에이전트 군단 병렬 동시 창작 중 (3 Concurrent Workers)...")
+    # Step 2, 3, 4, 5: 블로그 집필, 비주얼 가이드 설계, Reels 대본 기획, BGM 생성 -> 병렬(Parallel) 기동
+    print("\n⚡ Step 2, 3, 4, 5: 에이전트 군단 병렬 동시 창작 중 (4 Concurrent Workers)...")
     parallel_start = time.time()
     
     tasks = {
         "naver_writer": (os.path.join(YOUTUBE_TOOLS, "naver_writer.py"), "02_naver_blog.md", os.path.join(YOUTUBE_TOOLS, "naver_posts")),
         "visual_director": (os.path.join(DESIGNER_TOOLS, "visual_director.py"), "03_visual_guide.md", os.path.join(DESIGNER_TOOLS, "visual_guides")),
-        "reels_planner": (os.path.join(INSTAGRAM_TOOLS, "reels_planner.py"), "04_reels_script.md", os.path.join(INSTAGRAM_TOOLS, "reels_scripts"))
+        "reels_planner": (os.path.join(INSTAGRAM_TOOLS, "reels_planner.py"), "04_reels_script.md", os.path.join(INSTAGRAM_TOOLS, "reels_scripts")),
+        "music_generator": (os.path.join(EDITOR_TOOLS, "music_generate.py"), "05_signature_bgm.mp3", os.path.expanduser("~/connect-ai-music/output"))
     }
 
-    with ThreadPoolExecutor(max_workers=3) as executor:
+    with ThreadPoolExecutor(max_workers=4) as executor:
         futures = {
             executor.submit(run_tool, info[0]): name 
             for name, info in tasks.items()
@@ -129,9 +131,44 @@ def main():
             # 산출물 복사
             dest_name = tasks[name][1]
             src_dir = tasks[name][2]
-            latest_file = get_latest_file(src_dir)
+            ext = ".mp3" if dest_name.endswith(".mp3") else ".md"
+            latest_file = get_latest_file(src_dir, extension=ext)
             if latest_file and os.path.exists(latest_file):
                 shutil.copy2(latest_file, os.path.join(campaign_dir, dest_name))
+                
+            # 비주얼 디렉터 완료 시 실물 PNG(썸네일 & 카드뉴스) 복사 로직 추가
+            if name == "visual_director":
+                try:
+                    png_files = [os.path.join(src_dir, f) for f in os.listdir(src_dir) if f.endswith(".png")]
+                    thumb_candidates = [f for f in png_files if "thumbnail_" in os.path.basename(f)]
+                    card_candidates = [f for f in png_files if "card_news_" in os.path.basename(f)]
+                    
+                    thumb_file = None
+                    card_file = None
+                    
+                    for f in thumb_candidates:
+                        if timestamp in os.path.basename(f):
+                            thumb_file = f
+                            break
+                    if not thumb_file and thumb_candidates:
+                        thumb_file = max(thumb_candidates, key=os.path.getmtime)
+                        
+                    for f in card_candidates:
+                        if timestamp in os.path.basename(f):
+                            card_file = f
+                            break
+                    if not card_file and card_candidates:
+                        card_file = max(card_candidates, key=os.path.getmtime)
+                        
+                    if thumb_file and os.path.exists(thumb_file):
+                        shutil.copy2(thumb_file, os.path.join(campaign_dir, f"thumbnail_{timestamp}.png"))
+                        print(f"   └─ 🖼️ 유튜브 썸네일 백업 완료: thumbnail_{timestamp}.png")
+                    if card_file and os.path.exists(card_file):
+                        shutil.copy2(card_file, os.path.join(campaign_dir, f"card_news_{timestamp}.png"))
+                        print(f"   └─ 🖼️ 인스타 카드뉴스 백업 완료: card_news_{timestamp}.png")
+                except Exception as ex:
+                    print(f"   ⚠️ PNG 이미지 백업 복사 중 오류: {ex}")
+                    
             print(f"   └─ ⚡ {name} 병렬 창작 완료! (상태: {results['steps'][name]})")
 
     print(f"⚡ 에이전트 군단 병렬 창작 단계 완수! (소요시간: {time.time() - parallel_start:.2f}초)")
