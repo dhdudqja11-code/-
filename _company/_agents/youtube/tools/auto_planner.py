@@ -60,6 +60,16 @@ def main():
                 print(f"   {line}")
         sys.exit(1)
     print("✅ 검증 완료. 본 루프 시작.\n")
+
+    # 실시간 RAG decisions.md 메모리 자동 압축 및 아카이브 이중화 백업 기동
+    try:
+        SHARED_DIR = os.path.abspath(os.path.join(HERE, "..", "..", "..", "_shared"))
+        if SHARED_DIR not in sys.path:
+            sys.path.append(SHARED_DIR)
+        import decision_compressor
+        decision_compressor.compress_decisions()
+    except Exception as ce:
+        print(f"⚠️ RAG 메모리 압축 가동 실패: {ce}")
     STATE_PATH = os.path.join(HERE, "planner_state.json")
 
     def _write_state(status, loop_count, start_ts, elapsed, last_ts, next_ts):
@@ -99,6 +109,12 @@ def main():
             
             try:
                 subprocess.run([sys.executable, SNIPER_PATH], check=False, **win_kwargs)
+                
+                # 실시간 RAG decisions.md 메모리 자동 압축 및 아카이브 이중화 백업 기동
+                try:
+                    decision_compressor.compress_decisions()
+                except Exception as ce:
+                    print(f"⚠️ RAG 메모리 압축 가동 실패: {ce}")
             except Exception as e:
                 print(f"❌ 실행 실패: {e}")
             

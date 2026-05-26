@@ -16,6 +16,8 @@ class LegalReportData:
     @staticmethod
     def generate_summary(risk: float, loss: float, logs: list) -> str:
         """Executive Summary 섹션을 위한 논리적 서사문을 생성합니다."""
+        if not logs or loss <= 0:
+            return "현재 시스템 상태 분석 결과, 감지된 위반 사항이 없으며 비즈니스가 안전하게 통제되고 있음을 증명합니다."
         return (
             f"현재 시스템 상태 분석 결과, 귀사의 비즈니스는 총 {loss:,.2f} USD의 "
             f"예상 손실 위험에 노출되어 있습니다. 이는 주요 규제 위반 항목 ({len(logs)}건) 때문입니다. "
@@ -23,6 +25,11 @@ class LegalReportData:
         )
 
 class LegalReportGenerator:
+    def __init__(self, audit_log: list):
+        """Audit Log 기반의 법적 보고서 생성을 준비합니다."""
+        if not isinstance(audit_log, list) or not audit_log:
+            raise ValueError("LegalReportGenerator requires a non-empty list of audit logs.")
+        self.audit_log = audit_log
     """
     Audit Log와 Risk Data를 받아 구조화된 법률 보고서를 생성하는 서비스 클래스.
     (SRP 원칙에 따라, 데이터 재구성 및 논리 흐름 제어만 담당합니다.)
@@ -65,7 +72,7 @@ class LegalReportGenerator:
             # I. Executive Summary: Shock & Immediate Value
             summary = LegalReportData.generate_summary(structured_data.risk_score, structured_data.loss_estimate, structured_data.violation_logs)
             report_content.append("="*80)
-            report_content.append("I. EXECUTIVE SUMMARY: 법적 증명 보고서 (요약)")
+            report_content.append("I. Executive Summary: 법적 증명 보고서 (요약)")
             report_content.append(f"*** 핵심 결과: {summary} ***")
 
             # II. Core Risk Analysis: Fear & Context

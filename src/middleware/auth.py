@@ -1,5 +1,5 @@
 from fastapi import Request, HTTPException, status
-from typing import Dict
+from typing import Dict, Any
 
 class AuthMiddleware:
     """

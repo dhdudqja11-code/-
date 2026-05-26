@@ -1,127 +1,135 @@
 # -*- coding: utf-8 -*-
-import os, sys, shutil, time
-import unittest.mock as mock
+import os
+import sys
 import pytest
+import datetime
 
+# _shared 폴더를 sys.path에 추가합니다.
 HERE = os.path.dirname(os.path.abspath(__file__))
-COMPANY_ROOT = os.path.abspath(os.path.join(HERE, "..", "_company"))
-SHARED_DIR = os.path.join(COMPANY_ROOT, "_shared")
-
-sys.path.append(SHARED_DIR)
+SHARED_FOLDER = os.path.abspath(os.path.join(HERE, "..", "_company", "_shared"))
+if SHARED_FOLDER not in sys.path:
+    sys.path.append(SHARED_FOLDER)
 
 import decision_compressor
-import feedback_feeder
 
-@pytest.fixture(autouse=True)
-def setup_decisions_sandboxing():
-    """테스트 기동 동안 decisions.md의 원본을 임시 백업 및 격리 보호하는 피스처입니다."""
-    decisions_orig = os.path.join(SHARED_DIR, "decisions.md")
-    decisions_bak = os.path.join(SHARED_DIR, "decisions.md.test_diet_bak")
-    decisions_existed = os.path.exists(decisions_orig)
-
-    if decisions_existed:
-        shutil.copy2(decisions_orig, decisions_bak)
-        
-    # 테스트용 임시 decisions.md 파일 빌드
-    test_skeleton = """# 📌 회사 핵심 의사결정 로그 (테스트용)
+@pytest.fixture
+def temp_decisions_setup(tmp_path):
+    """테스트 기동 중 디스크의 실제 decisions.md를 보호하기 위해 격리된 파일 샌드박스를 구성합니다."""
+    temp_decisions = tmp_path / "decisions.md"
+    temp_archive = tmp_path / "decisions_archive.md"
+    
+    # 기본 의사결정 마스터 로그 템플릿 적재
+    master_template = """# 📌 회사 핵심 의사결정 로그 (테스트)
 
 ## 1. 비즈니스 모델 및 전략 방향
-* **전략**: 고성능 PC 하드웨어 최적화
+* **모델**: 디지털 경험 티켓.
+* **KPI**: ITCR.
 
-## 2. 디자인 및 UX
-* **UX**: 11초대 병렬 텔레그램 조종반 완수
+## 최근 주요 의사결정 로그
+- 모든 마케팅 및 영업 자료는 재무적 손실액에 초점을 맞춰야 한다.
 """
-    with open(decisions_orig, "w", encoding="utf-8") as f:
-        f.write(test_skeleton)
-
-    yield
-
-    # 원복 처리
-    if decisions_existed:
-        if os.path.exists(decisions_bak):
-            shutil.copy2(decisions_bak, decisions_orig)
-            os.remove(decisions_bak)
-    else:
-        if os.path.exists(decisions_orig):
-            os.remove(decisions_orig)
-
-def test_decision_compressor_skipped_below_threshold():
-    """임계 용량(KB) 미만인 경우 압축이 생략되는지 검증합니다."""
-    # force=False로 기동
-    res = decision_compressor.run_diet_compression(force=False, threshold_kb=10)
-    assert res["status"] == "skipped"
-    assert "임계값" in res["message"]
-
-def test_decision_compressor_rule_based_fallback():
-    """로컬 AI 미기동 상황 시, 중복 문장 필터링 및 최신 지침 추출 룰셋 Fallback이 완벽히 가동되는지 검증합니다."""
-    decisions_path = os.path.join(SHARED_DIR, "decisions.md")
+    temp_decisions.write_text(master_template, encoding="utf-8")
     
-    # 10줄 이상의 다량의 중복 피드백을 주입하여 강제로 용량 확보 가정을 만듭니다.
-    spam_logs = "\n".join([
-        f"## [2026-05-25] 세션 로그 {i}\n- 중복지침: 동일한 톤앤매너를 유지한다\n- 지침 {i}: 핵심 변수를 철저히 검증한다"
-        for i in range(5)
-    ])
-    
-    with open(decisions_path, "a", encoding="utf-8") as f:
-        f.write("\n\n" + spam_logs)
-        
-    # llm_adapter.generate_text가 offline fallback mockup을 반환하도록 패치
-    with mock.patch("llm_adapter.generate_text", return_value="연봉 3배 올리는 법: 로컬 가상 Mock"):
-        # force=True로 기동하여 압축 실행 유도
-        res = decision_compressor.run_diet_compression(force=True, threshold_kb=1)
-        
-        assert res["status"] == "success"
-        assert res["method"] == "Deterministic Rule-based Fallback"
-        assert res["reduction_percentage"] > 0.0
-        
-        # 파일 내용을 다시 읽어 뼈대는 유지되고 지침이 압축되었는지 확인
-        with open(decisions_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        assert "비즈니스 모델" in content
-        assert "11초대 병렬 텔레그램" in content
-        # 중복 문장 필터링 결과 확인
-        assert "동일한 톤앤매너" in content
+    return temp_decisions, temp_archive
 
-def test_decision_compressor_ai_online():
-    """로컬 AI 온라인 상황 시, llm_adapter가 생성한 지능형 요약 텍스트가 정상 반영되는지 검증합니다."""
-    decisions_path = os.path.join(SHARED_DIR, "decisions.md")
+def test_compress_no_duplicates_or_expiry(temp_decisions_setup):
+    """[압축기 테스트 - 해피패스] 중복이나 만료가 없는 RAG Feed가 있을 때 훼손 없이 보존되는지 검증합니다."""
+    temp_decisions, temp_archive = temp_decisions_setup
     
-    spam_logs = "\n".join([
-        f"## [2026-05-25] 세션 로그 {i}\n- 지침: 디자인 시 8pt 그리드 채택"
-        for i in range(5)
-    ])
-    with open(decisions_path, "a", encoding="utf-8") as f:
-        f.write("\n\n" + spam_logs)
-        
-    mock_ai_output = "- 로컬 GPU 연동 최적화 지침을 단일화하여 적용한다.\n- 8pt 디자인 컴포넌트 구조를 영구 수호한다."
-    
-    with mock.patch("llm_adapter.generate_text", return_value=mock_ai_output):
-        res = decision_compressor.run_diet_compression(force=True, threshold_kb=0)
-        
-        assert res["status"] == "success"
-        assert res["method"] == "Local AI (GPU/SLM)"
-        
-        with open(decisions_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        
-        assert "비즈니스 모델" in content
-        assert "8pt 디자인 컴포넌트" in content
-        assert "로컬 GPU 연동 최적화" in content
+    now_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    feed_content = f"""
 
-def test_feeder_triggers_compressor_subprocess():
-    """feedback_feeder.py로 피드백 주입 시, 백그라운드 압축기(subprocess.Popen)가 예외 없이 호출되는지 검증합니다."""
+### 📡 [RAG Feed] trend_sniper 자율 스캔 최신 트렌드 — {now_str}
+- **추천 틈새 키워드**: `로컬 AI 자동화`
+- **추천 썸네일 카피**: "30초 만에 로컬로 AI 가동하는 법"
+- **콘텐츠 핵심 테마**: "로컬 AI"
+"""
+    # 임시 파일에 쓰기
+    with open(temp_decisions, "a", encoding="utf-8") as f:
+        f.write(feed_content)
+        
+    # 압축 기동
+    result = decision_compressor.compress_decisions(str(temp_decisions), str(temp_archive))
     
-    with mock.patch("subprocess.Popen") as mock_popen:
-        res = feedback_feeder.feed_feedback("테스트 피드백 지시사항")
+    assert result is True
+    
+    # 검증: 본체 보존 여부
+    content = temp_decisions.read_text(encoding="utf-8")
+    assert "로컬 AI 자동화" in content
+    assert "## 1. 비즈니스 모델 및 전략 방향" in content
+    assert "모든 마케팅 및 영업 자료는" in content
+    
+    # 검증: 아카이브 생성되지 않았어야 함
+    assert not os.path.exists(temp_archive)
+
+def test_compress_deduplication_success(temp_decisions_setup):
+    """[압축기 테스트 - 중복 정제] 동일한 키워드로 여러 피드가 쌓였을 때, 최신 1개만 남고 이전은 아카이브로 등재되는지 검증합니다."""
+    temp_decisions, temp_archive = temp_decisions_setup
+    
+    # 2개의 중복 RAG 피드 생성 (과거 피드와 5분 뒤의 최신 피드)
+    past_time = (datetime.datetime.now() - datetime.timedelta(minutes=5)).strftime('%Y-%m-%d %H:%M:%S')
+    now_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    feeds = f"""
+
+### 📡 [RAG Feed] trend_sniper 자율 스캔 최신 트렌드 — {past_time}
+- **추천 틈새 키워드**: `로컬 AI 자동화`
+- **추천 썸네일 카피**: "과거 썸네일 카피"
+- **콘텐츠 핵심 테마**: "과거 테마"
+
+### 📡 [RAG Feed] trend_sniper 자율 스캔 최신 트렌드 — {now_str}
+- **추천 틈새 키워드**: `로컬 AI 자동화`
+- **추천 썸네일 카피**: "최신 썸네일 카피"
+- **콘텐츠 핵심 테마**: "최신 테마"
+"""
+    with open(temp_decisions, "a", encoding="utf-8") as f:
+        f.write(feeds)
         
-        assert res["status"] == "success"
-        # 백그라운드 스폰 호출이 안전하게 감지되었는지 단언
-        mock_popen.assert_called_once()
+    # 압축 기동
+    result = decision_compressor.compress_decisions(str(temp_decisions), str(temp_archive))
+    
+    assert result is True
+    
+    # decisions.md 본체 검증: 최신 피드만 존재해야 함
+    content = temp_decisions.read_text(encoding="utf-8")
+    assert "최신 썸네일 카피" in content
+    assert "과거 썸네일 카피" not in content
+    assert "## 1. 비즈니스 모델 및 전략 방향" in content # 마스터 보존
+    
+    # decisions_archive.md 백업함 검증: 과거 피드가 들어가 있어야 함
+    assert os.path.exists(temp_archive)
+    archive_content = temp_archive.read_text(encoding="utf-8")
+    assert "과거 썸네일 카피" in archive_content
+    assert "최신 썸네일 카피" not in archive_content
+
+def test_compress_expiry_success(temp_decisions_setup):
+    """[압축기 테스트 - 만료 정제] 7일이 지난 RAG 피드가 있을 때, 본체에서는 완전히 걷히고 아카이브에 이식되는지 검증합니다."""
+    temp_decisions, temp_archive = temp_decisions_setup
+    
+    # 8일이 지난 만료 피드 생성
+    expired_time = (datetime.datetime.now() - datetime.timedelta(days=8)).strftime('%Y-%m-%d %H:%M:%S')
+    
+    feed_content = f"""
+
+### 📡 [RAG Feed] trend_sniper 자율 스캔 최신 트렌드 — {expired_time}
+- **추천 틈새 키워드**: `오래된 AI 트렌드`
+- **추천 썸네일 카피**: "오래된 썸네일"
+- **콘텐츠 핵심 테마**: "오래된 테마"
+"""
+    with open(temp_decisions, "a", encoding="utf-8") as f:
+        f.write(feed_content)
         
-        called_args = mock_popen.call_args[0][0]
-        called_kwargs = mock_popen.call_args[1]
-        
-        assert "decision_compressor.py" in called_args[1]
-        if sys.platform == "win32":
-            assert "creationflags" in called_kwargs
-            assert called_kwargs["creationflags"] == 0x00004000
+    # 압축 기동
+    result = decision_compressor.compress_decisions(str(temp_decisions), str(temp_archive))
+    
+    assert result is True
+    
+    # decisions.md 본체 검증: 오래된 피드는 사라졌어야 함
+    content = temp_decisions.read_text(encoding="utf-8")
+    assert "오래된 AI 트렌드" not in content
+    assert "## 1. 비즈니스 모델 및 전략 방향" in content # 마스터 보존
+    
+    # decisions_archive.md 백업함 검증: 오래된 피드가 들어가 있어야 함
+    assert os.path.exists(temp_archive)
+    archive_content = temp_archive.read_text(encoding="utf-8")
+    assert "오래된 AI 트렌" in archive_content

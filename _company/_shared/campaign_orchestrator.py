@@ -97,6 +97,14 @@ def main():
         shutil.copy2(trend_report, os.path.join(campaign_dir, "01_youtube_trends.md"))
     print(f"   └─ 🎯 트렌드 스나이핑 완료 (소요시간: {time.time() - sniper_start:.2f}초)")
 
+    # 실시간 RAG decisions.md 메모리 자동 압축 및 아카이브 이중화 백업 기동
+    try:
+        sys.path.append(HERE)
+        import decision_compressor
+        decision_compressor.compress_decisions()
+    except Exception as ce:
+        print(f"⚠️ RAG 메모리 압축 가동 실패: {ce}")
+
     # Step 2, 3, 4: 블로그 집필, 비주얼 가이드 설계, Reels 대본 기획 -> 병렬(Parallel) 기동
     print("\n⚡ Step 2, 3, 4: 에이전트 군단 병렬 동시 창작 중 (3 Concurrent Workers)...")
     parallel_start = time.time()

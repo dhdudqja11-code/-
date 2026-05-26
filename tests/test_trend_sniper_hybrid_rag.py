@@ -98,14 +98,20 @@ def test_trend_sniper_main_happy_path_hybrid(temp_decisions_file):
             }
         ]
     }
-    
+    original_open = open
+    m_open = mock.mock_open()
+    def mock_open_side_effect(file, *args, **kwargs):
+        if "decisions.md" in str(file):
+            return original_open(file, *args, **kwargs)
+        return m_open(file, *args, **kwargs)
+
     with mock.patch("googleapiclient.discovery.build", return_value=mock_youtube), \
          mock.patch("web_search.scrape_google_news_rss", return_value=mock_news) as mock_rss, \
          mock.patch("requests.get") as mock_get, \
          mock.patch("requests.post", return_value=mock_llm_response), \
          mock.patch("trend_sniper.load_config", return_value={"TARGET_KEYWORDS": ["로컬 AI"]}), \
          mock.patch("trend_sniper.load_account", return_value={"YOUTUBE_API_KEY": "fake_key", "OLLAMA_URL": "http://127.0.0.1:1234/v1"}), \
-         mock.patch("builtins.open", mock.mock_open()) as mock_file_write:
+         mock.patch("builtins.open", side_effect=mock_open_side_effect) as mock_file_write:
          
         # get_models 모킹을 위한 GET 요청
         mock_get_models = mock.MagicMock()
@@ -122,7 +128,7 @@ def test_trend_sniper_main_happy_path_hybrid(temp_decisions_file):
         
         # decisions.md에 추천 키워드가 피딩 기록되었는지 파일 검증
         content = temp_decisions_file.read_text(encoding="utf-8")
-        assert "추천 틈새 키워드: `VRAM 8G 로컬 LLM`" in content
+        assert "추천 틈새 키워드**: `VRAM 8G 로컬 LLM`" in content
 
 def test_trend_sniper_api_quota_exhausted_fallback_success(temp_decisions_file):
     """
@@ -155,6 +161,13 @@ def test_trend_sniper_api_quota_exhausted_fallback_success(temp_decisions_file):
     mock_get_models.status_code = 200
     mock_get_models.json.return_value = {"models": [{"name": "mock-llm-model"}]}
 
+    original_open = open
+    m_open = mock.mock_open()
+    def mock_open_side_effect(file, *args, **kwargs):
+        if "decisions.md" in str(file):
+            return original_open(file, *args, **kwargs)
+        return m_open(file, *args, **kwargs)
+
     with mock.patch("googleapiclient.discovery.build", return_value=mock_youtube), \
          mock.patch("web_search.scrape_duckduckgo", return_value=mock_ddg) as mock_scrape_ddg, \
          mock.patch("web_search.scrape_google_news_rss", return_value=mock_news) as mock_rss, \
@@ -162,7 +175,7 @@ def test_trend_sniper_api_quota_exhausted_fallback_success(temp_decisions_file):
          mock.patch("requests.post") as mock_post, \
          mock.patch("trend_sniper.load_config", return_value={"TARGET_KEYWORDS": ["오프라인 AI"]}), \
          mock.patch("trend_sniper.load_account", return_value={"YOUTUBE_API_KEY": "fake_key"}), \
-         mock.patch("builtins.open", mock.mock_open()):
+         mock.patch("builtins.open", side_effect=mock_open_side_effect):
          
         # LLM 연결 실패로 인한 mock-model 자동 복구 모드 강제 유발을 위한 예외 처리
         mock_post.side_effect = Exception("Ollama Connection Refused")
@@ -177,5 +190,5 @@ def test_trend_sniper_api_quota_exhausted_fallback_success(temp_decisions_file):
         
         # 자율 폴백 mock-model RAG 데이터가 decisions.md에 피딩 등재 완료되었는지 검증
         content = temp_decisions_file.read_text(encoding="utf-8")
-        assert "추천 틈새 키워드: `AI 페어프로그래밍 샌드박스`" in content
+        assert "추천 틈새 키워드**: `AI 페어프로그래밍 샌드박스`" in content
         assert "AI랑 밤새 코딩해서 98개 테스트 한방에 통과한 썰" in content
