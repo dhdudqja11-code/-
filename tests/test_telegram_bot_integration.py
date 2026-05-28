@@ -422,3 +422,120 @@ def test_telegram_bot_campaign_bgm_sending_success():
         assert "Campaign BGM" in audio_args[3]
 
 
+def test_telegram_bot_status_dashboard_sending_success():
+    """[텔레그램 봇 - 마케팅 대시보드 시각화] 📊 플래너 상태 또는 /metrics 조회 시, 지표 분석 및 시각화 subprocess를 호출하고 미려한 대시보드 이미지를 자동 전송하는지 단언합니다."""
+    # mock subprocess.run for metrics tracker and visualizer
+    mock_proc = mock.MagicMock()
+    mock_proc.returncode = 0
+    
+    with mock.patch("subprocess.run", return_value=mock_proc) as mock_sub, \
+         mock.patch("os.path.exists", return_value=True), \
+         mock.patch("telegram_bot.send_message") as mock_send_msg, \
+         mock.patch("telegram_bot.send_photo") as mock_send_photo:
+         
+        telegram_bot.handle_command("📊 플래너 상태", "fake_token", "fake_chat_id")
+        
+        # 1. 트래커 및 시각화엔진 서브프로세스 2회 실행 단언
+        assert mock_sub.call_count == 2
+        called_args = [call[0][0] for call in mock_sub.call_args_list]
+        assert any("metrics_tracker.py" in str(arg) for arg in called_args)
+        assert any("metrics_visualizer.py" in str(arg) for arg in called_args)
+        
+        # 2. 분석 중 알림 메시지 + 최종 통합 리포트 메시지 발송 단언
+        assert mock_send_msg.call_count == 2
+        called_texts = [call[0][2] for call in mock_send_msg.call_args_list]
+        assert any("정밀 분석하는 중" in txt for txt in called_texts)
+        assert any("마케팅 성과 통합 리포트" in txt for txt in called_texts)
+        
+        # 3. premium 마케팅 대시보드 이미지 업로드 전송 단언
+        mock_send_photo.assert_called_once()
+        photo_args = mock_send_photo.call_args[0]
+        photo_kwargs = mock_send_photo.call_args[1]
+        assert "marketing_dashboard.png" in photo_args[2]
+        assert "실시간 마케팅 반응 분석 대시보드" in photo_kwargs["caption"]
+
+
+def test_telegram_bot_monte_carlo_success():
+    """[텔레그램 봇 - 몬테카를로 분석] 🎲 몬테카를로 분석 버튼 조회 시 시뮬레이션을 수행하고 통계 텍스트, 이미지 차트, PDF 보고서를 전부 연쇄 전송하는지 단언합니다."""
+    # mock simulate_risk_monte_carlo
+    mock_stats = {
+        "client_id": "TelegramRemote",
+        "trials": 20000,
+        "critical_threshold": 15000.0,
+        "mean_loss": 18240.50,
+        "median_loss": 18100.00,
+        "std_dev": 2400.00,
+        "var_95": 22400.00,
+        "var_99": 24100.00,
+        "exceed_prob": 88.5
+    }
+    mock_result = {
+        "status": "CRITICAL",
+        "stats": mock_stats,
+        "pdf_path": "fake_monte_carlo_report.pdf",
+        "mitigation_suggestion": "즉각적인 컴플라이언스 감사 및 decisions.md RAG 자율 통제를 조치하십시오."
+    }
+    
+    with mock.patch("mini_roi_simulator.core_api_service.simulate_risk_monte_carlo", return_value=(mock_result, True)) as mock_sim, \
+         mock.patch("os.path.exists", return_value=True), \
+         mock.patch("telegram_bot.send_message") as mock_send_msg, \
+         mock.patch("telegram_bot.send_photo") as mock_send_photo, \
+         mock.patch("telegram_bot.send_document") as mock_send_doc:
+         
+        telegram_bot.handle_command("🎲 몬테카를로 분석", "fake_token", "fake_chat_id")
+        
+        # 1. 몬테카를로 시뮬레이션 기동 단언
+        mock_sim.assert_called_once()
+        
+        # 2. 메시지 전송 단언 (수행 개시 안내 + 결과 통계 리포트 = 2회)
+        assert mock_send_msg.call_count == 2
+        called_texts = [call[0][2] for call in mock_send_msg.call_args_list]
+        assert any("몬테카를로 분석" in txt for txt in called_texts)
+        assert any("평균 예상 손실액: $18,240.50" in txt for txt in called_texts)
+        
+        # 3. 몬테카를로 분포 차트(PNG) 전송 단언
+        mock_send_photo.assert_called_once()
+        photo_args = mock_send_photo.call_args[0]
+        photo_kwargs = mock_send_photo.call_args[1]
+        assert "monte_carlo_distribution.png" in photo_args[2]
+        assert "몬테카를로 리스크 확률밀도 분포 차트" in photo_kwargs["caption"]
+        
+        # 4. 공식 실물 PDF 보고서(Document) 전송 단언
+        mock_send_doc.assert_called_once()
+        doc_args = mock_send_doc.call_args[0]
+        doc_kwargs = mock_send_doc.call_args[1]
+        assert "fake_monte_carlo_report.pdf" in doc_args[2]
+        assert "몬테카를로 정량 분석 증명서" in doc_kwargs["caption"]
+
+
+def test_telegram_bot_cool_ci_success():
+    """[텔레그램 봇 - 자율 빌드 검증] ⚡ 자율 빌드 검증 실행 시 쿨링 가드레일 하에서 CI 스크립트를 기동하고 성공 회신을 받는지 검증합니다."""
+    mock_proc = mock.MagicMock()
+    mock_proc.returncode = 0
+    
+    mock_report_content = """# ❄️ Thermal-Guard CI/CD 전사 빌드 자동화 리포트
+- **검증 일시**: 2026-05-27 23:20:00
+- **소요 시간**: 30.50초
+- **가드레일 상태**: SUCCESS (BELOW_NORMAL CPU 활성화)
+- **통과 여부**: 🟢 Perfect PASS"""
+    
+    with mock.patch("subprocess.run", return_value=mock_proc) as mock_sub, \
+         mock.patch("os.path.exists", return_value=True), \
+         mock.patch("builtins.open", mock.mock_open(read_data=mock_report_content)), \
+         mock.patch("telegram_bot.send_message") as mock_send_msg:
+         
+        telegram_bot.handle_command("⚡ 자율 빌드 검증", "fake_token", "fake_chat_id")
+        
+        # 1. 쿨 CI 러너 서브프로세스 1회 기동 단언
+        mock_sub.assert_called_once()
+        called_cmd = mock_sub.call_args[0][0]
+        assert "cool_ci_runner.py" in called_cmd[1]
+        
+        # 2. 실행 중 알림 + 완료 통보 메시지 2회 발송 단언
+        assert mock_send_msg.call_count == 2
+        called_texts = [call[0][2] for call in mock_send_msg.call_args_list]
+        assert any("테스트 및 빌드 검증을 쿨링 가드레일 모드로 실행" in txt for txt in called_texts)
+        assert any("자율 CI 빌드 통과 성공" in txt for txt in called_texts)
+        assert any("Perfect PASS" in txt for txt in called_texts)
+
+

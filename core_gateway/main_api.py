@@ -478,17 +478,42 @@ async def generate_legal_report_endpoint(
         }
         
         generator = LegalReportGenerator(mapped_logs)
-        final_text = generator.generate_report(initial_risk_context=risk_context, filename=request.filename)
+        report_result = generator.generate_report(initial_risk_context=risk_context, filename=request.filename)
+        final_text = report_result["text_report"]
+        data_hash = report_result["data_hash"]
+        file_hash = report_result["file_hash"]
         
         # 실물 PDF 보고서 사장님 모바일 텔레그램으로 직접 피딩 전송
         send_telegram_pdf(request.filename)
         
+        # 2차 SSoT 불변 파일 해시(file_hash)를 DB의 최근 감사 항목에 동적 갱신/기입
+        try:
+            import sqlite3
+            db_path = os.path.join(HERE, "gateway_audit.db")
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            try:
+                cursor.execute("ALTER TABLE audit_blocks ADD COLUMN artifact_hash TEXT")
+            except sqlite3.OperationalError:
+                pass
+            cursor.execute(
+                "UPDATE audit_blocks SET artifact_hash = ? WHERE id = (SELECT MAX(id) FROM audit_blocks)",
+                (file_hash,)
+            )
+            conn.commit()
+            conn.close()
+            print(f"🔒 [SSoT DB 이중 각인] 최종 PDF 파일 해시({file_hash})를 감사 데이터베이스에 성공적으로 이중 영구 적재했습니다.")
+        except Exception as dbe:
+            print(f"⚠️ [SSoT DB 기입 에러] {dbe}")
+            
         return {
             "success": True,
             "message": f"Successfully generated legal PDF report with {len(mapped_logs)} audit blocks.",
             "pdf_path": os.path.abspath(request.filename),
             "mapped_records_count": len(mapped_logs),
-            "report_summary": final_text[:500] + "..."
+            "report_summary": final_text[:500] + "...",
+            "data_hash": data_hash,
+            "file_hash": file_hash
         }
     except Exception as e:
         print(f"🐛 [Error] Legal report generation failed: {e}")

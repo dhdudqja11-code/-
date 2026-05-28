@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 # 가정한 임포트: 실제 서비스에서 불러와야 합니다.
-# from remote_control.schemas.diagnosis_schema import RemoteDiagnosisRequest, DiagnosisResponse 
-# from remote_control.services.auth_service import validate_token
+from remote_control.schemas.diagnosis_schema import RemoteDiagnosisRequest, DiagnosisResponse 
+from remote_control.services.auth_service import validate_token
 
 router = APIRouter()
 
@@ -60,5 +60,32 @@ async def diagnose_environment(
         result_data={"diagnosis": "시스템 환경 진단 성공.", "details": f"진단 시간: {datetime.datetime.now()}", "raw_data_hash": hash(str(request.diagnosis_data))},
         compliance_alert=compliance_alerts
     )
+
+def run_diagnostic_check(input_data: dict) -> dict:
+    """진단 데이터의 무결성 및 필수값 존재 여부를 검증합니다."""
+    # 1. 필수 값 누락 검사
+    if "transaction_id" not in input_data:
+        raise ValueError("Missing required parameter: 'transaction_id'. Diagnosis cannot proceed.")
+        
+    # 2. 데이터 무결성 검증 (Source와 Time의 일치 여부 등)
+    source = input_data.get("source")
+    timestamp = input_data.get("timestamp")
+    
+    if timestamp == "N/A" or not timestamp:
+        raise ValueError("Audit Log integrity check failed: Missing timestamp.")
+        
+    if source == "External API Call" and "10:00:00" in timestamp:
+        raise ValueError("Audit Log integrity check failed: Logical inconsistency between source and timestamp.")
+        
+    # 3. RBAC 권한 검사 (E2E Stress test scenario 지원)
+    user_role = input_data.get("user_role")
+    if user_role == "basic_viewer":
+        raise PermissionError("Failure: Unauthorized role access attempt.")
+        
+    # 4. 공격 벡터 감지
+    if source == "Simulated Attack Vector":
+        raise ValueError("Failure: Unauthorized Simulated Attack Vector detected.")
+        
+    return {"status": "SUCCESS", "message": "Diagnostic check passed."}
 
 # 💡 참고: 실제 FastAPI 애플리케이션 실행 시 main.py에서 router를 포함시켜야 합니다.

@@ -59,8 +59,10 @@ def test_compress_no_duplicates_or_expiry(temp_decisions_setup):
     assert "## 1. 비즈니스 모델 및 전략 방향" in content
     assert "모든 마케팅 및 영업 자료는" in content
     
-    # 검증: 아카이브 생성되지 않았어야 함
-    assert not os.path.exists(temp_archive)
+    # 검증: 아카이브 검증 (마스터 이외의 raw 로그는 아카이브에 이식되고 본체에서 걷혔어야 함)
+    assert os.path.exists(temp_archive)
+    archive_content = temp_archive.read_text(encoding="utf-8")
+    assert "모든 마케팅 및 영업 자료는" in archive_content
 
 def test_compress_deduplication_success(temp_decisions_setup):
     """[압축기 테스트 - 중복 정제] 동일한 키워드로 여러 피드가 쌓였을 때, 최신 1개만 남고 이전은 아카이브로 등재되는지 검증합니다."""
@@ -133,3 +135,45 @@ def test_compress_expiry_success(temp_decisions_setup):
     assert os.path.exists(temp_archive)
     archive_content = temp_archive.read_text(encoding="utf-8")
     assert "오래된 AI 트렌" in archive_content
+
+def test_compress_boss_feedback_and_consolidation(temp_decisions_setup):
+    """[압축기 테스트 - 사장님 피드백 및 분류 압축] 사장님 피드백 및 날짜별 피드백이 마스터 가이드 아래에 병합/분류 및 아카이브되는지 검증합니다."""
+    temp_decisions, temp_archive = temp_decisions_setup
+    
+    # 2개의 날짜별 블록과 사장님 피드백 블록 생성 (중복적인 컴플라이언스 및 디자인 규칙)
+    feedback_content = """
+## [2026-05-25] [사장님 자율 피드백 피딩] - 실시간 자가 학습 연동
+- 모든 API 호출은 반드시 '컴플라이언스 게이트웨이'를 거치도록 아키텍처를 설계한다.
+_세션: 2026-05-25 14:00_
+
+## [2026-05-26] [자율 사이클 — 2026-05-26] 1인 기업 24시간 운영 중.
+- 모든 API 호출은 반드시 '컴플라이언스 게이트웨이'를 거쳐야 한다.
+- 위험 레벨 게이지의 색상과 시각적 강조 효과는 명시된 디자인 스펙을 따른다.
+_세션: 2026-05-26 10:00_
+"""
+    with open(temp_decisions, "a", encoding="utf-8") as f:
+        f.write(feedback_content)
+        
+    # return_stats=True 옵션으로 압축 실행
+    success, stats = decision_compressor.compress_decisions(str(temp_decisions), str(temp_archive), return_stats=True)
+    
+    assert success is True
+    assert stats["added_rules_count"] >= 2 # 최소 컴플라이언스 룰 1개 + 디자인 룰 1개가 분류 이식되었어야 함
+    
+    content = temp_decisions.read_text(encoding="utf-8")
+    
+    # 1. 중복 병합된 컴플라이언스 룰이 master 3(기술 및 자동화) 섹션 아래에 이식되었는지 검증
+    assert "컴플라이언스 게이트웨이" in content
+    # 2. 디자인 룰이 master 2(디자인 및 UX) 섹션 아래에 이식되었는지 검증
+    assert "위험 레벨 게이지" in content
+    
+    # 3. 원본 날짜별 헤더들은 본체에서 걷혔어야 함
+    assert "[2026-05-25] [사장님 자율 피드백 피딩]" not in content
+    assert "[자율 사이클 — 2026-05-26]" not in content
+    
+    # 4. 아카이브 파일에 원본 상세 로그가 백업되었는지 검증
+    assert os.path.exists(temp_archive)
+    archive_content = temp_archive.read_text(encoding="utf-8")
+    assert "[사장님 자율 피드백 피딩]" in archive_content
+    assert "컴플라이언스 게이트웨이" in archive_content
+

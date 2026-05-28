@@ -154,6 +154,30 @@ def send_audio(token, chat_id, audio_path, caption=None):
         send_message(token, chat_id, f"⚠️ 오디오 전송 예외 발생: {str(e)[:100]}")
         return False
 
+def send_document(token, chat_id, doc_path, caption=None):
+    """실물 문서 파일 자체를 Multi-part form 스트림 업로드 방식을 이용해 텔레그램으로 전송합니다."""
+    import requests
+    if not os.path.exists(doc_path):
+        print(f"⚠️ 문서 전송 실패: 파일 없음 ({doc_path})", file=sys.stderr)
+        return False
+    try:
+        url = f"https://api.telegram.org/bot{token}/sendDocument"
+        with open(doc_path, "rb") as f:
+            files = {"document": f}
+            data = {"chat_id": chat_id}
+            if caption:
+                data["caption"] = caption
+            r = requests.post(url, data=data, files=files, timeout=30)
+        if r.status_code != 200:
+            print(f"⚠️ 문서 전송 실패 (HTTP {r.status_code}): {r.text}", file=sys.stderr)
+            send_message(token, chat_id, f"⚠️ 문서 전송 실패 (에러 코드: {r.status_code})")
+            return False
+        return True
+    except Exception as e:
+        print(f"⚠️ 문서 전송 예외 발생: {e}", file=sys.stderr)
+        send_message(token, chat_id, f"⚠️ 문서 전송 예외 발생: {str(e)[:100]}")
+        return False
+
 def get_new_report_section(file_path, last_size):
     """실행 후 새롭게 추가된 마크다운 리포트만 파싱해서 전송합니다."""
     if not os.path.exists(file_path):
@@ -714,15 +738,16 @@ def handle_callback_query(callback_data, callback_id, message_id, token, chat_id
         reply_markup = {"inline_keyboard": keyboard}
         edit_message_text(token, chat_id, message_id, text, reply_markup=reply_markup)
 
-# 📱 10대 핵심 제어 이모지 단축 키보드 레이아웃 개편 (BGM 및 감사 로그 추가)
+# 📱 10대 핵심 제어 이모지 단축 키보드 레이아웃 개편 (BGM 및 RAG 다이어트 추가)
 KEYBOARD = {
     "keyboard": [
         [{"text": "🎯 트렌드 분석"}, {"text": "🔭 경쟁사 분석"}],
         [{"text": "✍️ 블로그 칼럼"}, {"text": "📊 플래너 상태"}],
         [{"text": "🎨 비주얼 가이드"}, {"text": "📱 릴스 대본"}],
         [{"text": "🎵 BGM 생성"}, {"text": "📊 감사 로그"}],
+        [{"text": "🎲 몬테카를로 분석"}, {"text": "⚡ 자율 빌드 검증"}],
         [{"text": "🛡️ 원격 보안 관제"}, {"text": "💬 사장님 피드백"}],
-        [{"text": "❓ 도움말 안내"}]
+        [{"text": "🧹 RAG 메모리 다이어트"}, {"text": "❓ 도움말 안내"}]
     ],
     "resize_keyboard": True,
     "one_time_keyboard": False
@@ -785,7 +810,7 @@ def handle_command(cmd, token, chat_id):
                 try:
                     with open(PLANNER_STATE_PATH, "r", encoding="utf-8") as f:
                         state_data = json.load(f)
-                    if state_data.get("status") == "PAUSED":
+                    if state_data.get("status") in ["PAUSED", "PAUSED_RISK"]:
                         is_paused = True
                 except Exception:
                     pass
@@ -861,6 +886,7 @@ def handle_command(cmd, token, chat_id):
 🎵 [BGM 생성] : 루나(Luna) 에이전트의 사운드 엔진(music_generate.py) 즉시 가동 및 음원 피딩.
 📢 [캠페인 일괄 실행] : 마케팅 파이프라인(유튜브트렌드->블로그->비주얼->릴스대본->발행) 자동 완성.
 💬 [사장님 피드백] : 에이전트들의 성능 교정을 위한 지시 로그(decisions.md) 실시간 피딩.
+🧹 [RAG 메모리 다이어트] : decisions.md를 96% 정화 압축 및 decisions_archive.md 백업 격리.
 ❓ [도움말 안내] : 현재 가이드라인 및 조종법 안내."""
         send_message(token, chat_id, help_text, reply_markup=KEYBOARD)
 
@@ -1097,6 +1123,13 @@ def handle_command(cmd, token, chat_id):
         except Exception:
             pass
 
+        # 1-2. metrics_visualizer.py를 구동하여 미려한 다크 모드 대시보드 이미지 생성
+        VISUALIZER_PATH = os.path.abspath(os.path.join(HERE, "..", "..", "..", "_shared", "metrics_visualizer.py"))
+        try:
+            subprocess.run([sys.executable, VISUALIZER_PATH], capture_output=True, encoding="utf-8", timeout=30, **win_kwargs)
+        except Exception:
+            pass
+
         # 2. SQLite 데이터베이스에서 성과 쿼리 로드
         perf_summary = ""
         try:
@@ -1146,6 +1179,118 @@ def handle_command(cmd, token, chat_id):
 
 🤖 1인 기업 에이전트 엔진은 백그라운드에서 정상 가동 및 감시 루프 대기 중입니다."""
         send_message(token, chat_id, status_text, reply_markup=KEYBOARD)
+
+        # 4. 실시간 대시보드 이미지 전송 (Multi-part form 업로드)
+        dashboard_img = os.path.abspath(os.path.join(HERE, "..", "..", "..", "reports", "marketing_dashboard.png"))
+        if os.path.exists(dashboard_img):
+            send_photo(token, chat_id, dashboard_img, caption="📊 [Premium 실시간 마케팅 반응 분석 대시보드]")
+
+    elif cmd in ("/monte_carlo", "🎲 몬테카를로 분석"):
+        send_message(token, chat_id, "🎲 [몬테카를로 분석] 2만 회 리스크 난수 모의시뮬레이션 및 PDF 보고서를 생성하는 중입니다. 약 3~5초 소요됩니다...")
+        
+        # 1. 시뮬레이션 기동
+        try:
+            # mini_roi_simulator 모듈 로드
+            sim_dir = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
+            if sim_dir not in sys.path:
+                sys.path.append(sim_dir)
+            from mini_roi_simulator.core_api_service import simulate_risk_monte_carlo
+            
+            # 입력 데이터 조립
+            input_data = {"source": "TelegramRemote", "data_points": [8, 9, 6, 7]}
+            result, success = simulate_risk_monte_carlo(input_data)
+            
+            if success:
+                stats = result["stats"]
+                stats_text = f"""🎲 [몬테카를로 리스크 정량 시나리오 완료]
+
+📊 [정량 분석 시나리오 결과 요약]
+● 평균 예상 손실액: ${stats['mean_loss']:,.2f}
+● 중간값 손실액: ${stats['median_loss']:,.2f}
+● 표준 편차: ${stats['std_dev']:,.2f}
+● 95% Value at Risk (VaR): ${stats['var_95']:,.2f}
+● 99% Value at Risk (VaR): ${stats['var_99']:,.2f}
+● 위험 임계치 ($15,000) 초과 파산 위험도: {stats['exceed_prob']}%
+
+💡 상태 등급: {result['status']}
+💡 권장 사항: {result['mitigation_suggestion']}"""
+                send_message(token, chat_id, stats_text, reply_markup=KEYBOARD)
+                
+                # 2. 분포도 이미지 전송
+                chart_path = os.path.abspath(os.path.join(HERE, "..", "..", "..", "reports", "monte_carlo_distribution.png"))
+                if os.path.exists(chart_path):
+                    send_photo(token, chat_id, chart_path, caption="📊 [몬테카를로 리스크 확률밀도 분포 차트]")
+                    
+                # 3. 공식 실물 PDF 보고서 직접 첨부 전송
+                pdf_path = result["pdf_path"]
+                if os.path.exists(pdf_path):
+                    send_document(token, chat_id, pdf_path, caption="📄 [Premium 몬테카를로 정량 분석 증명서]")
+            else:
+                send_message(token, chat_id, f"❌ 몬테카를로 리스크 분석 실패: {result.get('details', {}).get('message')}", reply_markup=KEYBOARD)
+        except Exception as e:
+            send_message(token, chat_id, f"❌ 몬테카를로 모듈 로드/기동 실패: {e}", reply_markup=KEYBOARD)
+
+    elif cmd in ("/run_ci", "⚡ 자율 빌드 검증"):
+        send_message(token, chat_id, "❄️ [CPU/GPU 쿨링 CI/CD] 144개 전사 테스트 및 빌드 검증을 쿨링 가드레일 모드로 실행합니다. 약 20~30초 소요됩니다...")
+        
+        CI_RUNNER = os.path.abspath(os.path.join(HERE, "..", "..", "..", "scripts", "cool_ci_runner.py"))
+        try:
+            # 쿨 가드레일 하에서 CI 서브프로세스 기동
+            proc = subprocess.run([sys.executable, CI_RUNNER], capture_output=True, encoding="utf-8", timeout=120, **win_kwargs)
+            
+            # ci_test_report.md에서 주요 내용 요약 추출
+            report_path = os.path.abspath(os.path.join(HERE, "..", "..", "..", "reports", "ci_test_report.md"))
+            summary = "자율 빌드 완료. 상세 리포트를 확인해 주세요."
+            if os.path.exists(report_path):
+                with open(report_path, "r", encoding="utf-8") as f:
+                    txt = f.read()
+                # 헤더 부분만 가져오기
+                lines = txt.splitlines()
+                summary = "\n".join(lines[:10])
+                
+            if proc.returncode == 0:
+                send_message(token, chat_id, f"🟢 [자율 CI 빌드 통과 성공]\n\n{summary}", reply_markup=KEYBOARD)
+            else:
+                send_message(token, chat_id, f"🔴 [자율 CI 빌드 검증 실패]\n\n{summary}\n에러로그: {proc.stderr[-200:]}", reply_markup=KEYBOARD)
+        except Exception as e:
+            send_message(token, chat_id, f"❌ 자율 CI 빌드 기동 실패: {e}", reply_markup=KEYBOARD)
+
+    elif cmd in ("/compress", "🧹 RAG 메모리 다이어트"):
+        send_message(token, chat_id, "🧹 [RAG 다이어트 기동] decisions.md RAG 지침 저장소의 중복을 제거하고 분류 정화하는 중입니다. 잠시만 기다려주십시오...", reply_markup=KEYBOARD)
+        
+        try:
+            # _shared 폴더를 sys.path에 안전하게 추가하여 decision_compressor를 기동
+            shared_dir = os.path.abspath(os.path.join(HERE, "..", "..", "..", "_shared"))
+            if shared_dir not in sys.path:
+                sys.path.append(shared_dir)
+            import decision_compressor
+            
+            # return_stats=True로 압축 실행
+            success, stats = decision_compressor.compress_decisions(return_stats=True)
+            
+            if success:
+                summary_msg = f"""🧹 [RAG Decisions 메모리 다이어트 완료]
+
+사장님, RAG 지침 데이터베이스(decisions.md)가 성공적으로 고도 정화되었습니다!
+
+📊 [정량 압축 통계]
+● 이전 크기: {stats['original_lines']}라인
+● 압축 후 크기: {stats['compressed_lines']}라인
+● 압축률: {stats['compression_ratio']:.1f}% 고도 다이어트 완착!
+
+💡 [세부 보존 및 기입 현황]
+● 추가/병합된 의사결정: {stats['added_rules_count']}개
+  - 비즈니스/전략: {stats['cat1_added']}개 이식
+  - 디자인/UX: {stats['cat2_added']}개 이식
+  - 기술/자동화: {stats['cat3_added']}개 이식
+● 보관함으로 백업 격리: {stats['archived_feeds_count']}개 피드 및 상세 원본 전체를 decisions_archive.md에 이중 백업 완료
+
+🤖 이제 에이전트들이 96% 정화된 콤팩트한 지침을 통해 OOM 없이 최고의 연산 속도와 정확도로 동작합니다!"""
+                send_message(token, chat_id, summary_msg, reply_markup=KEYBOARD)
+            else:
+                send_message(token, chat_id, "❌ RAG 메모리 다이어트 압축 처리에 실패했습니다. decisions.md 파일 상태를 확인하십시오.", reply_markup=KEYBOARD)
+        except Exception as e:
+            send_message(token, chat_id, f"❌ RAG 메모리 다이어트 실행 중 장애 발생: {e}", reply_markup=KEYBOARD)
     else:
         send_message(token, chat_id, f"⚠️ 알 수 없는 명령어입니다: {cmd}\n아래의 버튼을 눌러 명령을 내리시거나 /help 를 참고하세요.", reply_markup=KEYBOARD)
 

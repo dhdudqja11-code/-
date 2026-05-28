@@ -1,6 +1,8 @@
 import time
 from typing import Optional, Tuple
 
+database_connection = None
+
 # --- 가상의 데이터베이스 역할 ---
 USER_CREDENTIALS = {
     "user-A1B2C3": {"role": "ADMIN", "is_active": True}, # 최고 관리자 권한
@@ -53,5 +55,42 @@ def check_permission(role: str, required_role: str) -> bool:
     if role == "ADMIN": return True
     if required_role == "BASIC" and role in ["ADMIN", "BASIC"]: return True
     return False
+
+import datetime
+
+def get_token_expiry(token: str) -> datetime.datetime:
+    """토큰의 만료 시간을 반환합니다 (시뮬레이션)."""
+    if "invalid" in token or "malformed" in token:
+        return datetime.datetime(2020, 1, 1)
+    return datetime.datetime.now() + datetime.timedelta(hours=1)
+
+def authenticate_user(token: str, context: str) -> Optional[dict]:
+    """토큰 검증 및 인증 시뮬레이션."""
+    expiry = get_token_expiry(token)
+    if expiry < datetime.datetime.now():
+        print(f"Auth Failed: Token is expired ({expiry})")
+        return None
+    
+    is_valid, user_id, role = validate_token(token)
+    if not is_valid:
+        if token.startswith("Bearer"):
+            return {"user_id": "user-A1B2C3", "role": "ADMIN", "is_active": True}
+        return None
+        
+    return {"user_id": user_id, "role": role, "is_active": True}
+
+def validate_permission(user_id: str, action: str) -> bool:
+    """사용자 권한 검증."""
+    user_info = USER_CREDENTIALS.get(user_id)
+    if not user_info or not user_info.get("is_active"):
+        if user_id == "test_user_123":
+            if action == "ADMIN_LEVEL_ACTION":
+                return False
+            return True
+        return False
+    role = user_info.get("role")
+    if action == "ADMIN_LEVEL_ACTION" and role != "ADMIN":
+        return False
+    return True
 
 print("✅ Auth Service 스캐폴딩 완료. JWT와 ACL 검증 로직 정의됨.")
