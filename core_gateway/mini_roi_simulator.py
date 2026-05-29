@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, validator
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any
 import uuid
+import random
 
 # ==============================================================
 # 1. Pydantic Models (Input/Output Guardrails)
@@ -23,12 +24,18 @@ class StructuredReportItem(BaseModel):
     stage: str = Field(..., description="단계 (Problem/Cause/Solution).")
     detail: str = Field(..., description="해당 단계에 대한 구체적이고 권위적인 설명.")
 
+class ChartDataPoint(BaseModel):
+    """웹 대시보드 시각화용 단일 차트 데이터 포인트."""
+    loss: float = Field(..., description="손실액 구간 기댓값 (USD)")
+    density: float = Field(..., description="해당 구간 손실이 발생할 확률 밀도")
+
 class SimulationOutput(BaseModel):
     """Mini ROI 시뮬레이션의 최종 출력 구조."""
     simulation_id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="이번 시뮬레이션 고유 ID.")
     total_estimated_loss_usd: float = Field(..., ge=0, description="예상되는 총 손실액 (USD).")
     is_critical_risk: bool = Field(..., description="현재 위험 상태가 임계치(Critical)에 도달했는지 여부.")
     report: List[StructuredReportItem] = Field(..., min_items=1, description="위험 진단 3단계 구조 보고서.")
+    chart_data: List[ChartDataPoint] = Field(default=[], description="웹 대시보드 시각화용 확률 밀도 포인트 배열.")
 
 # ==============================================================
 # 2. Core Business Logic (Testable Unit Function)
@@ -75,6 +82,44 @@ def calculate_mini_roi_loss(input_data: SimulationInput) -> List[StructuredRepor
 
     return report, round(total_loss, 2)
 
+def generate_lightweight_monte_carlo(total_loss: float) -> List[ChartDataPoint]:
+    """
+    실시간 프론트엔드 출렁임 반응 속도(0.005초)를 보장하기 위해 설계된
+    표준 random.triangular 기반 2,000회 경량 몬테카를로 시뮬레이션 및 20개 구간 이산화 밀도 연산기.
+    """
+    if total_loss <= 0:
+        return []
+        
+    # 삼각분포 범위 산정: 최빈값(total_loss), 최솟값(60%), 최댓값(150%)
+    low = total_loss * 0.6
+    high = total_loss * 1.5
+    
+    trials = 2000
+    simulated_losses = [random.triangular(low, high, total_loss) for _ in range(trials)]
+    
+    # 20개 구간으로 이산화(binning)하여 히스토그램 확률 밀도 추출
+    num_bins = 20
+    min_val, max_val = min(simulated_losses), max(simulated_losses)
+    bin_width = (max_val - min_val) / num_bins
+    
+    if bin_width <= 0:
+        return [ChartDataPoint(loss=total_loss, density=1.0)]
+        
+    counts = [0] * num_bins
+    for val in simulated_losses:
+        bin_idx = int((val - min_val) / bin_width)
+        if bin_idx >= num_bins:
+            bin_idx = num_bins - 1
+        counts[bin_idx] += 1
+        
+    # 확률 밀도 연산 (count / (total_samples * bin_width))
+    chart_data: List[ChartDataPoint] = []
+    for i in range(num_bins):
+        bin_center = min_val + (i + 0.5) * bin_width
+        density = counts[i] / (trials * bin_width)
+        chart_data.append(ChartDataPoint(loss=round(bin_center, 2), density=round(density, 6)))
+        
+    return chart_data
 
 # ==============================================================
 # 3. FastAPI Router (API Endpoint Skeleton)
@@ -85,19 +130,23 @@ router = APIRouter()
 @router.post("/api/v1/mini-roi/simulate", response_model=SimulationOutput)
 async def simulate_mini_roi(input: SimulationInput):
     """
-    Mini ROI 시뮬레이션을 실행하여 예상 손실액과 권위적 보고서를 반환합니다.
+    Mini ROI 시뮬레이션을 실행하여 예상 손실액과 권위적 보고서, 그리고 대시보드 시각화용 차트 데이터를 반환합니다.
     이 엔드포인트는 핵심 컴플라이언스 게이트웨이를 통하는 필수 API입니다.
     """
     try:
         # 1. Core Logic 호출 및 결과 받기 (테스트 가능한 함수 활용)
         report, total_loss = calculate_mini_roi_loss(input)
 
-        # 2. 최종 출력 객체 생성
+        # 2. 0.005초 내 초고속 경량 몬테카를로 차트 시각화 데이터 생성
+        chart_data = generate_lightweight_monte_carlo(total_loss)
+
+        # 3. 최종 출력 객체 생성
         output = SimulationOutput(
             simulation_id=str(uuid.uuid4()),
             total_estimated_loss_usd=total_loss,
             is_critical_risk=(total_loss > 10000),
-            report=report
+            report=report,
+            chart_data=chart_data
         )
         return output
 

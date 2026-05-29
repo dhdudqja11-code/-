@@ -16,7 +16,7 @@ const gowunBatang = Gowun_Batang({
 
 export const metadata: Metadata = {
   title: "마음을 묻다 - 당신만의 선명한 빛을 찾아가세요",
-  description: "현대인을 위한 AI 심리 처방전. 불안, 우울, 무기력 등 당신의 아픈 마음을 위로하는 아날로그 편지.",
+  description: "현대인을 위한 AI 심리 처방전. 불안, 무기력, 불면증 등 당신의 아픈 마음을 위로하는 아날로그 편지.",
   robots: {
     index: false,
     follow: false,

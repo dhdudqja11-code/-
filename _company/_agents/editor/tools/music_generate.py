@@ -44,32 +44,32 @@ def _load(p):
 
 def extract_mood_from_latest_post():
     """최신 블로그 포스팅 분석을 통해 음악 테마와 분위기를 도출합니다."""
-    posts_dir = os.path.join(WORKSPACE, "_company", "_agents", "youtube", "tools", "naver_posts")
+    posts_dir = os.path.join(WORKSPACE, "_company", "_agents", "writer", "tools", "naver_posts")
     if not os.path.exists(posts_dir):
-        return "hopeful tech theme"
+        return "528Hz Solfeggio frequency meditation healing ambient"
     try:
         files = [os.path.join(posts_dir, f) for f in os.listdir(posts_dir) if f.endswith(".md")]
         if not files:
-            return "hopeful tech theme"
+            return "528Hz Solfeggio frequency meditation healing ambient"
         latest_file = max(files, key=os.path.getmtime)
         with open(latest_file, "r", encoding="utf-8") as f:
             content = f.read()
             
         # 포스팅 제목 및 본문 기반 키워드 매칭 무드 기법
         keywords = {
-            "보안": "cybersecurity dark ambient electronic",
-            "가드레일": "industrial structured steady electronic beat",
-            "오프라인": "retro cinematic deep synth",
-            "로컬": "minimal tech lofi beats",
-            "수익화": "upbeat inspiring corporate theme",
-            "1인 기업": "hopeful rising indie tech pop"
+            "불안": "528Hz Solfeggio frequency calming meditation ambient piano",
+            "우울": "432Hz deep comforting soft strings healing background music",
+            "번아웃": "therapeutic peaceful forest nature soundscape with warm acoustic guitar",
+            "위로": "gentle slow-tempo comforting warm synth pads and soft bells",
+            "침묵": "deep spiritual silence healing sound bath 528Hz solfeggio",
+            "안도감": "soothing warm light rays cinematic ambient hopeful resolution"
         }
         for kw, mood in keywords.items():
             if kw in content:
                 return mood
     except Exception:
         pass
-    return "hopeful tech theme, gentle synth, smooth beats"
+    return "528Hz Solfeggio frequency meditation healing ambient, soft piano"
 
 
 def _generate_simulated(prompt, duration_sec, output_path):
@@ -205,7 +205,7 @@ def _api_send_audio_to_telegram(audio_path, prompt):
             files = {"audio": f_audio}
             data = {
                 "chat_id": chat_id,
-                "caption": f"🎵 [Premium Procedural BGM]\n루나(Luna) 에이전트가 로컬에서 procedurally 작곡한 시그니처 사운드 트랙입니다.\n\n🎧 무드 테마: {prompt}"
+                "caption": f"🎵 [마음을 묻다 — 치유 음원 출고]\n\n오영범 마스터의 정서적 교감을 극대화하기 위해 로컬 AI로 합성해낸 528Hz/432Hz 명상/치유 솔페지오 BGM 음원입니다.\n\n🎧 사운드 무드: {prompt}"
             }
             requests.post(url, data=data, files=files, timeout=30)
             

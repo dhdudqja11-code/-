@@ -13,20 +13,20 @@ import unittest.mock as mock
 HERE = os.path.dirname(os.path.abspath(__file__))
 COMPANY_ROOT = os.path.abspath(os.path.join(HERE, "..", "_company"))
 SHARED_DIR = os.path.join(COMPANY_ROOT, "_shared")
-YOUTUBE_TOOLS = os.path.join(COMPANY_ROOT, "_agents", "youtube", "tools")
+SECRETARY_TOOLS = os.path.join(COMPANY_ROOT, "_agents", "secretary", "tools")
 
 if SHARED_DIR not in sys.path:
     sys.path.append(SHARED_DIR)
-if YOUTUBE_TOOLS not in sys.path:
-    sys.path.append(YOUTUBE_TOOLS)
+if SECRETARY_TOOLS not in sys.path:
+    sys.path.append(SECRETARY_TOOLS)
 
 import auto_planner
 
 @pytest.fixture(autouse=True)
 def setup_test_sandboxing():
     """Isolates the environment to prevent breaking decisions.md or planner state."""
-    state_path = os.path.join(YOUTUBE_TOOLS, "planner_state.json")
-    state_bak = os.path.join(YOUTUBE_TOOLS, "planner_state.json.bak")
+    state_path = os.path.join(SECRETARY_TOOLS, "planner_state.json")
+    state_bak = os.path.join(SECRETARY_TOOLS, "planner_state.json.bak")
     state_existed = os.path.exists(state_path)
     if state_existed:
         shutil.copy2(state_path, state_bak)
@@ -136,5 +136,5 @@ def test_auto_planner_monte_carlo_lockdown_risk():
         assert "PAUSED_RISK" in mock_alert.call_args[0][0] or "일시정지" in mock_alert.call_args[0][0]
         
         # State file check
-        state_path = os.path.join(YOUTUBE_TOOLS, "planner_state.json")
+        state_path = os.path.join(SECRETARY_TOOLS, "planner_state.json")
         assert os.path.exists(state_path)

@@ -101,6 +101,7 @@ def test_main_api_legal_report_ssot_double_hashing(tmp_path):
     """Verifies that API Gateway generates reports, applies ALTER TABLE, and stores file_hash into SSoT DB."""
     from fastapi.testclient import TestClient
     from core_gateway.main_api import app
+    from core_gateway.auth_service import create_access_token
     
     client = TestClient(app)
     
@@ -145,7 +146,17 @@ def test_main_api_legal_report_ssot_double_hashing(tmp_path):
         }
         
         # TestClient로 FastAPI 엔드포인트 호출
-        response = client.post("/api/v1/security/report", json=request_payload)
+        # 유효한 JWT 토큰 및 헤더 생성
+        token_payload = {
+            "sub": "admin_test",
+            "roles": ["ROLE_ADMIN"],
+            "active": True
+        }
+        token = create_access_token(token_payload)
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        # TestClient로 FastAPI 엔드포인트 호출
+        response = client.post("/api/v1/security/report", headers=headers, json=request_payload)
         
         assert response.status_code == 200
         data = response.json()

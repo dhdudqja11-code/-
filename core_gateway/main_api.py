@@ -332,6 +332,13 @@ def map_audit_block_to_legal_log(block: Dict[str, Any]) -> Dict[str, Any]:
 # ------------------- [4. FastAPI 애플리케이션 및 엔드포인트] ------------------- #
 app = FastAPI(title="Immutable Audit Gateway (IAG)")
 
+# mini_roi_simulator 라우터 인클루드 (Option C 완착)
+try:
+    from mini_roi_simulator import router as mini_roi_router
+except ImportError:
+    from .mini_roi_simulator import router as mini_roi_router
+app.include_router(mini_roi_router)
+
 @app.post("/api/v1/simulate_risk", response_model=AuditBlock)
 async def simulate_risk_endpoint(
     request: MiniROIRequest, 
@@ -411,6 +418,7 @@ async def check_compliance_endpoint(
             message=f"Failure: {type(e).__name__}: {str(e)}"
         )
 
+@app.post("/api/v1/security/report", response_model=Dict[str, Any])
 @app.post("/api/v1/generate_legal_report", response_model=Dict[str, Any])
 async def generate_legal_report_endpoint(
     request: ReportGenerationRequest,

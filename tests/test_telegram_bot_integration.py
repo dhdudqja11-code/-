@@ -7,9 +7,9 @@ import unittest.mock as mock
 
 # 봇 도구 폴더를 sys.path에 추가하여 직접 임포트합니다.
 HERE = os.path.dirname(os.path.abspath(__file__))
-YOUTUBE_TOOLS = os.path.abspath(os.path.join(HERE, "..", "_company", "_agents", "youtube", "tools"))
-if YOUTUBE_TOOLS not in sys.path:
-    sys.path.append(YOUTUBE_TOOLS)
+SECRETARY_TOOLS = os.path.abspath(os.path.join(HERE, "..", "_company", "_agents", "secretary", "tools"))
+if SECRETARY_TOOLS not in sys.path:
+    sys.path.append(SECRETARY_TOOLS)
 
 import telegram_bot
 
@@ -402,7 +402,10 @@ def test_telegram_bot_campaign_bgm_sending_success():
     
     with mock.patch("subprocess.run", return_value=mock_proc), \
          mock.patch("os.path.exists", return_value=True) as mock_exists, \
+         mock.patch("os.listdir", return_value=[]) as mock_listdir, \
          mock.patch("telegram_bot.send_message") as mock_send_msg, \
+         mock.patch("telegram_bot.send_photo") as mock_send_photo, \
+         mock.patch("telegram_bot.send_document") as mock_send_doc, \
          mock.patch("telegram_bot.send_audio") as mock_send_audio:
          
         telegram_bot.handle_command("/campaign", "fake_token", "fake_chat_id")
@@ -411,7 +414,7 @@ def test_telegram_bot_campaign_bgm_sending_success():
         assert mock_send_msg.call_count == 2
         called_texts = [call[0][2] for call in mock_send_msg.call_args_list]
         assert any("연쇄 기동 중" in txt for txt in called_texts)
-        assert any("AI 1인 기업 일괄 캠페인 병렬 완수" in txt for txt in called_texts)
+        assert any("통합 치유 캠페인 완수" in txt for txt in called_texts)
         assert any("campaign_20260526_1800" in txt for txt in called_texts)
         
         # 2. mp3 스캔 및 텔레그램 업로드 단언
@@ -419,7 +422,7 @@ def test_telegram_bot_campaign_bgm_sending_success():
         audio_args = mock_send_audio.call_args[0]
         # BGM 파일명 및 캡션 매치 단언
         assert "05_signature_bgm.mp3" in audio_args[2]
-        assert "Campaign BGM" in audio_args[3]
+        assert "시그니처 명상 BGM" in audio_args[3]
 
 
 def test_telegram_bot_status_dashboard_sending_success():

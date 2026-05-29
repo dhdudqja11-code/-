@@ -66,23 +66,30 @@ def sanitize_text(text: str, font: str) -> str:
             "진단 항목": "Category",
             "손실 예상액": "Estimated Loss",
             "쉬운 설명": "Explanation",
-            "평균적인 손실 기댓값": "Average Expected Loss",
-            "모의실험 전체에서 나타난 평균 손실액": "Average loss across all simulations",
-            "보통 상황의 예상 손실액": "Normal Scenario Loss",
-            "전체 상황 중 정확히 중간 순위의 예상 손실": "50th percentile rank scenario loss",
-            "손실 불확실성 변동폭": "Loss Variability",
-            "예측이 빗나갈 수 있는 불확실성의 범위": "Uncertainty range of estimated loss",
-            "최악의 위기 상황 예상 손실 (상위 5% 위험)": "Worst 5% Scenario Loss (95% VaR)",
-            "100번 중 5번 꼴로 나타나는 최악의 상황 시 발생 가능한 최대 손실액": "Maximum loss in worst 5% situations",
-            "극단적 파산 위기 예상 손실 (상위 1% 위험)": "Extreme 1% Scenario Loss (99% VaR)",
-            "100번 중 1번 꼴로 나타나는 극단적 위기 상황 시 발생 가능한 최대 손실액": "Maximum loss in worst 1% situations",
-            "🔔 안전한 경영을 위한 권고사항": "🔔 Recommendations for Safe Business",
-            "1. 이 보고서는 비즈니스의 위험 요인을 바탕으로 컴퓨터가 20,000번 가상으로 모의실험을 수행해 도출해낸 안전성 진단 결과입니다.":
-                "1. This report is a safety diagnosis from 20,000 virtual computer simulations based on your business risk factors.",
-            "2. 상위 5% 및 상위 1% 예상 손실액 수치는 법률 위반이나 개인정보 노출 등 극단적인 위기가 발생했을 때 발생할 수 있는 잠재적 최대 금액입니다.":
-                "2. The worst 5% and 1% estimated loss levels represent the potential maximum damages in extreme compliance failures.",
-            "3. 빨간불 경고 확률(위험 기준액 초과 가능성)이 높게 나오는 경우, 즉각적으로 시스템의 자동 안전 차단 장치(Core Gateway)를 강화하고 의사결정 안전 지침을 보강할 것을 권장합니다.":
-                "3. If the risk exceedance chance is high, we strongly recommend reinforcing your system safety filters (Core Gateway) and safety guidelines.",
+            "평균적인 손실 기댓값 (평소에 발생할 수 있는 지출 규모)": "Average Expected Loss (Normal business operation expense)",
+            "2만 번의 가상 실행에서 나타난 지극히 평균적인 지출 수준": "Extremely average expenditure level observed across 20,000 trials",
+            "보통 상황의 예상 손실액 (딱 중간 순위의 일반적 날씨)": "Normal Scenario Loss (The most ordinary middle-rank situation)",
+            "특별한 이변이 없는 일상에서 마주하는 일반적인 손실액": "General loss encountered in daily business without extreme events",
+            "손실의 흔들림 변동폭 (표준편차)": "Loss Volatility (Standard Deviation)",
+            "비가 오거나 맑은 날씨의 차이처럼 손실이 오르내리는 흔들림의 크기": "The range of rise and fall in loss, like the difference between rain and shine",
+            "최악의 폭풍우 상황 예상 손실 (상위 5% 위험)": "Worst 5% Storm Loss (95% Value at Risk)",
+            "100일 중 가장 운이 없는 5일 동안 겪을 수 있는 잠재적 최대 폭풍우 손실액": "Maximum potential loss incurred during the 5 worst days out of 100 days",
+            "극단적 태풍 위기 예상 손실 (상위 1% 위험)": "Extreme 1% Typhoon Loss (99% Value at Risk)",
+            "평생 한 번 올까 말까 한 초대형 태풍 상황 시의 최대 리스크액": "Maximum absolute risk when hit by an ultra-typhoon once in a lifetime",
+            "🔔 대표님(사장님), 오늘 하루도 참 많이 애쓰셨습니다": "🔔 President, thank you so much for your hard work today",
+            "1. 2만 번의 가상 모의 경영 시뮬레이션은 대표님이 밤낮으로 다져오신 사업의 기틀을 지키기 위한 조용한 안부이자 예방 진단입니다.":
+                "1. The 20,000 virtual simulations act as a quiet greeting and proactive scan to protect your business foundation.",
+            "2. 상위 5% 및 1% 예상 손실액은 혹여나 마주할 수 있는 법률적, 보안상 비바람에 대비해 우리가 단단한 지붕(우산)을 미리 지어둘 수 있도록 돕는 사랑의 이정표입니다.":
+                "2. The worst 5% and 1% losses serve as warm guideposts, reminding us to prepare solid umbrellas against compliance rainstorms.",
+            "3. 리스크 초과 확률이 높게 나오더라도 자책하지 마세요. 대표님이 더 견고하고 안전한 방어막을 구축해 마음을 완전히 편히 놓으셔도 된다는 다정한 신호입니다.":
+                "3. Please do not blame yourself if the risk probability seems high; it is a friendly sign to build a stronger defensive shield and let your mind rest.",
+            "💡 초보 사장님을 위한 마스터의 10초 요약 꿀팁": "💡 Warm Cheat-Sheet for Beginner Presidents",
+            "• 평균 손실과 보통 손실은 일상적인 맑은 날씨에 발생하는 소소한 비용 지출이므로 평소처럼 편안하게 대처하시면 됩니다.":
+                "• Average & Normal losses are just minor everyday expenses under sunny skies. Rest easy and deal with them casually.",
+            "• 흔들림 변동폭은 날씨가 수시로 변하듯 비즈니스가 오르내리는 자연스러운 호흡(파도)입니다.":
+                "• Volatility is simply the natural rhythm of your business fluctuating, much like shifting weather patterns.",
+            "• 우리가 대비해야 할 것은 최악(5%) 및 극단적(1%) 상황입니다. 이 수치가 커질 때만 튼튼한 우산(Gateway 자동 안전 가드)을 펼쳐 마음을 지키시면 됩니다.":
+                "• All we need to shield against are the Worst (5%) & Extreme (1%) storms. When these rise, just unfold your strong Gateway umbrella.",
             "🔒 디지털 보안 및 위조 방지 서명 (디지털 안전 인증)": "🔒 Digital Security & Immutability Certificate",
             "안전 장부 고유 번호": "Document Signature Hash",
             "안전 인증 완료": "Compliance Verified",
@@ -365,19 +372,19 @@ def generate_monte_carlo_pdf(sim_results: dict) -> dict:
         [Paragraph(sanitize_text("진단 항목", FONT_NAME), bold_body_style), 
          Paragraph(sanitize_text("손실 예상액", FONT_NAME), bold_body_style), 
          Paragraph(sanitize_text("쉬운 설명", FONT_NAME), bold_body_style)],
-        [Paragraph(sanitize_text("평균적인 손실 기댓값", FONT_NAME), body_style), f"${sim_results['mean_loss']:,.2f}", 
-         Paragraph(sanitize_text("모의실험 전체에서 나타난 평균 손실액", FONT_NAME), body_style)],
-        [Paragraph(sanitize_text("보통 상황의 예상 손실액", FONT_NAME), body_style), f"${sim_results['median_loss']:,.2f}", 
-         Paragraph(sanitize_text("전체 상황 중 정확히 중간 순위의 예상 손실", FONT_NAME), body_style)],
-        [Paragraph(sanitize_text("손실 불확실성 변동폭", FONT_NAME), body_style), f"${sim_results['std_dev']:,.2f}", 
-         Paragraph(sanitize_text("예측이 빗나갈 수 있는 불확실성의 범위", FONT_NAME), body_style)],
-        [Paragraph(sanitize_text("최악의 위기 상황 예상 손실 (상위 5% 위험)", FONT_NAME), bold_body_style), f"${sim_results['var_95']:,.2f}", 
-         Paragraph(sanitize_text("100번 중 5번 꼴로 나타나는 최악의 상황 시 발생 가능한 최대 손실액", FONT_NAME), body_style)],
-        [Paragraph(sanitize_text("극단적 파산 위기 예상 손실 (상위 1% 위험)", FONT_NAME), bold_body_style), f"${sim_results['var_99']:,.2f}", 
-         Paragraph(sanitize_text("100번 중 1번 꼴로 나타나는 극단적 위기 상황 시 발생 가능한 최대 손실액", FONT_NAME), body_style)]
+        [Paragraph(sanitize_text("평균적인 손실 기댓값 (평소에 발생할 수 있는 지출 규모)", FONT_NAME), body_style), f"${sim_results['mean_loss']:,.2f}", 
+         Paragraph(sanitize_text("2만 번의 가상 실행에서 나타난 지극히 평균적인 지출 수준", FONT_NAME), body_style)],
+        [Paragraph(sanitize_text("보통 상황의 예상 손실액 (딱 중간 순위의 일반적 날씨)", FONT_NAME), body_style), f"${sim_results['median_loss']:,.2f}", 
+         Paragraph(sanitize_text("특별한 이변이 없는 일상에서 마주하는 일반적인 손실액", FONT_NAME), body_style)],
+        [Paragraph(sanitize_text("손실의 흔들림 변동폭 (표준편차)", FONT_NAME), body_style), f"${sim_results['std_dev']:,.2f}", 
+         Paragraph(sanitize_text("비가 오거나 맑은 날씨의 차이처럼 손실이 오르내리는 흔들림의 크기", FONT_NAME), body_style)],
+        [Paragraph(sanitize_text("최악의 폭풍우 상황 예상 손실 (상위 5% 위험)", FONT_NAME), bold_body_style), f"${sim_results['var_95']:,.2f}", 
+         Paragraph(sanitize_text("100일 중 가장 운이 없는 5일 동안 겪을 수 있는 잠재적 최대 폭풍우 손실액", FONT_NAME), body_style)],
+        [Paragraph(sanitize_text("극단적 태풍 위기 예상 손실 (상위 1% 위험)", FONT_NAME), bold_body_style), f"${sim_results['var_99']:,.2f}", 
+         Paragraph(sanitize_text("평생 한 번 올까 말까 한 초대형 태풍 상황 시의 최대 리스크액", FONT_NAME), body_style)]
     ]
     
-    stats_table = Table(stats_data, colWidths=[180, 90, 250])
+    stats_table = Table(stats_data, colWidths=[180, 80, 260])
     stats_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#F3EFE9")),
         ('GRID', (0,0), (-1,-1), 0.8, colors.HexColor("#E5D9C9")),
@@ -389,17 +396,24 @@ def generate_monte_carlo_pdf(sim_results: dict) -> dict:
     story.append(stats_table)
     story.append(Spacer(1, 10))
     
+    # 💡 초보 사장님을 위한 마스터의 10초 요약 꿀팁 단락 신설 (가독성 최적화)
+    story.append(Paragraph(sanitize_text("💡 초보 사장님을 위한 마스터의 10초 요약 꿀팁", FONT_NAME), heading_style))
+    story.append(Paragraph(sanitize_text("• 평균 손실과 보통 손실은 일상적인 맑은 날씨에 발생하는 소소한 비용 지출이므로 평소처럼 편안하게 대처하시면 됩니다.", FONT_NAME), body_style))
+    story.append(Paragraph(sanitize_text("• 흔들림 변동폭은 날씨가 수시로 변하듯 비즈니스가 오르내리는 자연스러운 호흡(파도)입니다.", FONT_NAME), body_style))
+    story.append(Paragraph(sanitize_text("• 우리가 대비해야 할 것은 최악(5%) 및 극단적(1%) 상황입니다. 이 수치가 커질 때만 튼튼한 우산(Gateway 자동 안전 가드)을 펼쳐 마음을 지키시면 됩니다.", FONT_NAME), body_style))
+    story.append(Spacer(1, 10))
+    
     # 4. 차트 이미지 임베딩
     if os.path.exists(chart_img):
         story.append(Paragraph(sanitize_text("📊 모의실험 손실 분포 및 위기 발생 확률 흐름", FONT_NAME), heading_style))
         story.append(Image(chart_img, width=440, height=255))
         story.append(Spacer(1, 10))
         
-    # 5. 서명 지침 및 법적 효력 경고
-    story.append(Paragraph(sanitize_text("🔔 안전한 경영을 위한 권고사항", FONT_NAME), heading_style))
-    story.append(Paragraph(sanitize_text("1. 이 보고서는 비즈니스의 위험 요인을 바탕으로 컴퓨터가 20,000번 가상으로 모의실험을 수행해 도출해낸 안전성 진단 결과입니다.", FONT_NAME), body_style))
-    story.append(Paragraph(sanitize_text("2. 상위 5% 및 상위 1% 예상 손실액 수치는 법률 위반이나 개인정보 노출 등 극단적인 위기가 발생했을 때 발생할 수 있는 잠재적 최대 금액입니다.", FONT_NAME), body_style))
-    story.append(Paragraph(sanitize_text("3. 빨간불 경고 확률(위험 기준액 초과 가능성)이 높게 나오는 경우, 즉각적으로 시스템의 자동 안전 차단 장치(Core Gateway)를 강화하고 의사결정 안전 지침을 보강할 것을 권장합니다.", FONT_NAME), body_style))
+    # 5. 서명 지침 및 법적 효력 경고 (오영범 마스터 감성 페르소나 따뜻한 안부 이식)
+    story.append(Paragraph(sanitize_text("🔔 대표님(사장님), 오늘 하루도 참 많이 애쓰셨습니다", FONT_NAME), heading_style))
+    story.append(Paragraph(sanitize_text("1. 2만 번의 가상 모의 경영 시뮬레이션은 대표님이 밤낮으로 다져오신 사업의 기틀을 지키기 위한 조용한 안부이자 예방 진단입니다.", FONT_NAME), body_style))
+    story.append(Paragraph(sanitize_text("2. 상위 5% 및 1% 예상 손실액은 혹여나 마주할 수 있는 법률적, 보안상 비바람에 대비해 우리가 단단한 지붕(우산)을 미리 지어둘 수 있도록 돕는 사랑의 이정표입니다.", FONT_NAME), body_style))
+    story.append(Paragraph(sanitize_text("3. 리스크 초과 확률이 높게 나오더라도 자책하지 마세요. 대표님이 더 견고하고 안전한 방어막을 구축해 마음을 완전히 편히 놓으셔도 된다는 다정한 신호입니다.", FONT_NAME), body_style))
     story.append(Spacer(1, 8))
     
     # 6. 불변 2FA SHA-256 서명 박스 각인 (1차 해시)

@@ -88,6 +88,26 @@ TEST_SUITES = [
         "name": "PDF Premium Aesthetics & Cryptosystem Tests",
         "cmd": [sys.executable, "-m", "pytest", "tests/test_pdf_premium_aesthetics.py"],
         "desc": "2대 PDF 보고서의 딥 스페이스 사이버 네온 HSL 리디자인 및 2중 SHA-256 서명/SSoT 적재 E2E 검증"
+    },
+    {
+        "name": "Global Knowledge RAG & Reference Tests",
+        "cmd": [sys.executable, "-m", "unittest", "tests/test_global_knowledge.py"],
+        "desc": "글로벌 학술 스카우터 크롤링, SQLite3 지식 DB 적재 및 고민 키워드 RAG 매칭 검증"
+    },
+    {
+        "name": "Web Monte Carlo Dashboard & CTA Tests",
+        "cmd": [sys.executable, "-m", "pytest", "tests/test_web_monte_carlo.py"],
+        "desc": "실시간 경량 몬테카를로 API 가동 속도, Recharts용 이산 밀도 차트 데이터 송출 및 CTA 연동 검증"
+    },
+    {
+        "name": "Automated SEO Agent & Metadata Optimizer Tests",
+        "cmd": [sys.executable, "-m", "pytest", "tests/test_seo_agent.py"],
+        "desc": "자율 SEO 에이전트 구동 및 reviews.json 분석 기반 layout.tsx 메타데이터 자율 갱신/검증"
+    },
+    {
+        "name": "Empathy Profiler & Psychology Diagnostics Tests",
+        "cmd": [sys.executable, "-m", "pytest", "tests/test_empathy_profiler.py"],
+        "desc": "공감 프로파일러 에이전트 구동, 다차원 감정 지표 수치 연산 및 E2E API 연쇄 검증"
     }
 ]
 

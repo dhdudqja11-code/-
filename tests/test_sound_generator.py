@@ -7,11 +7,14 @@ import unittest.mock as mock
 HERE = os.path.dirname(os.path.abspath(__file__))
 EDITOR_TOOLS = os.path.abspath(os.path.join(HERE, "..", "_company", "_agents", "editor", "tools"))
 YOUTUBE_TOOLS = os.path.abspath(os.path.join(HERE, "..", "_company", "_agents", "youtube", "tools"))
+SECRETARY_TOOLS = os.path.abspath(os.path.join(HERE, "..", "_company", "_agents", "secretary", "tools"))
 
 if EDITOR_TOOLS not in sys.path:
     sys.path.append(EDITOR_TOOLS)
 if YOUTUBE_TOOLS not in sys.path:
     sys.path.append(YOUTUBE_TOOLS)
+if SECRETARY_TOOLS not in sys.path:
+    sys.path.append(SECRETARY_TOOLS)
 
 import music_generate
 import telegram_bot
@@ -20,25 +23,25 @@ def test_extract_mood_from_latest_post_fallback():
     """Verify that extract_mood_from_latest_post returns default value if directory does not exist."""
     with mock.patch("os.path.exists", return_value=False):
         mood = music_generate.extract_mood_from_latest_post()
-        assert "hopeful tech theme" in mood
+        assert "healing ambient" in mood
 
 def test_extract_mood_from_latest_post_keywords(tmp_path):
-    """Verify keyword extraction matches content keywords like '보안' or '가드레일'."""
+    """Verify keyword extraction matches content keywords like '불안'."""
     original_workspace = music_generate.WORKSPACE
     # Point workspace to a temp directory structure
     music_generate.WORKSPACE = str(tmp_path)
     
-    posts_dir = os.path.join(tmp_path, "_company", "_agents", "youtube", "tools", "naver_posts")
+    posts_dir = os.path.join(tmp_path, "_company", "_agents", "writer", "tools", "naver_posts")
     os.makedirs(posts_dir, exist_ok=True)
     
     post_file = os.path.join(posts_dir, "post_1.md")
     with open(post_file, "w", encoding="utf-8") as f:
-        f.write("이것은 보안 가드레일에 대한 기업 마케팅 글입니다.")
+        f.write("이것은 마음에 불안과 우울을 겪는 분들을 위한 치유의 글입니다.")
         
     try:
         mood = music_generate.extract_mood_from_latest_post()
-        # Since '보안' matches cybersecurity mood: "cybersecurity dark ambient electronic"
-        assert "cybersecurity" in mood
+        # Since '불안' matches calming ambient mood
+        assert "calming" in mood
     finally:
         music_generate.WORKSPACE = original_workspace
 
