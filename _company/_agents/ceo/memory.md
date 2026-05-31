@@ -17,3 +17,4 @@ _최근 압축일: 2026-05-29_
   - LM Studio API 연동 규격 접미사 `/v1` settings.json 보정 완료 (`http://127.0.0.1:1234/v1`).
   - 자율 재무 관제 **CFO 에이전트 (CFO Agent)** 설계 청사진 수립 및 의사결정 RAG 저장소([decisions.md](file:///c:/Users/user/AI%20%EA%B8%B0%EC%97%85%20%EB%91%90%EB%87%8C/%EB%82%B4%20%EC%9E%91%EC%97%85%EB%93%A4/_company/_shared/decisions.md)) 영구 보존 완료.
   - 지금까지의 기술 무결성 코드 및 RAG decisions.md GitHub 원격 `main` 브랜치 백업 완료.
+- [2026-05-31] 영숙아 작업 시작하자 → 보고서 sessions/2026-05-31T12-38/_report.md

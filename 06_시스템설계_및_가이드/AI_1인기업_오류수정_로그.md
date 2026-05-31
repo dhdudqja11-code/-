@@ -80,6 +80,28 @@
   - `getAgentModel()` 내부에서 `agent_models.json`을 동적으로 읽어오되 없을 때만 `'connectai-main'`으로 대체하도록 유연하게 개선.
   - 에이전트 호출 로직 `_callAgentLLM`에 **Fault-Tolerant Retry Loop**를 설계하여, 1차 호출 중 OOM/TIMEOUT/ECONNREFUSED/HTTP 500 등이 감지되면 즉시 사용자에게 경고 알림을 보내고 자동으로 `'connectai-main'` 모델로 스왑하여 2차 재시도(Retry)를 즉석 자율 수행하도록 고도화.
 
+### 📅 [2026-05-31] 8차 수정: Next.js frontend 빌드 에러 및 OpenAI SDK 초기화 빌드 타임 크래시 해결
+- **오류 증상**: `npm run build` 실행 시 두 가지 핵심 빌드 에러가 발생하여 컴파일 차단됨.
+  1. `Type error: 'letterData' is possibly 'null'` (page.tsx:1619)
+  2. `Missing credentials` 에러로 인한 static page collection 단계에서의 OpenAI SDK 초기화 크래시 (api/generate-letter 및 api/upload-knowledge 경로).
+- **원인**:
+  1. strict TS 타입 체크 하에서 `LetterData | null` 타입을 가진 `letterData`가 null 검증 없이 프리미엄 카드 렌더링 블록 내부에서 직접 역참조됨.
+  2. Next.js 빌드 시점에 API Route 모듈들이 사전 평가(Evaluation)되는데, 이때 환경 변수 `OPENAI_API_KEY`가 주입되지 않아 `new OpenAI()` 생성이 즉시 예외를 발생시키며 크래시됨.
+- **조치**:
+  1. `global-letters/src/app/page.tsx` 내부의 프리미엄 렌더링 블록에 대해 `letterData ? ( ... ) : null` 삼항 연산자 가드를 추가하여 null 타입 좁히기(Narrowing)를 완벽 수행.
+  2. `api/generate-letter/route.ts`, `route.v3_backup.ts` 및 `api/upload-knowledge/route.ts`에 환경 변수가 없을 시 기본값으로 `"dummy-key-for-build"`를 삽입하여 빌드 타임 평가 예외를 우회 및 성공적으로 100% 빌드 컴파일 녹색 패스 달성.
+
+### 📅 [2026-05-31] 9차 수정: 깃 충돌 흔적으로 인한 동기화 중단 및 index.lock stale 복구
+- **오류 증상**: 지식 동기화(git sync) 시 `error: could not write index`, `fatal: stash failed` 에러 알림 발생 및 모든 Git 동작 영구 중단.
+- **원인**:
+  1. `.gitignore` 파일에 병합 충돌 마커(`<<<<<<< HEAD` 등)가 그대로 방치되어 Git이 이를 정상 인식하지 못함.
+  2. 그로 인해 대용량 빌드 파일(`.firebase/`, `.next/`, `node_modules/` 등)이 Git 추적 대상에 흘러들어가 path limit 및 파일 lock 점유 문제 발생.
+  3. 이 와중에 지식 동기화 프로세스가 강제 중단되어 5개의 유령 `git.exe` 프로세스가 메모리에 멈춰 서고, `.git/index.lock` 파일이 stale 상태로 고착됨.
+- **조치**:
+  1. 멈춰 있던 5개의 유령 `git` 프로세스를 PowerShell 명령(`Stop-Process -Name git -Force`)으로 모두 강제 종료.
+  2. 잠금 잠식의 주범이었던 `.git/index.lock` 0바이트 stale 파일을 완벽하게 강제 삭제 조치.
+  3. `.gitignore` 내부 충돌 마커를 깔끔하게 정비하고 Next/Firebase 빌드 폴더들을 완전히 무시하도록 복구하여 동기화 기능 즉각적인 정상화 성공.
+
 ---
 
 ## 📖 4. 최종 운영 및 유지보수 지침
@@ -94,5 +116,5 @@
    - 백그라운드에서 실행 중인 `Watch-LM-Studio-ConnectAI.ps1` 감시 프로그램이 켜져 있는지 확인합니다.
 
 ---
-**최종 마스터 업데이트 일시**: 2026-05-25 11:52 (원격 제어 및 레거시 API 게이트웨이 검증 성공 시점에 양대 로그 병합 완료)  
+**최종 마스터 업데이트 일시**: 2026-05-31 16:57 (Next.js 빌드 성공 및 깃 인덱스 교착 자가 치유 완료)  
 **작성자 및 검증**: Antigravity & 개발 사장님 합작
