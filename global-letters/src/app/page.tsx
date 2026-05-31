@@ -16,6 +16,13 @@ interface LetterData {
   recovery_days?: { day: number; letter: string; action: string }[];
   letter?: string;
   action?: string;
+  scientific_reference?: {
+    title: string;
+    authors: string;
+    source_url: string;
+    insight_ko: string;
+  };
+  emotions?: Record<string, number>;
 }
 
 const TIERS = [
@@ -1434,7 +1441,7 @@ export default function Home() {
                               </div>
 
                               {/* 🧠 뇌과학적 등불 (Scientific Reference) - RAG 문헌 각인 */}
-                              {idx === letterData.recovery_days.length - 1 && letterData.scientific_reference && (
+                              {idx === letterData.recovery_days!.length - 1 && letterData.scientific_reference && (
                                 <div className="mt-8 border border-amber-200/50 p-4 rounded-xl bg-amber-50/20 text-left font-serif max-w-[500px] self-end">
                                   <h4 className="font-bold text-[10px] text-amber-800 flex items-center gap-1.5 mb-1.5 font-sans tracking-wide">
                                     🧠 {isKorean ? "뇌과학적 등불 (Scientific Reference)" : "Scientific Reference"}
@@ -1452,7 +1459,7 @@ export default function Home() {
                               )}
 
                               {/* 마지막 페이지(7일차)에 SHA-256 서명 각인 */}
-                              {idx === letterData.recovery_days.length - 1 && sha256Hash && (
+                              {idx === letterData.recovery_days!.length - 1 && sha256Hash && (
                                 <div className="mt-8 border border-slate-200/60 p-4 rounded-xl bg-white/70 flex flex-col gap-1 text-[9px] font-mono text-slate-400 self-end w-fit">
                                   <span className="font-bold text-[10px] text-slate-500 font-sans tracking-wide">🛡️ B2B SECURE DIGITAL SIGNATURE</span>
                                   <span>HASH: {sha256Hash}</span>
@@ -1467,7 +1474,7 @@ export default function Home() {
                                 <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
                                 <span>{isKorean ? "당신의 마음을 듣습니다" : "Listening to your heart"} @young_beom_oh</span>
                               </div>
-                              <span>PAGE {idx + 2} OF {letterData.recovery_days.length + 1}</span>
+                              <span>PAGE {idx + 2} OF {letterData.recovery_days!.length + 1}</span>
                             </div>
                           </div>
                         ))}
@@ -1549,7 +1556,7 @@ export default function Home() {
                           )}
                         </div>
                       </div>
-                    ) : (
+                    ) : letterData ? (
                       <div className="w-full flex flex-col items-center animate-fade-in mb-8 px-4 sm:px-0">
                         {/* 프리미엄 웹 뷰어 컨테이너 (Premium Handcrafted Letter Sheet - HSL Tailored Hues) */}
                         <div className="w-full max-w-2xl deckled-letter-paper rounded-[32px] p-5 sm:p-10 md:p-16 mb-8 text-left overflow-hidden relative shadow-layered border border-slate-200/60 bg-[#FDFBF7]">
@@ -1661,7 +1668,7 @@ export default function Home() {
                           {t.pdfPermanentLabel}
                         </button>
                       </div>
-                    )}
+                    ) : null}
 
                 {/* [추가] 별점 및 리뷰 남기기 UI (하이엔드 미니멀리즘 디자인) */}
                 <div className="w-full bg-white rounded-[32px] p-8 md:p-10 border border-slate-50 shadow-layered text-center animate-fade-in mb-8 no-print z-10">

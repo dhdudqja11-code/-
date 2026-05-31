@@ -5,7 +5,7 @@ import path from "path";
 
 // OpenAI client initialization
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "",
+  apiKey: process.env.OPENAI_API_KEY || "dummy-key-for-build",
 });
 
 // Simple in-memory rate limiting store (Works for basic serverless protection)

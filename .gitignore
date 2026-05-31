@@ -1,21 +1,38 @@
-<<<<<<< HEAD
-# Connect AI auto-generated
+# Dependencies
+node_modules/
+/node_modules
+global-letters/node_modules/
+global-letters/.next/
+global-letters/.firebase/
+
+# Next.js build output
+.next/
+out/
+
+# Firebase
+.firebase/
+firebase-debug.log
+ui-debug.log
+
+# System Files
 .DS_Store
 .obsidian/
 .trash/
-node_modules/
+Thumbs.db
+
+# VS Code / IDE
+.vscode-test/
+*.vsix
+preview.html
+
+# Cache & Logs
+.cache/
 *.tmp
 *.log
-.cache/
-Thumbs.db
-=======
-node_modules/
-out/
-*.vsix
-.vscode-test/
-preview.html
-.DS_Store
-releases/
+
+# Environment variables
 .env
+.env*.local
+
+# Backup files
 *.bak.*
->>>>>>> origin/main

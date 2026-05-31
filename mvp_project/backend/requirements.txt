@@ -1,0 +1,6 @@
+fastapi==0.104.1
+uvicorn[standard]>=1.2.0
+pydantic>=2.5.3
+sqlalchemy>=2.0.23
+python-dotenv
+openai # 또는 사용할 LLM 라이브러리
