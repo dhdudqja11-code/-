@@ -1559,20 +1559,20 @@ export default function Home() {
                     ) : letterData ? (
                       <div className="w-full flex flex-col items-center animate-fade-in mb-8 px-4 sm:px-0">
                         {/* 프리미엄 웹 뷰어 컨테이너 (Premium Handcrafted Letter Sheet - HSL Tailored Hues) */}
-                        <div className="w-full max-w-2xl deckled-letter-paper rounded-[32px] p-5 sm:p-10 md:p-16 mb-8 text-left overflow-hidden relative shadow-layered border border-slate-200/60 bg-[#FDFBF7]">
+                        <div className="w-full max-w-2xl deckled-letter-paper rounded-[32px] p-6 sm:p-12 md:p-16 mb-8 text-left overflow-hidden relative shadow-[0_30px_100px_rgba(27,24,17,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] border border-[#e6dec9]/70 bg-gradient-to-b from-[#fdfbf7] via-[#faf6f0] to-[#f4eee3]">
                           
                           {/* Vintage Postage Stamp (Top-Right Decor) */}
                           <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 pointer-events-none no-print">
-                            <div className="vintage-stamp shadow-sm">
+                            <div className="vintage-stamp shadow-sm border border-dashed border-[#e6dec9] bg-white/60 backdrop-blur-sm">
                               <span className="text-[7px] font-sans font-bold text-[#b91c1c] tracking-widest uppercase">KOREA</span>
                               <div className="text-sm my-1 text-slate-600 font-serif">心</div>
                               <span className="text-[6px] font-sans text-slate-400">2026</span>
                             </div>
                           </div>
 
-                          <div className="text-center mb-8 md:mb-14 border-b border-slate-200/60 pb-6 md:pb-10">
-                            <h1 className="text-2xl sm:text-3xl md:text-5xl font-serif text-slate-900 mb-4 tracking-tight leading-tight">{letterData?.cover?.title || t.freeCardLabel}</h1>
-                            <p className="mx-auto max-w-xl text-base md:text-lg text-slate-500 font-serif leading-relaxed">{letterData?.cover?.heart_name}</p>
+                          <div className="text-center mb-8 md:mb-14 border-b border-[#e6dec9]/60 pb-6 md:pb-10">
+                            <h1 className="text-2xl sm:text-3xl md:text-[42px] font-serif text-slate-900 mb-4 tracking-tight leading-tight font-bold">{letterData?.cover?.title || t.freeCardLabel}</h1>
+                            <p className="mx-auto max-w-xl text-base md:text-lg text-slate-500 font-serif leading-relaxed italic">{letterData?.cover?.heart_name}</p>
                           </div>
 
                           {(!letterData?.recovery_days || letterData.recovery_days.length === 0) ? (
