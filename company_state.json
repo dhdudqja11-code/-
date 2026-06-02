@@ -1,6 +1,8 @@
 {
-  "tasksCompleted": 90,
+  "tasksCompleted": 92,
   "knowledgeInjected": 0,
-  "lastSessionDate": "",
-  "foundedAt": "2026-05-31"
+  "lastSessionDate": "2026-06-02",
+  "foundedAt": "2026-05-31",
+  "simulationRuns": 2,
+  "contentEvaluated": 2
 }

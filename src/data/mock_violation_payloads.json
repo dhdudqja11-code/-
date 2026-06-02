@@ -1,0 +1,52 @@
+[
+  {
+    "case_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "regulation_name": "GDPR (General Data Protection Regulation)",
+    "article_number": "Art. 5(1)(a)",
+    "failure_mechanism_type": "Non-Anonymization",
+    "affected_data_field": "Personal Identifiers (Name, Email)",
+    "violation_summary": "AI 모델 학습에 사용된 데이터셋이 개별 식별자를 제거하지 않아 개인정보 유출 위험 발생.",
+    "potential_fine_amount": 1000000.0,
+    "risk_level_score": 0.95
+  },
+  {
+    "case_id": "b2c3d4e5-f6g7-890a-bcde-f12345678901",
+    "regulation_name": "CCPA (California Consumer Privacy Act)",
+    "article_number": "Sec. 1798.100",
+    "failure_mechanism_type": "Lack of Consent",
+    "affected_data_field": "Biometric Data",
+    "violation_summary": "사용자에게 생체 데이터 수집 동의를 명확히 받지 않고, 서비스 이용 목적으로 무단 사용.",
+    "potential_fine_amount": 500000.0,
+    "risk_level_score": 0.88
+  },
+  {
+    "case_id": "c3d4e5f6-g7h8-90ab-cdef-123456789012",
+    "regulation_name": "AI Ethics Charter (가상 규정)",
+    "article_number": "Sec. 3.2",
+    "failure_mechanism_type": "Bias in Model",
+    "affected_data_field": "Demographic Group (Gender, Race)",
+    "violation_summary": "모델 학습 데이터의 특정 성별/인종 편향으로 인해 차별적 진단 결과 도출.",
+    "potential_fine_amount": 750000.0,
+    "risk_level_score": 0.92
+  },
+  {
+    "case_id": "d4e5f6g7-h8i9-0abc-def1-234567890123",
+    "regulation_name": "CCPA (California Consumer Privacy Act)",
+    "article_number": "Sec. 1798.105",
+    "failure_mechanism_type": "Data Breach",
+    "affected_data_field": "Financial/PII Mix",
+    "violation_summary": "보안 패치가 미흡한 환경에서 고객의 금융 정보가 외부 공격을 통해 유출됨.",
+    "potential_fine_amount": 300000.0,
+    "risk_level_score": 0.75
+  },
+  {
+    "case_id": "e5f6g7h8-i9j0-abcd-ef12-345678901234",
+    "regulation_name": "GDPR (General Data Protection Regulation)",
+    "article_number": "Art. 32(1)",
+    "failure_mechanism_type": "Lack of Consent",
+    "affected_data_field": "Usage Behavior Log",
+    "violation_summary": "데이터 전송 시 암호화 프로토콜 미적용으로 통신 과정에서 데이터가 노출됨.",
+    "potential_fine_amount": 900000.0,
+    "risk_level_score": 0.85
+  }
+]

@@ -1,0 +1,143 @@
+{
+  "system_id": "마음을 묻다_콘텐츠_백그라운드_시뮬레이터",
+  "version": "1.0.0",
+  "founded_at": "2026-06-02",
+  "config": {
+    "project_name": "마음을 묻다 편지",
+    "ai_model": "local_ollama",
+    "simulation_mode": "background",
+    "update_interval": "daily"
+  },
+  "content_evaluation": {
+    "criteria": {
+      "hooking_score": "첫 문장이 멈춰세우는 힘 (0-100)",
+      "empathy_score": "저장·댓글을 부르는 감정 밀도 (0-100)",
+      "sales_connection": "전자책·상품으로 자연스럽게 이어지는 정도 (0-100)",
+      "seo_score": "블로그 검색 키워드 적합도 (0-100)",
+      "cta_score": "클릭·댓글·소장 유도력 (0-100)",
+      "spam_risk": "반복어·과한 홍보·플랫폼 제한 위험 (0-100, 낮을수록 좋음)"
+    },
+    "recommendation_logic": {
+      "upload_go": "평균점수 >= 80 AND 스팸위험 < 30",
+      "revision_needed": "평균점수 >= 65 AND < 80",
+      "discard": "평균점수 < 65 OR 스팸위험 >= 50"
+    }
+  },
+  "revenue_simulation": {
+    "tiers": {
+      "free": {
+        "price": 0,
+        "conversion_rates": {
+          "low": 0,
+          "mid": 0,
+          "high": 0
+        }
+      },
+      "beta": {
+        "price": 5000,
+        "conversion_rates": {
+          "low": 0.001,
+          "mid": 0.003,
+          "high": 0.008
+        }
+      },
+      "deep": {
+        "price": 9000,
+        "conversion_rates": {
+          "low": 0.0005,
+          "mid": 0.0015,
+          "high": 0.004
+        }
+      },
+      "recovery": {
+        "price": 29000,
+        "conversion_rates": {
+          "low": 0.0002,
+          "mid": 0.0008,
+          "high": 0.0015
+        }
+      },
+      "gift": {
+        "price": 12000,
+        "conversion_rates": {
+          "low": 0.0005,
+          "mid": 0.0012,
+          "high": 0.0025
+        }
+      }
+    },
+    "channels": {
+      "instagram": {
+        "ctr": {
+          "low": 0.005,
+          "mid": 0.015,
+          "high": 0.04
+        }
+      },
+      "blog": {
+        "ctr": {
+          "low": 0.003,
+          "mid": 0.008,
+          "high": 0.02
+        }
+      },
+      "thread": {
+        "ctr": {
+          "low": 0.002,
+          "mid": 0.006,
+          "high": 0.015
+        }
+      },
+      "email": {
+        "ctr": {
+          "low": 0.01,
+          "mid": 0.03,
+          "high": 0.08
+        }
+      }
+    }
+  },
+  "funnel_tracking": {
+    "stages": [
+      "content_exposure",
+      "stop_and_read",
+      "save",
+      "comment",
+      "profile_visit",
+      "link_click",
+      "detail_page_visit",
+      "payment_attempt",
+      "purchase",
+      "review"
+    ]
+  },
+  "data_integration": {
+    "local_data": [
+      "traffic_log.json",
+      "reviews.json",
+      "company_state.json"
+    ],
+    "target_integrations": [
+      "GA4 API",
+      "Google Search Console",
+      "Meta Ads API"
+    ]
+  },
+  "background_execution": {
+    "enabled": true,
+    "schedule": "daily",
+    "output_destinations": [
+      "google_sheets",
+      "local_json",
+      "telegram_briefing"
+    ]
+  },
+  "metrics": {
+    "tasks_completed": 92,
+    "knowledge_injected": 0,
+    "last_session_date": "2026-06-02",
+    "simulation_runs": 2,
+    "content_evaluated": 2,
+    "predictions_corrected": 0
+  }
+}

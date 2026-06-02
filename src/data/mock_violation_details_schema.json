@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "description": "AI 및 개인정보보호 규제 위반 사례의 상세 데이터 스키마.",
+  "fields": [
+    {"name": "case_id", "type": "UUID", "required": true, "description": "고유한 사건 식별자."},
+    {"name": "regulation_name", "type": "String", "required": true, "description": "위반된 법규의 공식 명칭 (예: GDPR Article 5)."},
+    {"name": "article_number", "type": "String", "required": true, "description": "관련 규정 조항 번호."},
+    {"name": "failure_mechanism_type", "type": "Enum", "options": ["Non-Anonymization", "Lack of Consent", "Data Breach", "Bias in Model"], "required": true},
+    {"name": "affected_data_field", "type": "String", "required": true, "description": "위반된 데이터의 종류 (예: Biometric Data, Health Record)."},
+    {"name": "violation_summary", "type": "Text", "required": false, "description": "규정 위반 상황에 대한 간략한 요약."},
+    {"name": "potential_fine_amount", "type": "Number", "required": true, "description": "잠재적 최대 벌금액 (USD 기준)."},
+    {"name": "risk_level_score", "type": "Float", "required": true, "description": "위험도 점수 (0.0 ~ 1.0) - $A_{LP}$ 계산에 사용됨."}
+  ]
+}

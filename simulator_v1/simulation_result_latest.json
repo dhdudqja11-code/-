@@ -1,0 +1,199 @@
+{
+  "evaluation_report": {
+    "evaluated_at": "2026-06-02T14:48:14.316850",
+    "scores": {
+      "hooking_score": 90,
+      "empathy_score": 95,
+      "sales_connection": 90,
+      "seo_score": 85,
+      "cta_score": 90,
+      "spam_risk": 10
+    },
+    "average_score": 90.0,
+    "spam_risk": 10,
+    "decision": "upload_go"
+  },
+  "simulation_result": {
+    "status": "success",
+    "decision": "upload_go",
+    "quality_multiplier": 0.92,
+    "total_predicted_revenue": 4096000,
+    "total_purchases_by_tier": {
+      "free": 0,
+      "beta": 236,
+      "deep": 120,
+      "recovery": 36,
+      "gift": 66
+    },
+    "channels": {
+      "instagram": {
+        "funnel": {
+          "content_exposure": 33937870,
+          "stop_and_read": 1248914,
+          "save": 175542,
+          "comment": 62310,
+          "profile_visit": 88046,
+          "link_click": 20769,
+          "detail_page_visit": 16257
+        },
+        "tier_details": {
+          "beta": {
+            "conversion_rate_used": 0.00736,
+            "payment_attempt": 142,
+            "purchase": 124,
+            "review": 19,
+            "revenue": 620000
+          },
+          "deep": {
+            "conversion_rate_used": 0.00368,
+            "payment_attempt": 72,
+            "purchase": 62,
+            "review": 10,
+            "revenue": 558000
+          },
+          "recovery": {
+            "conversion_rate_used": 0.00138,
+            "payment_attempt": 23,
+            "purchase": 17,
+            "review": 2,
+            "revenue": 493000
+          },
+          "gift": {
+            "conversion_rate_used": 0.0023,
+            "payment_attempt": 41,
+            "purchase": 33,
+            "review": 4,
+            "revenue": 396000
+          }
+        },
+        "channel_revenue": 2067000
+      },
+      "blog": {
+        "funnel": {
+          "content_exposure": 28235585,
+          "stop_and_read": 519535,
+          "save": 79357,
+          "comment": 29357,
+          "profile_visit": 44420,
+          "link_click": 9435,
+          "detail_page_visit": 7354
+        },
+        "tier_details": {
+          "beta": {
+            "conversion_rate_used": 0.00736,
+            "payment_attempt": 71,
+            "purchase": 54,
+            "review": 8,
+            "revenue": 270000
+          },
+          "deep": {
+            "conversion_rate_used": 0.00368,
+            "payment_attempt": 35,
+            "purchase": 29,
+            "review": 4,
+            "revenue": 261000
+          },
+          "recovery": {
+            "conversion_rate_used": 0.00138,
+            "payment_attempt": 11,
+            "purchase": 9,
+            "review": 1,
+            "revenue": 261000
+          },
+          "gift": {
+            "conversion_rate_used": 0.0023,
+            "payment_attempt": 20,
+            "purchase": 15,
+            "review": 2,
+            "revenue": 180000
+          }
+        },
+        "channel_revenue": 972000
+      },
+      "thread": {
+        "funnel": {
+          "content_exposure": 13760257,
+          "stop_and_read": 189892,
+          "save": 25794,
+          "comment": 10439,
+          "profile_visit": 13326,
+          "link_click": 3131,
+          "detail_page_visit": 2442
+        },
+        "tier_details": {
+          "beta": {
+            "conversion_rate_used": 0.00736,
+            "payment_attempt": 20,
+            "purchase": 16,
+            "review": 2,
+            "revenue": 80000
+          },
+          "deep": {
+            "conversion_rate_used": 0.00368,
+            "payment_attempt": 12,
+            "purchase": 11,
+            "review": 2,
+            "revenue": 99000
+          },
+          "recovery": {
+            "conversion_rate_used": 0.00138,
+            "payment_attempt": 4,
+            "purchase": 3,
+            "review": 0,
+            "revenue": 87000
+          },
+          "gift": {
+            "conversion_rate_used": 0.0023,
+            "payment_attempt": 7,
+            "purchase": 6,
+            "review": 1,
+            "revenue": 72000
+          }
+        },
+        "channel_revenue": 338000
+      },
+      "email": {
+        "funnel": {
+          "content_exposure": 5753563,
+          "stop_and_read": 423462,
+          "save": 60768,
+          "comment": 22487,
+          "profile_visit": 30692,
+          "link_click": 7182,
+          "detail_page_visit": 5725
+        },
+        "tier_details": {
+          "beta": {
+            "conversion_rate_used": 0.00736,
+            "payment_attempt": 54,
+            "purchase": 42,
+            "review": 7,
+            "revenue": 210000
+          },
+          "deep": {
+            "conversion_rate_used": 0.00368,
+            "payment_attempt": 23,
+            "purchase": 18,
+            "review": 3,
+            "revenue": 162000
+          },
+          "recovery": {
+            "conversion_rate_used": 0.00138,
+            "payment_attempt": 9,
+            "purchase": 7,
+            "review": 1,
+            "revenue": 203000
+          },
+          "gift": {
+            "conversion_rate_used": 0.0023,
+            "payment_attempt": 14,
+            "purchase": 12,
+            "review": 2,
+            "revenue": 144000
+          }
+        },
+        "channel_revenue": 719000
+      }
+    }
+  }
+}
