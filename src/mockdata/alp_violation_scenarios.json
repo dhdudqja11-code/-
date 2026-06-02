@@ -1,0 +1,86 @@
+[
+  {
+    "case_id": "MOCK-001",
+    "scenario_name": "GDPR - 재식별화 성공 위반",
+    "violation_details": {
+      "source_data_type": "PII (Health Record)",
+      "risk_level": 0.95,
+      "description": "데이터 비식별화 과정에서 연결 고리(Linkage) 분석에 취약하여 개인이 재식별화되는 사례.",
+      "legal_meta": {
+        "regulation_name": "GDPR Article 5(1)(f)",
+        "violation_category": "Data Anonymization Failure",
+        "failure_type_detail": "Linkage Attack / k-anonymity violation detected."
+      },
+      "estimated_fine_eur": 200000,
+      "avoided_loss_potential": 1500000,
+      "impact_factor": 0.95
+    }
+  },
+  {
+    "case_id": "MOCK-002",
+    "scenario_name": "CCPA - 동의 거부권 침해 위반",
+    "violation_details": {
+      "source_data_type": "Behavioral Data (Browsing History)",
+      "risk_level": 0.80,
+      "description": "사용자가 명시적으로 데이터 처리를 거부했음에도 불구하고 마케팅 목적으로 활용된 사례.",
+      "legal_meta": {
+        "regulation_name": "CCPA Right to Opt-Out",
+        "violation_category": "Consent Violation",
+        "failure_type_detail": "Explicit opt-out signal ignored by data pipeline."
+      },
+      "estimated_fine_usd": 50000,
+      "avoided_loss_potential": 300000,
+      "impact_factor": 0.80
+    }
+  },
+  {
+    "case_id": "MOCK-003",
+    "scenario_name": "국내 법규 - 편향성 기반 차별 위반",
+    "violation_details": {
+      "source_data_type": "Evaluation Data (Loan Application)",
+      "risk_level": 0.75,
+      "description": "AI 모델 학습 데이터의 인종/성별 편향성이 특정 집단에 대한 부당한 평가로 이어진 사례.",
+      "legal_meta": {
+        "regulation_name": "국내 개인정보보호법 제35조",
+        "violation_category": "Algorithmic Bias / Discrimination",
+        "failure_type_detail": "Bias amplification due to skewed training set."
+      },
+      "estimated_fine_krw": 8000000,
+      "avoided_loss_potential": 6500000,
+      "impact_factor": 0.75
+    }
+  },
+  {
+    "case_id": "MOCK-004",
+    "scenario_name": "GDPR - 데이터 전송 거부 위반",
+    "violation_details": {
+      "source_data_type": "Sensitive PII (Biometric)",
+      "risk_level": 0.98,
+      "description": "데이터 주체의 명시적인 국경 간 데이터 이동 거부에도 불구하고 서버를 통해 전송된 사례.",
+      "legal_meta": {
+        "regulation_name": "GDPR Chapter V (Transfers)",
+        "violation_category": "Jurisdictional Violation",
+        "failure_type_detail": "Lack of Standard Contractual Clauses (SCCs) enforcement."
+      },
+      "estimated_fine_eur": 500000,
+      "avoided_loss_potential": 4200000,
+      "impact_factor": 0.98
+    }
+  },
+  {
+    "case_id": "MOCK-005",
+    "scenario_name": "CCPA - 데이터 삭제 요청 불이행 위반",
+    "violation_details": {
+      "source_data_type": "Account Data (User Profile)",
+      "risk_level": 0.85,
+      "description": "사용자가 계정 탈퇴 및 데이터 삭제를 요구했으나 백업 시스템에 잔존한 사례.",
+      "legal_meta": {
+        "regulation_name": "CCPA Right to Deletion",
+        "violation_category": "Data Retention Policy Failure",
+        "failure_type_detail": "Deletion cascade failed; residual data found in cold storage."
+      },
+      "estimated_fine_usd": 75000,
+      "avoided_loss_potential": 800000,
+      "impact_factor": 0.85
+    }
+]
