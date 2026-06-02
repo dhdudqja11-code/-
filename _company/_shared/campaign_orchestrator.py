@@ -107,6 +107,19 @@ def main():
     except Exception as ce:
         print(f"⚠️ RAG 메모리 압축 가동 실패: {ce}")
 
+    # 세션 자동 정리 (Garbage Collection) 백그라운드 기동
+    try:
+        sessions_gc_py = os.path.join(HERE, "sessions_gc.py")
+        win_kwargs = {}
+        if sys.platform == "win32":
+            win_kwargs["creationflags"] = 0x00004000 # BELOW_NORMAL_PRIORITY_CLASS
+        
+        # 백그라운드로 안전하게 스폰하여 오케스트레이터 지연 최소화
+        subprocess.Popen([sys.executable, sessions_gc_py], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **win_kwargs)
+        print("   └─ 🧹 세션 가비지 컬렉터(sessions_gc) 백그라운드 기동 완료")
+    except Exception as gce:
+        print(f"⚠️ 세션 가비지 컬렉터 백그라운드 기동 실패: {gce}")
+
     # Step 2, 3, 4: 블로그 집필, 1:1 감성 엽서 설계, 528Hz 치유 음원 작곡 -> 병렬(Parallel) 기동
     print("\n⚡ Step 2, 3, 4: 에이전트 군단 병렬 동시 창작 중 (3 Concurrent Workers)...")
     parallel_start = time.time()

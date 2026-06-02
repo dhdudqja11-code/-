@@ -78,7 +78,11 @@ def main():
    - 독자의 눈물샘을 따뜻하게 자극하고 깊은 소장 욕구를 일으키는 메인 위로 문구 1가지 (예: "너는 멈춘 사람이 아니라, 너무 오래 버틴 사람이다").
    - 엽서 하단에 들어갈 서브 텍스트(예: "당신의 마음을 듣습니다 @young_beom_oh").
 4. 레이아웃 & 구도 가이드: 
-   - 은은한 새벽녘 그라�        if model == "mock-model":
+   - 은은한 새벽녘 그라데이션 및 레이아웃 빌드 가이드.
+"""
+
+    try:
+        if model == "mock-model":
             guide_content = f"""# 🎨 [PREMIUM POSTCARD VISUAL GUIDE] 마음을 묻다 아날로그 엽서
 
 본 비주얼 가이드는 최신 감성 치유 에세이를 심도 있게 분석하여, 고요하면서도 다정한 위로의 에너지를 1:1 아날로그 감성 엽서로 렌더링하기 위해 설계된 디자인 지시서입니다.
@@ -398,107 +402,6 @@ def _api_send_photos_to_telegram(postcard_path, caption_text):
             requests.post(url, data=data, files=files, timeout=20)
             
         print("🚀 [Telegram Pushing] Successfully sent 1:1 healing postcard directly to your Telegram chat!")
-    except Exception as e:
-        print(f"⚠️ 텔레그램 이미지 발송 중 에러: {e}")
-
-if __name__ == "__main__":
-    main()
-   y_sub = 190 + len(lines_main) * (font_main.size if font_main else 48) + 40
-    draw_highlighted_text(draw_thumb, lines_sub, 50, y_sub, font_sub, (148, 163, 184, 255), spacing=15)
-    
-    # 우측 장치 모양 데코
-    draw_thumb.rectangle([940, 180, 1200, 540], fill=(0, 242, 254, 8), outline=(0, 242, 254, 40), width=2)
-    for offset in range(0, 260, 30):
-        draw_thumb.line([(940 + offset, 180), (940, 180 + offset)], fill=(0, 242, 254, 15), width=1)
-    draw_thumb.text((980, 330), "🔒 SECURE", font=font_main, fill=(255, 255, 255, 20))
-    draw_thumb.text((985, 390), "Expected Loss = 0", font=font_sub, fill=(255, 109, 0, 180))
-    
-    # --- 2) 인스타 카드뉴스 생성 (1080x1080) ---
-    img_card = draw_gradient_background(1080, 1080)
-    img_card = draw_ambient_glow(img_card, 540, 540, 500, (160, 32, 240)) # Center purple glow
-    img_card = draw_ambient_glow(img_card, 900, 100, 300, (0, 242, 254))  # Cyan glow top
-    img_card = draw_tech_mesh(img_card, step=50)
-    
-    draw_card = ImageDraw.Draw(img_card)
-    
-    # 헤더 뱃지
-    draw_card.rectangle([45, 45, 255, 80], fill=(255, 255, 255, 10), outline=(255, 255, 255, 30))
-    draw_card.text((60, 52), "📱 B2B MARKETING", font=font_logo, fill=(0, 242, 254, 230))
-    
-    font_card_main = get_premium_font(44, is_bold=True)
-    font_card_sub = get_premium_font(26, is_bold=False)
-    
-    lines_card_main = wrap_text(main_title, font_card_main, 950)
-    lines_card_sub = wrap_text(sub_title, font_card_sub, 900)
-    
-    draw_highlighted_text(draw_card, lines_card_main, 50, 250, font_card_main, (255, 255, 255, 255), spacing=24)
-    
-    y_card_sub = 250 + len(lines_card_main) * (font_card_main.size if font_card_main else 44) + 40
-    draw_highlighted_text(draw_card, lines_card_sub, 50, y_card_sub, font_card_sub, (148, 163, 184, 255), spacing=18)
-    
-    # 카드뉴스 하단 재무적 가치 윈도우 그리기
-    draw_card.rectangle([50, 750, 1030, 980], fill=(13, 14, 18, 180), outline=(255, 109, 0, 40), width=2)
-    draw_card.text((80, 780), "📊 Expected Avoided Loss Value (ALV)", font=font_sub, fill=(255, 109, 0, 230))
-    draw_card.text((80, 840), "$2,500+ Saved per Compliance Block", font=font_card_main, fill=(255, 255, 255, 255))
-    draw_card.text((80, 915), "GDPR / CCPA Cryptographic Integrity Standards Checked.", font=font_logo, fill=(148, 163, 184, 230))
-
-    # 저장 처리
-    thumb_name = f"thumbnail_{timestamp}.png"
-    card_name = f"card_news_{timestamp}.png"
-    
-    thumb_path = os.path.join(GUIDES_DIR, thumb_name)
-    card_path = os.path.join(GUIDES_DIR, card_name)
-    
-    img_thumb.save(thumb_path, "PNG")
-    img_card.save(card_path, "PNG")
-    
-    print(f"✅ Real YouTube Thumbnail Generated: {thumb_path}")
-    print(f"✅ Real Instagram Card News Generated: {card_path}")
-    
-    # 텔레그램으로 즉시 자동 발송 시도
-    _api_send_photos_to_telegram(thumb_path, card_path)
-
-def _api_send_photos_to_telegram(thumb_path, card_path):
-    """비서 설정을 읽어와 새로 생성된 실물 이미지들을 사장님 텔레그램 채널로 즉시 전송합니다."""
-    token, chat_id = "", ""
-    
-    secretary_json = os.path.join(WORKSPACE, "_company", "_agents", "secretary", "tools", "telegram_setup.json")
-    if os.path.exists(secretary_json):
-        try:
-            with open(secretary_json, "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-            token = (cfg.get("TELEGRAM_BOT_TOKEN") or "").strip()
-            chat_id = (cfg.get("TELEGRAM_CHAT_ID") or "").strip()
-        except Exception:
-            pass
-            
-    if not token or not chat_id:
-        print("⚠️ 텔레그램 토큰 설정이 유효하지 않아 텔레그램 직접 전송은 건너뜁니다.")
-        return
-        
-    try:
-        import requests
-        url = f"https://api.telegram.org/bot{token}/sendPhoto"
-        
-        # 썸네일 발송
-        with open(thumb_path, "rb") as f_thumb:
-            files = {"photo": f_thumb}
-            data = {
-                "chat_id": chat_id,
-                "caption": "🎨 [Premium Visual Thumbnail]\nRyzen 9 병렬 가속 기반으로 생성된 유튜브/블로그 실물 썸네일입니다."
-            }
-            requests.post(url, data=data, files=files, timeout=20)
-            
-        # 카드뉴스 발송
-        with open(card_path, "rb") as f_card:
-            files = {"photo": f_card}
-            data = {
-                "chat_id": chat_id,
-                "caption": "📱 [Premium Card News]\nNVIDIA RTX 4060 로컬 AI 시나리오가 반영된 인스타용 실물 카드뉴스입니다."
-            }
-            requests.post(url, data=data, files=files, timeout=20)
-            
-        print("🚀 [Telegram Pushing] Successfully sent procedural PNG thumbnails directly to your Telegram chat!")
     except Exception as e:
         print(f"⚠️ 텔레그램 이미지 발송 중 에러: {e}")
 
