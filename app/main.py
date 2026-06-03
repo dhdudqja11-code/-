@@ -4,12 +4,26 @@ from fastapi.responses import JSONResponse
 from app.schemas import AvoidedLossResponse, InputData, CalculationInputs
 from app.services.loss_calculator import calculate_avoided_loss, run_stress_test
 from app.api.v1 import marketing_router
+from app.api import simulation_router
 import time
 import json
 
+from fastapi.middleware.cors import CORSMiddleware
+
 # FastAPI 앱 인스턴스 생성
 app = FastAPI(title="Avoided Loss API Gateway", version="v1")
+
+# CORS 미들웨어 등록 (Next.js 프론트엔드 통신 보장)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(marketing_router.router, prefix="/api/v1", tags=["Marketing"])
+app.include_router(simulation_router.router)
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):

@@ -1,6 +1,7 @@
 import pytest
 from pydantic import ValidationError
 from src.schemas.v1_authority import AuthorityMetadata, AlpCalculationRequest
+from src.api.v1.calculate_alp import calculate_alp
 # 필요한 mock 함수와 클래스를 가정하고 테스트 코드를 작성합니다.
 
 def create_valid_metadata() -> AuthorityMetadata:
@@ -44,11 +45,9 @@ def test_successful_calculation():
 
 def test_validation_failure_too_few_categories():
     """[FAILURE] primary_legal_categories가 3개 미만인 경우 (Pydantic 레벨 실패 검증)."""
-    invalid_meta = create_invalid_metadata("Category too few")
-    request = create_test_request(invalid_meta)
-    
     with pytest.raises(ValidationError, match="최소 3가지의 법적 규제 카테고리를 포함해야 합니다."):
-        # Pydantic은 스키마 단계에서 오류를 발생시켜야 함
+        invalid_meta = create_invalid_metadata("Category too few")
+        request = create_test_request(invalid_meta)
         AlpCalculationRequest(**request.model_dump())
 
 def test_validation_failure_too_few_strategies():

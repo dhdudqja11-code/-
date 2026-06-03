@@ -39,7 +39,7 @@ def connect_remote(token: AccessToken, connection_info: RemoteConnectionDetails)
     try:
         ip = connection_info.ip_address
         port = connection_info.port
-        if not ("192." <= ip[:4]) or not (1024 <= port <= 65535):
+        if not ip.startswith("192.") or not (port == 22 or 1024 <= port <= 65535):
             raise IntegrationError("유효하지 않거나 제한된 IP/Port 조합입니다.", "NETWORK_ERROR")
 
     except Exception as e:

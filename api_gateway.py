@@ -4,6 +4,9 @@ from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
+# 원격 접근 서비스 연동 임포트
+from src.services.remote_access_service import AccessToken, RemoteConnectionDetails, run_remote_access_flow
+
 app = Flask(__name__)
 CORS(app)  # Next.js 프론트엔드 컴포넌트와의 E2E CORS 통신 보장
 
@@ -85,6 +88,41 @@ def track_review():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/remote/flow', methods=['POST'])
+def remote_access_flow():
+    """
+    원격 접근 및 세션 복구 E2E 검증 시뮬레이션 엔드포인트
+    """
+    try:
+        req_data = request.get_json() or {}
+        user_id = req_data.get('user_id', 'demo_ceo')
+        role = req_data.get('role', 'admin')  # admin, standard, guest
+        ip_address = req_data.get('ip_address', '192.168.1.50')
+        port_val = req_data.get('port', 22)
+
+        try:
+            port = int(port_val)
+        except ValueError:
+            return jsonify({
+                "success": False,
+                "error_report": "❌ 원격 접근 플로우 중 치명적인 오류 발생 (VALIDATION_ERROR).",
+                "details": "Port must be an integer."
+            }), 200
+
+        command = req_data.get('command', 'ls -l /var/log')
+
+        token = AccessToken(user_id=user_id, role=role)
+        conn_info = RemoteConnectionDetails(ip_address=ip_address, port=port)
+
+        result = run_remote_access_flow(token, conn_info, command)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error_report": "🚨 API 게이트웨이 내부 처리 중 예외 발생.",
+            "details": str(e)
+        }), 200
+
 if __name__ == '__main__':
     print("====================================================")
     print("--- 'Asking the Heart' AI 1-Person Company API Gateway ---")
@@ -93,3 +131,4 @@ if __name__ == '__main__':
     print(f"   - Review Log: {REVIEWS_PATH}")
     print("====================================================")
     app.run(host='0.0.0.0', port=5000, debug=False)
+

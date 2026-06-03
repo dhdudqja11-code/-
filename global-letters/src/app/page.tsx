@@ -366,6 +366,142 @@ export default function Home() {
   const [reservePhone, setReservePhone] = useState("");
   const [reserveSuccess, setReserveSuccess] = useState(false);
 
+  // 🛡️ 원격 보안 관제 및 세션 복구 콘솔 상태들
+  const [showRemoteRecoveryModal, setShowRemoteRecoveryModal] = useState(false);
+  const [recoveryIp, setRecoveryIp] = useState("192.168.1.50");
+  const [recoveryPort, setRecoveryPort] = useState("22");
+  const [recoveryRole, setRecoveryRole] = useState("admin"); // admin, standard, guest
+  const [recoveryCommand, setRecoveryCommand] = useState("ls -l /var/log");
+  const [customCommand, setCustomCommand] = useState("");
+  const [isRecoveryRunning, setIsRecoveryRunning] = useState(false);
+  const [recoveryLogs, setRecoveryLogs] = useState<string[]>([]);
+  const [recoveryStatus, setRecoveryStatus] = useState<"idle" | "running" | "success" | "failed">("idle");
+  const [stepStates, setStepStates] = useState<{
+    credential: "idle" | "checking" | "success" | "failed";
+    escalation: "idle" | "checking" | "success" | "failed";
+    sync: "idle" | "checking" | "success" | "failed";
+  }>({
+    credential: "idle",
+    escalation: "idle",
+    sync: "idle",
+  });
+
+  const handleStartRecovery = async () => {
+    if (isRecoveryRunning) return;
+    setIsRecoveryRunning(true);
+    setRecoveryStatus("running");
+    setRecoveryLogs([]);
+    setStepStates({
+      credential: "checking",
+      escalation: "idle",
+      sync: "idle"
+    });
+
+    const finalCommand = recoveryCommand === "custom" ? customCommand : recoveryCommand;
+    const addLog = (msg: string) => {
+      setRecoveryLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+    };
+
+    addLog("🔄 원격 세션 복구 시작 시퀀스 가동...");
+    addLog(`🌐 대상 IP: ${recoveryIp}:${recoveryPort} | 권한: ${recoveryRole}`);
+    addLog(`⚙️ 실행 명령어: "${finalCommand}"`);
+
+    // 1단계 Credential Check 시뮬레이션 딜레이
+    await new Promise((r) => setTimeout(r, 1200));
+
+    if (recoveryRole === "guest") {
+      setStepStates((prev) => ({ ...prev, credential: "failed" }));
+      setRecoveryStatus("failed");
+      addLog("❌ [인증 실패] Credential Integrity Check 실패.");
+      addLog("❌ 상세 오류: Guest user는 원격 연결 시도가 불가능합니다. (AUTH_ERROR)");
+      setIsRecoveryRunning(false);
+      return;
+    }
+
+    try {
+      const parsedPort = parseInt(recoveryPort);
+      if (!recoveryIp.startsWith("192.") || !(parsedPort === 22 || (parsedPort >= 1024 && parsedPort <= 65535))) {
+        setStepStates((prev) => ({ ...prev, credential: "failed" }));
+        setRecoveryStatus("failed");
+        addLog("❌ [네트워크 검증 실패] 유효하지 않거나 제한된 IP/Port 조합입니다. (VALIDATION_ERROR)");
+        setIsRecoveryRunning(false);
+        return;
+      }
+    } catch {
+      setStepStates((prev) => ({ ...prev, credential: "failed" }));
+      setRecoveryStatus("failed");
+      addLog("❌ [검증 오류] 포트 형식이 올바르지 않습니다. (VALIDATION_ERROR)");
+      setIsRecoveryRunning(false);
+      return;
+    }
+
+    setStepStates((prev) => ({ ...prev, credential: "success", escalation: "checking" }));
+    addLog("🟢 [인증 완료] Credential 무결성 검증 완료.");
+    addLog("🔄 2단계: 권한 승격 및 정책 검사(Authority Escalation) 진행 중...");
+
+    // 2단계 Authority Escalation 시뮬레이션 딜레이
+    await new Promise((r) => setTimeout(r, 1200));
+
+    if (finalCommand.includes("systemctl restart") && recoveryRole !== "admin") {
+      setStepStates((prev) => ({ ...prev, escalation: "failed" }));
+      setRecoveryStatus("failed");
+      addLog("❌ [권한 거부] 관리자 권한이 필요합니다. (PERMISSION_DENIED)");
+      addLog(`❌ 상세 오류: 이 명령어는 해당 접근 역할(${recoveryRole})에서 제한되었습니다.`);
+      setIsRecoveryRunning(false);
+      return;
+    }
+
+    setStepStates((prev) => ({ ...prev, escalation: "success", sync: "checking" }));
+    addLog("🟢 [권한 승격 완료] Authority Escalation 정상 확인.");
+    addLog("🔄 3단계: 접속 재동기화 및 실시간 데이터 스트리밍(Re-Synchronization) 가동...");
+
+    // 3단계 Re-Synchronization 및 API 호출
+    try {
+      const response = await fetch("http://localhost:5000/api/remote/flow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: "ceo_recovery",
+          role: recoveryRole,
+          ip_address: recoveryIp,
+          port: parseInt(recoveryPort),
+          command: finalCommand
+        })
+      });
+
+      const data = await response.json();
+
+      await new Promise((r) => setTimeout(r, 1000));
+
+      if (data.success) {
+        setStepStates((prev) => ({ ...prev, sync: "success" }));
+        setRecoveryStatus("success");
+        addLog("🟢 [동기화 완료] 실시간 시스템 메트릭 스트리밍 수신 성공.");
+        
+        // 백엔드 스트리밍 데이터 로그 출력
+        if (data.details && data.details.data_stream && data.details.data_stream.data) {
+          const streamLines = data.details.data_stream.data.split("\n");
+          streamLines.forEach((line: string) => {
+            if (line.trim()) addLog(`📡 [STREAM] ${line}`);
+          });
+        }
+        addLog("🎉 시스템 복구 시퀀스가 완벽하게 성공하였습니다.");
+      } else {
+        setStepStates((prev) => ({ ...prev, sync: "failed" }));
+        setRecoveryStatus("failed");
+        addLog("❌ [실행 실패] 백엔드 플로우 중 오류 발생.");
+        addLog(`❌ 에러 정보: ${data.error_report || ""}`);
+        addLog(`❌ 상세 내역: ${data.details || ""}`);
+      }
+    } catch (err: any) {
+      setStepStates((prev) => ({ ...prev, sync: "failed" }));
+      setRecoveryStatus("failed");
+      addLog(`🚨 [네트워크 오류] API Gateway(http://localhost:5000) 연결 실패: ${err.message}`);
+    } finally {
+      setIsRecoveryRunning(false);
+    }
+  };
+
   const t = isKorean ? translations.ko : translations.en;
 
   // 슬라이더 값이 변경될 때마다 실시간 몬테카를로 API 호출
@@ -1794,10 +1930,10 @@ export default function Home() {
                         
                         {simCritical && (
                           <button
-                            onClick={() => setShowCtaModal(true)}
-                            className="mt-4 px-6 py-3 bg-rose-600 text-white rounded-2xl font-serif text-xs font-bold tracking-wide hover:bg-rose-700 transition shadow-lg active:scale-95 duration-150 cursor-pointer animate-pulse text-center"
+                            onClick={() => setShowRemoteRecoveryModal(true)}
+                            className="mt-4 px-6 py-3 bg-amber-600 text-white rounded-2xl font-serif text-xs font-bold tracking-wide hover:bg-amber-700 transition shadow-lg active:scale-95 duration-150 cursor-pointer animate-pulse text-center"
                           >
-                            {isKorean ? "🚨 긴급 리스크 대책: 1:1 오영범 작가 상담 예약하기" : "🚨 Risk Mitigation: Book 1:1 Counseling"}
+                            {isKorean ? "🚨 실시간 원격 보안 관제 및 세션 복구 가동" : "🚨 Execute Remote Security Session Recovery"}
                           </button>
                         )}
                       </div>
@@ -1898,6 +2034,219 @@ export default function Home() {
                           </button>
                         </div>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 🛡️ 원격 보안 관제 및 세션 복구 콘솔 모달 */}
+                {showRemoteRecoveryModal && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 no-print animate-fade-in">
+                    <div className="relative w-full max-w-2xl bg-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl text-left text-slate-100 flex flex-col max-h-[90vh]">
+                      <button
+                        onClick={() => {
+                          if (isRecoveryRunning) {
+                            if (!confirm(isKorean ? "현재 복구 세션이 가동 중입니다. 정말 닫으시겠습니까?" : "A recovery session is currently running. Do you really want to close?")) return;
+                          }
+                          setShowRemoteRecoveryModal(false);
+                        }}
+                        className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 cursor-pointer transition text-2xl font-bold"
+                      >
+                        &times;
+                      </button>
+
+                      <div className="border-b border-slate-800 pb-4 mb-6">
+                        <h4 className="font-serif text-xl font-bold text-amber-500 flex items-center gap-2">
+                          <span>🛡️</span> {isKorean ? "실시간 원격 보안 관제 및 세션 복구 콘솔" : "Remote Security & Session Recovery Console"}
+                        </h4>
+                        <p className="font-sans text-[11px] text-slate-400 mt-1">
+                          {isKorean 
+                            ? "5대 보안 취약점에 대한 원격 연결 수립, 권한 승격, 데이터 스트리밍 복구를 E2E로 테스트합니다."
+                            : "Establish connection, verify credentials, escalate authority, and stream recovery metrics."}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        {/* 설정 패널 */}
+                        <div className="flex flex-col gap-4 bg-slate-900/50 border border-slate-800/80 p-4 rounded-2xl text-xs">
+                          <h5 className="font-bold text-amber-600 mb-2 border-b border-slate-800 pb-1.5 flex items-center gap-1.5">
+                            ⚙️ {isKorean ? "접속 정보 설정" : "Session Configuration"}
+                          </h5>
+                          
+                          <div className="flex flex-col gap-1">
+                            <label className="text-slate-400 font-semibold">{isKorean ? "원격 대상 IP 주소" : "Remote IP Address"}</label>
+                            <input
+                              type="text"
+                              value={recoveryIp}
+                              onChange={(e) => setRecoveryIp(e.target.value)}
+                              disabled={isRecoveryRunning}
+                              className="w-full rounded-lg border border-slate-800 bg-slate-950 p-2 outline-none text-slate-200 font-mono"
+                              placeholder="e.g. 192.168.1.50"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-1">
+                            <label className="text-slate-400 font-semibold">{isKorean ? "포트 번호 (SSH 등)" : "Port"}</label>
+                            <input
+                              type="text"
+                              value={recoveryPort}
+                              onChange={(e) => setRecoveryPort(e.target.value)}
+                              disabled={isRecoveryRunning}
+                              className="w-full rounded-lg border border-slate-800 bg-slate-950 p-2 outline-none text-slate-200 font-mono"
+                              placeholder="e.g. 22"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-1">
+                            <label className="text-slate-400 font-semibold">{isKorean ? "접근 권한 역할 (Token Role)" : "Role Level"}</label>
+                            <select
+                              value={recoveryRole}
+                              onChange={(e) => setRecoveryRole(e.target.value)}
+                              disabled={isRecoveryRunning}
+                              className="w-full rounded-lg border border-slate-800 bg-slate-950 p-2 outline-none text-slate-200 cursor-pointer"
+                            >
+                              <option value="admin">Admin (관리자)</option>
+                              <option value="standard">Standard (일반 사용자)</option>
+                              <option value="guest">Guest (비인증 게스트)</option>
+                            </select>
+                          </div>
+
+                          <div className="flex flex-col gap-1">
+                            <label className="text-slate-400 font-semibold">{isKorean ? "수행할 복구 명령어" : "Recovery Command"}</label>
+                            <select
+                              value={recoveryCommand}
+                              onChange={(e) => setRecoveryCommand(e.target.value)}
+                              disabled={isRecoveryRunning}
+                              className="w-full rounded-lg border border-slate-800 bg-slate-950 p-2 outline-none text-slate-200 cursor-pointer"
+                            >
+                              <option value="ls -l /var/log">{isKorean ? "안전한 명령어 (ls -l /var/log)" : "Safe Command"}</option>
+                              <option value="systemctl restart sshd">{isKorean ? "시스템 중요 명령어 (systemctl restart sshd)" : "Critical Command"}</option>
+                              <option value="FAIL_CMD">{isKorean ? "실패 시뮬레이션 (FAIL_CMD)" : "Failure Simulation"}</option>
+                              <option value="custom">{isKorean ? "직접 입력..." : "Custom..."}</option>
+                            </select>
+                          </div>
+
+                          {recoveryCommand === "custom" && (
+                            <div className="flex flex-col gap-1 animate-fade-in">
+                              <label className="text-slate-400 font-semibold">{isKorean ? "커스텀 명령어 입력" : "Enter Custom Command"}</label>
+                              <input
+                                type="text"
+                                value={customCommand}
+                                onChange={(e) => setCustomCommand(e.target.value)}
+                                disabled={isRecoveryRunning}
+                                className="w-full rounded-lg border border-slate-800 bg-slate-950 p-2 outline-none text-slate-200 font-mono"
+                                placeholder="e.g. whoami"
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 시각화 및 LED 램프 */}
+                        <div className="flex flex-col gap-4 bg-slate-900/50 border border-slate-800/80 p-4 rounded-2xl text-xs">
+                          <h5 className="font-bold text-amber-600 mb-2 border-b border-slate-800 pb-1.5 flex items-center gap-1.5">
+                            📊 {isKorean ? "복구 진행 상태관제" : "Recovery Stage LEDs"}
+                          </h5>
+
+                          <div className="flex flex-col gap-3.5 mt-2">
+                            {/* LED 1 */}
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 border border-slate-900">
+                              <div className="flex flex-col">
+                                <span className="font-bold text-slate-200">1. Credential Integrity Check</span>
+                                <span className="text-[10px] text-slate-500">{isKorean ? "인증 토큰 무결성 및 IP 범위 검증" : "Token validation & IP check"}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`h-3 w-3 rounded-full ${
+                                  stepStates.credential === "idle" ? "bg-slate-700" :
+                                  stepStates.credential === "checking" ? "bg-amber-500 animate-ping" :
+                                  stepStates.credential === "success" ? "bg-emerald-500 shadow-[0_0_8px_#10b981]" : "bg-rose-500 shadow-[0_0_8px_#f43f5e]"
+                                }`} />
+                                <span className="text-[10px] text-slate-400 uppercase font-mono w-14 text-right">
+                                  {stepStates.credential}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* LED 2 */}
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 border border-slate-900">
+                              <div className="flex flex-col">
+                                <span className="font-bold text-slate-200">2. Authority Escalation Check</span>
+                                <span className="text-[10px] text-slate-500">{isKorean ? "수행 명령어 역할 기반 권한 제어" : "RBAC command check"}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`h-3 w-3 rounded-full ${
+                                  stepStates.escalation === "idle" ? "bg-slate-700" :
+                                  stepStates.escalation === "checking" ? "bg-amber-500 animate-ping" :
+                                  stepStates.escalation === "success" ? "bg-emerald-500 shadow-[0_0_8px_#10b981]" : "bg-rose-500 shadow-[0_0_8px_#f43f5e]"
+                                }`} />
+                                <span className="text-[10px] text-slate-400 uppercase font-mono w-14 text-right">
+                                  {stepStates.escalation}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* LED 3 */}
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 border border-slate-900">
+                              <div className="flex flex-col">
+                                <span className="font-bold text-slate-200">3. Metrics Re-Synchronization</span>
+                                <span className="text-[10px] text-slate-500">{isKorean ? "세션 연결 후 메트릭 로그 스트리밍 수신" : "Connect & stream logs"}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`h-3 w-3 rounded-full ${
+                                  stepStates.sync === "idle" ? "bg-slate-700" :
+                                  stepStates.sync === "checking" ? "bg-amber-500 animate-ping" :
+                                  stepStates.sync === "success" ? "bg-emerald-500 shadow-[0_0_8px_#10b981]" : "bg-rose-500 shadow-[0_0_8px_#f43f5e]"
+                                }`} />
+                                <span className="text-[10px] text-slate-400 uppercase font-mono w-14 text-right">
+                                  {stepStates.sync}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 터미널 로그 창 */}
+                      <div className="flex-grow flex flex-col min-h-[160px] bg-slate-950 border border-slate-900 rounded-2xl p-4 overflow-y-auto font-mono text-[11px] leading-relaxed text-emerald-400/90 shadow-inner">
+                        <div className="text-slate-500 border-b border-slate-900 pb-1 mb-2 flex justify-between select-none">
+                          <span>SYSTEM LOG CONSOLE V1.0.0</span>
+                          <span className={isRecoveryRunning ? "animate-pulse text-amber-500" : "text-slate-600"}>
+                            {isRecoveryRunning ? "● ACTIVE_SESSION" : "● DISCONNECTED"}
+                          </span>
+                        </div>
+                        <div className="flex-grow overflow-y-auto max-h-[180px]">
+                          {recoveryLogs.length === 0 ? (
+                            <span className="text-slate-600">{isKorean ? "콘솔이 대기 중입니다. '복구 세션 가동'을 눌러 테스트를 수행하세요." : "Console is idle. Press Start Session to test."}</span>
+                          ) : (
+                            recoveryLogs.map((log, index) => (
+                              <div key={index} className={log.includes("❌") || log.includes("🚨") ? "text-rose-400 animate-fade-in" : log.includes("🟢") || log.includes("🎉") ? "text-emerald-400 animate-fade-in" : "text-slate-300 animate-fade-in"}>
+                                {log}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 버튼 제어 */}
+                      <div className="mt-6 flex gap-3">
+                        <button
+                          onClick={() => {
+                            setShowRemoteRecoveryModal(false);
+                          }}
+                          className="px-5 py-3.5 border border-slate-800 text-slate-400 rounded-xl text-xs font-semibold hover:text-slate-200 hover:bg-slate-900 cursor-pointer transition active:scale-95 duration-100"
+                        >
+                          {isKorean ? "닫기" : "Close"}
+                        </button>
+                        <button
+                          onClick={handleStartRecovery}
+                          disabled={isRecoveryRunning || (recoveryCommand === "custom" && !customCommand)}
+                          className={`flex-grow px-6 py-3.5 rounded-xl text-xs font-bold tracking-wide shadow-lg text-center cursor-pointer transition active:scale-95 duration-150 ${
+                            isRecoveryRunning || (recoveryCommand === "custom" && !customCommand)
+                              ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                              : "bg-amber-500 text-slate-950 font-bold hover:bg-amber-400"
+                          }`}
+                        >
+                          {isRecoveryRunning ? (isKorean ? "⚡ 실시간 원격 보안 관제 가동 중..." : "⚡ Session Recovery Active...") : (isKorean ? "🔒 원격 보안 세션 복구 가동" : "🔒 Start Remote Security Recovery")}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
