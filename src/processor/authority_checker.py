@@ -60,6 +60,33 @@ def generate_authority_warning(violation_data: List[Dict[str, Any]], case_id: st
     # --- 핵심 권위적 경고 메시지 포맷팅 로직 끝 ---
     return warning
 
+
+class AuthorityChecker:
+    """원격지 제어의 권위 복구 흐름을 진단하고 확인하는 통합 검증 체커 클래스"""
+    
+    def __init__(self, system_id: str):
+        self.system_id = system_id
+
+    def run_remote_check(self, payload: Dict[str, Any]) -> str:
+        """외부 위험 상태 값을 입력받아 JSON 파싱 및 권위 경고 출력 플로우를 가동합니다."""
+        external_risk_payload = payload.get('external_risk_payload')
+        if not external_risk_payload:
+            return "structural integrity failure: missing external_risk_payload"
+        
+        try:
+            data = json.loads(external_risk_payload)
+        except Exception:
+            return "structural integrity failure: failed to parse JSON"
+            
+        is_violating = data.get("is_violating", False)
+        if is_violating:
+            violation_type = data.get("violation_type", "Unknown")
+            legal_article = data.get("legal_article", "N/A")
+            return f"SYSTEM AUTHORITY ALERT: {violation_type} detected. Violating {legal_article}."
+        else:
+            return "Status OK: No violations detected."
+
+
 if __name__ == '__main__':
     # 테스트 실행 예시: 데이터/regulatory_violation_schema.json 경로를 가정
     test_data_path = "data/regulatory_violation_schema.json" 

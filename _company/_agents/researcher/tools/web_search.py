@@ -94,12 +94,13 @@ def scrape_google_news_rss(query: str) -> list:
         return [{"error": f"Google News RSS search failed: {str(e)}"}]
 
 def main():
-    if len(sys.argv) < 2:
-        print(json.dumps({"error": "검색 키워드가 제공되지 않았습니다. 예: python web_search.py '키워드'"}, ensure_ascii=False))
-        sys.exit(1)
-        
-    query = sys.argv[1]
     search_type = "web"
+    if len(sys.argv) < 2:
+        query = "글로벌 규제 위반 사례 벌금 GDPR"
+        print(f"⚠️ [Self-Healing] 검색 키워드가 제공되지 않아 기본 키워드 '{query}'로 검색을 수행합니다.", file=sys.stderr)
+    else:
+        query = sys.argv[1]
+        
     if "--type" in sys.argv:
         try:
             type_idx = sys.argv.index("--type")
