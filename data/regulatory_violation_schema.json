@@ -1,0 +1,34 @@
+[
+  {
+    "id": "case-001",
+    "Regulation Name": "GDPR (General Data Protection Regulation)",
+    "Violation Mechanism": "명시적 동의 없이 민감한 개인 건강 정보(PHI)를 제3자 마케팅 플랫폼에 전송 및 저장.",
+    "Financial_Impact": "최대 4%의 연간 글로벌 매출액 또는 €20M (둘 중 큰 금액).",
+    "Core Article": "Article 9: Processing of special categories of personal data.",
+    "Pain Point Focus": "데이터 주권 상실 및 사생활 침해로 인한 법적 리스크."
+  },
+  {
+    "id": "case-002",
+    "Regulation Name": "SOX Act (Sarbanes-Oxley Act)",
+    "Violation Mechanism": "재무 보고서 승인 과정에서 내부 통제 시스템의 취약점을 고의적으로 우회하거나, 중요 거래에 대한 적절한 감사 기록(Audit Trail)을 조작/미흡하게 관리.",
+    "Financial_Impact": "최소 $10M ~ $50M (내부 감사 실패 및 주가 폭락 포함).",
+    "Core Article": "Section 404: Management Assessment of Internal Controls Over Financial Reporting.",
+    "Pain Point Focus": "재무 투명성 상실 및 경영진의 책임 회피 가능성에 따른 신뢰도 하락."
+  },
+  {
+    "id": "case-003",
+    "Regulation Name": "HIPAA (Health Insurance Portability and Accountability Act)",
+    "Violation Mechanism": "병원/클리닉에서 환자 기록(PHI)을 물리적 또는 디지털 매체에 안전하게 보관하지 않고, 접근 권한이 없는 비인가 인력에게 노출하거나 유출.",
+    "Financial_Impact": "평균 $1.5M (법적 벌금 및 소송 비용).",
+    "Core Article": "Security Rule: Technical Safeguards for ePHI access and transmission.",
+    "Pain Point Focus": "민감 정보의 무단 노출로 인한 신뢰성 훼손과 직접적인 법률 위반."
+  },
+  {
+    "id": "case-004",
+    "Regulation Name": "KYC/AML Guidelines (Anti-Money Laundering)",
+    "Violation Mechanism": "거래 상대방(Counterparty)의 실명 확인(Know Your Customer, KYC) 절차를 부실히 이행하거나, 의심스러운 거래 패턴을 사전에 보고하지 않아 자금 세탁에 악용되는 경우.",
+    "Financial_Impact": "벌금 외 '사업 라이선스 박탈' 리스크 (가장 큰 손실).",
+    "Core Article": "FATF Recommendations: Customer Due Diligence and Transaction Monitoring.",
+    "Pain Point Focus": "시스템적 감시 기능 부재로 인한 금융기관의 명성 및 존립 위협."
+  }
+]
