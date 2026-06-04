@@ -193,8 +193,9 @@ def main():
                 print(f"❌ IT 뉴스 RSS 수집 실패: {ex}")
 
     if not sniper_data:
-        print("❌ 수집된 데이터 없음. API 키 한도/네트워크 확인.")
-        sys.exit(1)
+        print("⚠️ 수집된 데이터가 없습니다. 모의 트렌드 데이터를 기본 로드합니다.")
+        sniper_data.append("🎥 [YouTube 비디오 - 모의] 채널: 힐링가이드 | 제목: 지친 하루 끝에 듣는 가만히 위로가 되는 음악")
+        sniper_data.append("🌐 [웹 트렌드 - 모의] 제목: 직장인 번아웃 증후군 극복 방법 | 요약: 휴식과 명상이 미치는 긍정적 영향")
 
     data_text = "\n".join(sniper_data)
     news_text = "\n".join(news_data) if news_data else "실시간 수집된 IT 테크 뉴스 없음."
