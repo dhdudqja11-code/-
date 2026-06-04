@@ -1961,7 +1961,7 @@ export default function Home() {
                           <p className="font-serif text-xs text-slate-500 leading-relaxed px-4">
                             {isKorean 
                               ? "대표님, 애쓰고 계신 그 아픈 무게를 조금이라도 나누어 짊어질 수 있도록 오영범 작가(마스터)가 곧 기입해주신 연락처로 묵직한 안부를 전하겠습니다. 조심히 기다려 주십시오."
-                              : "The Master will quietly reach out to you soon via the contact details provided to share and support your business weights."}
+                              : "The Master will gently reach out to you soon via the contact details provided to share and support your business weights."}
                           </p>
                           <button
                             onClick={() => {

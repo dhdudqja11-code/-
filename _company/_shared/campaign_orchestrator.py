@@ -199,9 +199,10 @@ def main():
     WORKSPACE_DIR = os.path.abspath(os.path.join(HERE, "..", ".."))
     try:
         import requests
-        SIM_DIR = os.path.join(WORKSPACE_DIR, "mini_roi_simulator")
-        if WORKSPACE_DIR not in sys.path:
-            sys.path.append(WORKSPACE_DIR)
+        SIM_PARENT_DIR = os.path.join(WORKSPACE_DIR, "_company", "_agents", "developer", "src")
+        SIM_DIR = os.path.join(SIM_PARENT_DIR, "mini_roi_simulator")
+        if SIM_PARENT_DIR not in sys.path:
+            sys.path.append(SIM_PARENT_DIR)
         if SIM_DIR not in sys.path:
             sys.path.append(SIM_DIR)
             

@@ -100,8 +100,7 @@ def main():
     api_key = (_shared(cfg, acct, "YOUTUBE_API_KEY") or "").strip()
     if not api_key:
         print("⚠️  YOUTUBE_API_KEY가 비어있어요. youtube_account.json 또는 trend_sniper.json에 입력하세요.")
-        print("   발급: https://console.cloud.google.com/ → YouTube Data API v3 사용 설정 → 사용자 인증 정보 → API 키")
-        sys.exit(1)
+        print("   [안내] API 키가 없어 자율 웹 스카우터 폴백 모드로 진행합니다.")
     target_keywords = cfg.get("TARGET_KEYWORDS", [])
     if not target_keywords:
         print("⚠️  TARGET_KEYWORDS가 비어있어요. 분석할 키워드를 1개 이상 추가하세요.")
@@ -133,19 +132,27 @@ def main():
         print("⚠️ [하이브리드 RAG 엔진] 자율 웹 스카우터 임포트 실패. YouTube 검색 전용으로 폴백합니다.")
 
     print(f"\n🎯 [트렌드 스나이퍼] 키워드 {chosen} 하이브리드 스캔 시작...")
-    youtube = build('youtube', 'v3', developerKey=api_key)
+    
+    youtube = None
+    is_fallback_mode = not api_key
+    if api_key:
+        try:
+            youtube = build('youtube', 'v3', developerKey=api_key)
+        except Exception as e:
+            print(f"⚠️ YouTube API build 실패: {e}")
+            is_fallback_mode = True
+            
     last_month = (datetime.datetime.utcnow() - datetime.timedelta(days=30)).isoformat("T") + "Z"
     
     sniper_data = []
     news_data = []
-    is_fallback_mode = False
 
     for q in chosen:
         print(f"📡 [{q}] 시장 스캔 가동 중...")
         
         # 1) YouTube 데이터 획득 시도 (API 쿼터 한도 가드레일)
         yt_success = False
-        if not is_fallback_mode:
+        if not is_fallback_mode and youtube:
             try:
                 req = youtube.search().list(
                     part="snippet", q=q, maxResults=3, order="viewCount",

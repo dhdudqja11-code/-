@@ -23,5 +23,30 @@
     },
     "sentAt": "2026-05-31T13:46:12.707Z",
     "status": "SUCCESS"
+  },
+  {
+    "id": "8tucy3b",
+    "timestamp": "2026-06-03T14:31:11.880Z",
+    "recipientName": "사랑하는 지우",
+    "recipientEmail": "jiwoo@example.com",
+    "senderName": "마스터 오영범",
+    "letterData": {
+      "cover": {
+        "title": "지우님을 위한 문장 처방전",
+        "heart_name": "괜찮은 척하느라 지친 마음에게"
+      },
+      "page_letter_paragraphs": [
+        "참 많이 애썼구나. 괜찮아."
+      ],
+      "page_sentences": [
+        "너는 너무 오래 버틴 사람이다."
+      ],
+      "page_questions": [
+        "내가 삼킨 말은 무엇일까?"
+      ],
+      "page_action": "네 마음에 이름을 붙여주렴."
+    },
+    "sentAt": "2026-06-03T14:31:11.894Z",
+    "status": "SUCCESS"
   }
 ]
