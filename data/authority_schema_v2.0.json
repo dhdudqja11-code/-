@@ -1,0 +1,37 @@
+{
+  "case_id": "STRING",
+  "violation_summary": {
+    "title": "STRING",
+    "description": "STRING",
+    "severity_level": "ENUM(Critical, High, Medium, Low)" 
+  },
+  "regulatory_source": {
+    "jurisdiction": "STRING",
+    "article_reference": "STRING",
+    "regulatory_body": "STRING"
+  },
+  "violation_details": {
+    "entity_involved": "STRING",
+    "data_type_affected": "STRING",
+    "failure_mechanism": "STRING"
+  },
+  "financial_impact": {
+    "base_loss_estimate": {
+      "currency": "CUR",
+      "min_value": 0.0,
+      "max_value": 0.0,
+      "basis": "STRING"
+    },
+    "quantitative_risk_variables": {
+      "expected_revenue_decrease_rate": 0.0, 
+      "remediation_cost_multiplier": 1.0,     
+      "legal_litigation_exposure_score": 0.0  
+    },
+    "total_potential_loss_range": "STRING"
+  },
+  "mitigation_strategy": {
+    "required_control": "STRING",
+    "our_solution_feature": "STRING",
+    "co_value_description": "STRING"
+  }
+}
