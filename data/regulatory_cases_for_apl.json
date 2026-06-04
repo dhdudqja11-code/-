@@ -1,0 +1,50 @@
+[
+  {
+    "case_id": "GDPR_01",
+    "위반_법조항": "GDPR Article 17 (Right to Erasure)",
+    "위반의_구체적_상황": "사용자가 데이터 삭제를 요청했음에도 불구하고, 내부 및 외부 연결 지점(CRM, 마케팅 DB 등)에서 데이터를 자동으로 스캔하고 파기하지 않아 법정 기한을 초과하여 개인 식별 정보를 보유함.",
+    "A_LP_추정치": "$5M ~ $15M",
+    "재무_피해_유형": "직접 벌금 및 소송 비용 (Compliance Failure)",
+    "출처_권위": "GDPR (General Data Protection Regulation) / 유럽 데이터 보호 위원회 가이드라인 기반"
+  },
+  {
+    "case_id": "GDPR_02",
+    "위반_법조항": "GDPR Chapter V (Transfers outside EU/EEA)",
+    "위반의_구체적_상황": "데이터를 전송하는 국가의 규제 변화(예: 새로운 국가 간 데이터 송금 금지 조치)를 실시간으로 감지하지 못하고, 비준수 상태로 데이터를 해외에 전송하여 운영을 일시 중단당함.",
+    "A_LP_추정치": "$10M ~ $35M",
+    "재무_피해_유형": "운영 중단 비용 및 벌금 (Operational Halt & Fine)",
+    "출처_권위": "Schrems II 판결 및 데이터 국경 위반 규제 사례 기반"
+  },
+  {
+    "case_id": "AI_01",
+    "위반_법조항": "EU AI Act (High-Risk AI System); Non-Discrimination Laws",
+    "위반의_구체적_상황": "시스템이 학습하거나 추론한 데이터 세트가 특정 인종/성별 그룹에게 불리하거나 편향된 결과를 초래하는 것을 사전에 시뮬레이션하지 못하고, 이를 기반으로 중요한 비즈니스 결정을 내림.",
+    "A_LP_추정치": "$7M ~ $20M",
+    "재무_피해_유형": "소송 비용 및 평판 손실 (Litigation & Reputational Loss)",
+    "출처_권위": "EU AI Act 초안 및 차별 금지 법규 적용 예측 모델"
+  },
+  {
+    "case_id": "DATA_01",
+    "위반_법조항": "GDPR Article 5(1)(e) (Storage Limitation); Purpose Limitation Principle",
+    "위반의_구체적_상황": "데이터 수집 목적과 유지 기간을 명확히 정의하지 않고, '만약을 대비한다'는 이유로 불필요한 데이터를 장기간 보관하여 규제 당국으로부터 과도한 데이터 보유에 대한 지적 및 벌금 처분을 받음.",
+    "A_LP_추정치": "$3M ~ $10M",
+    "재무_피해_유형": "규제 위반 벌금 (Regulatory Fine)",
+    "출처_권위": "GDPR Article 5 원칙 및 데이터 거버넌스 규제 사례 기반"
+  },
+  {
+    "case_id": "SEC_01",
+    "위반_법조항": "Sarbanes-Oxley Act (SOX) / Mandatory Breach Notification Rules",
+    "위반의_구체적_상황": "외부 해킹 시도 또는 취약점 발견 데이터를 즉시 수집하고 분석하여, 법적 요구사항에 맞는 최소화된 '권위적 경고' 보고서(Impact Assessment)를 실시간으로 작성하지 못함.",
+    "A_LP_추정치": "$20M ~ $50M",
+    "재무_피해_유형": "최악의 데이터 유출 사고 비용 (Mega Breach Cost)",
+    "출처_권위": "SOX 법규 및 최대 규모 사이버 보안 사고(Worst-Case Scenario) 분석 기반"
+  },
+  {
+    "case_id": "HIPAA_01",
+    "위반_법조항": "Health Insurance Portability and Accountability Act (HIPAA) Security Rule",
+    "위반의_구체적_상황": "민감한 건강 정보(PHI, Protected Health Information)를 비암호화된 채널로 전송하거나, 접근 통제 기록을 제대로 감사하지 않아 의료 정보를 유출함.",
+    "A_LP_추정치": "$15M ~ $30M",
+    "재무_피해_유형": "의료 정보 침해 벌금 및 배상액 (PHI Breach Fine & Settlement)",
+    "출처_권위": "HIPAA 규제 가이드라인 및 미국 법적 사례 기반"
+  }
+]
