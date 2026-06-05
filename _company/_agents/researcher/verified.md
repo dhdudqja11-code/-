@@ -26,3 +26,6 @@ _사용자가 직접 줄을 지우면 그 주장은 다시 미검증 상태로 �
 - [2026-06-05] | **규제 근거** | GDPR Article 17 (Right to Erasure); CCPA Right to Delete | _(근거: self-RAG)_
 - [2026-06-05] | **규제 근거** | GDPR Chapter V (Transfers outside EU/EEA); Schrems II 판결 등 데이터 국경 위반 | _(근거: self-RAG)_
 - [2026-06-05] | **규제 근거** | GDPR Article 5(1)(e) (Storage Limitation); Purpose Limitation Principle | _(근거: self-RAG)_
+- [2026-06-05] 이 데이터는 단순한 '규제 목록'이 아니라, **'어떤 상황에서 어떤 금전적 피해가 발생하는지'**를 정량적으로 증명하여 우리의 시스템적 권위(Authority)를 강화하는 핵심 자산입니다 . _(근거: Self-RAG)_
+- [2026-06-05] 2. **개발 연동:** `financial_impact` 필드의 `estimated_loss_range`는 Authority Meter UI에서 **가장 크게 강조되어야 할 수치적 근거**입니다. 백엔드는 이 데이터셋의 구조를 따르는 에러 플로우를 반드시 시뮬레이션해야 합니다 . _(근거: 코다리 — 검증된 지식)_
+- [2026-06-05] 3. **전문성 극대화:** 각 사례의 `legal_basis`와 `impact_mechanism`을 전문 용어(e.g., *Schrems II*, *Mandatory Notification*)로 사용하여, 일반적인 '규정 위반'이 아닌 **'시스템적 통제 실패'**라는 프레임으로 권위를 구축해야 합니다 . _(근거: 지난 의사결정 로그)_
