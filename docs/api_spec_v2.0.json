@@ -1,0 +1,70 @@
+{
+  "title": "Authority Data Schema v2.0",
+  "description": "마음을 묻다 서비스의 핵심 진단 및 상태 전이(State Transition)를 정의하는 API 스키마. 단순 데이터 전달을 넘어, 시스템적 권위 증명 과정을 포함한다.",
+  "type": "object",
+  "required": ["request_context", "response_payload"],
+  "properties": {
+    "request_context": {
+      "description": "진단이 시작된 초기 요청 정보. 누가, 무엇을 분석했는지 정의합니다.",
+      "type": "object",
+      "required": ["user_id", "data_source_id"],
+      "properties": {
+        "user_id": {"type": "string"},
+        "data_source_id": {"type": "string"}
+      }
+    },
+    "response_payload": {
+      "description": "시스템의 진단 결과와 권위 확보 과정을 담는 최종 응답 구조. 모든 상태 전이 로그를 포함해야 합니다.",
+      "type": "object",
+      "required": ["final_authority_score", "state_transition_log", "actionable_recommendation"],
+      "properties": {
+        "initial_status": {"type": "string", "enum": ["OK", "WARNING", "CRITICAL"]},
+        "final_authority_score": {
+          "description": "종합적인 시스템적 권위 지수 (0~100). 높을수록 통제력이 확보되었음을 의미합니다.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "state_transition_log": {
+          "description": "진단 과정에서 발생한 모든 상태 전이 기록. (E2E 테스트의 핵심)",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["timestamp", "current_state", "previous_state", "latency_ms"],
+            "properties": {
+              "timestamp": {"type": "string", "format": "date-time"},
+              "previous_state": {"type": "string", "enum": ["INIT", "DATA_VALIDATION", "RISK_CHECK"]},
+              "current_state": {"type": "string", "enum": ["INITIALIZING", "PROCESSING", "WARNING", "RESOLUTION", "COMPLETED"]},
+              "latency_ms": {"description": "상태 전이 및 처리 과정에 걸린 시간 지연 (밀리초 단위). 시스템의 반응성을 증명합니다.", "type": "integer"},
+              "message": {"type": "string"}
+            }
+          }
+        },
+        "authority_warning": {
+          "description": "Critical 상태 발생 시 반환되는 구조화된 경고 메시지. 단순히 에러 코드를 넘어서야 합니다.",
+          "type": "object",
+          "properties": {
+            "code": {"type": "string"},
+            "severity": {"type": "string", "enum": ["CRITICAL", "WARNING"]},
+            "details": {"type": "string"},
+            "mitigation_steps": {
+              "description": "시스템이 제시하는 구체적인 해결책 (3단계 논리 구조).",
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          },
+          "required": ["code", "severity"]
+        },
+        "actionable_recommendation": {
+          "description": "시스템이 최종적으로 사용자에게 제시하는 비즈니스 액션 플랜. (예: 규제 리스크 컨설팅 필요)",
+          "type": "object",
+          "properties": {
+            "level": {"type": "string"},
+            "summary": {"type": "string"}
+          }
+        }
+      },
+      "required": ["final_authority_score", "state_transition_log"]
+    }
+  }
+}
