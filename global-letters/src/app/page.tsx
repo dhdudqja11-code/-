@@ -1293,84 +1293,38 @@ export default function Home() {
                     </p>
                     
                     <div className="envelope-container w-full max-w-[480px] px-4">
-                      <div 
-                        className="envelope-wrapper flex items-center justify-center relative"
-                        style={{
-                          position: "relative",
-                          width: "100%",
-                          maxWidth: "520px",
-                          height: "350px",
-                          backgroundColor: "#dfd5c6",
-                          borderRadius: "16px",
-                          boxShadow: "0 30px 60px -15px rgba(0,0,0,0.4), 0 15px 30px -10px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.4)",
-                          transformStyle: "preserve-3d",
-                          transition: "transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)"
-                        }}
-                      >
+                      <div className="envelope-wrapper flex items-center justify-center relative">
                         {/* Top Flap */}
-                        <div 
-                          className="envelope-flap"
-                          style={{
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            width: "100%",
-                            height: "50%",
-                            backgroundColor: "#cfc4b3",
-                            clipPath: "polygon(0 0, 50% 100%, 100% 0)",
-                            transformOrigin: "top",
-                            transition: "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s, z-index 0.1s linear 0.4s",
-                            zIndex: 4,
-                            boxShadow: "0 4px 10px rgba(0,0,0,0.05)"
-                          }}
-                        />
+                        <div className="envelope-flap" />
+                        
+                        {/* Letter Card (Inside Envelope, slides up on open) */}
+                        <div className="envelope-letter-card">
+                          <div className="w-full h-full border border-[#f1e7d2]/60 rounded-md p-4 flex flex-col items-center justify-center text-center bg-[#fffdf9]/80">
+                            <span className="text-[10px] font-sans font-bold text-amber-600/70 tracking-widest uppercase">Secret Letter</span>
+                            <div className="w-8 h-[1px] bg-amber-400/40 my-2" />
+                            <p className="text-[11px] font-serif text-slate-400 italic">For your healing journey</p>
+                          </div>
+                        </div>
                         
                         {/* Front pocket with card inside */}
-                        <div 
-                          className="envelope-front-pocket"
-                          style={{
-                            position: "absolute",
-                            inset: 0,
-                            backgroundColor: "#dfd5c6",
-                            clipPath: "polygon(0 42%, 50% 74%, 100% 42%, 100% 100%, 0 100%)",
-                            zIndex: 3,
-                            boxShadow: "0 -4px 20px rgba(0,0,0,0.08)",
-                            borderBottomLeftRadius: "16px",
-                            borderBottomRightRadius: "16px"
-                          }}
-                        />
+                        <div className="envelope-front-pocket" />
 
                         {/* Recipient Text - Absolutely positioned at the bottom, above the pocket but below the seal (Zero Overlap!) */}
-                        <div 
-                          className="absolute bottom-6 left-0 right-0 text-center font-serif text-slate-700 select-none pointer-events-none"
-                          style={{
-                            zIndex: 20,
-                            position: "absolute",
-                            bottom: "24px",
-                            left: 0,
-                            right: 0
-                          }}
-                        >
-                          <p className="text-[10px] tracking-widest uppercase opacity-50 mb-1" style={{ fontSize: "10px", letterSpacing: "0.1em", opacity: 0.5, marginBottom: "4px" }}>Ask Your Heart</p>
-                          <h3 className="text-xl md:text-2xl font-bold tracking-tight font-serif text-slate-800" style={{ fontSize: "20px", fontWeight: "bold", color: "#1e293b" }}>
+                        <div className="absolute bottom-6 left-0 right-0 text-center font-serif text-slate-700 select-none pointer-events-none z-20">
+                          <p className="text-[10px] tracking-widest uppercase opacity-50 mb-1">Ask Your Heart</p>
+                          <h3 className="text-xl md:text-2xl font-bold tracking-tight text-slate-800">
                             {formData.q1_name || t.dearRecipient}{t.dearRecipientSuffix}
                           </h3>
-                          <p className="text-[9px] opacity-40 mt-3 tracking-wider" style={{ fontSize: "9px", opacity: 0.4, marginTop: "12px", letterSpacing: "0.05em" }}>
+                          <p className="text-[9px] opacity-40 mt-3 tracking-wider">
                             {t.envelopeSender}
                           </p>
                         </div>
 
                         {/* Wax Seal Button at the Center (z-index 30 sits on top of everything) */}
-                        <div 
-                          className="absolute top-[50%] left-[50%] -translate-x-[50%] -translate-y-[50%] flex flex-col items-center gap-2"
-                          style={{
-                            position: "absolute",
-                            top: "50%",
-                            left: "50%",
-                            transform: "translate(-50%, -50%)",
-                            zIndex: 30
-                          }}
-                        >
+                        <div className="absolute top-[50%] left-[50%] -translate-x-[50%] -translate-y-[50%] flex flex-col items-center gap-2 z-30">
+                          {/* Ambient Aura Gold Glow Ring */}
+                          <div className="seal-glow-ring" />
+
                           <button
                             type="button"
                             onClick={() => {
@@ -1384,52 +1338,13 @@ export default function Home() {
                             }}
                             className="wax-seal"
                             aria-label="Open envelope"
-                            style={{
-                              width: "64px",
-                              height: "64px",
-                              background: "radial-gradient(circle at 35% 35%, #b91c1c 0%, #7f1d1d 90%)",
-                              borderRadius: "50%",
-                              boxShadow: "0 10px 25px rgba(127, 29, 29, 0.4), inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -4px 8px rgba(0,0,0,0.4)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              cursor: "pointer",
-                              transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                              userSelect: "none",
-                              border: "2px solid #991b1b"
-                            }}
                           >
-                            <div 
-                              className="wax-seal-inner"
-                              style={{
-                                width: "44px",
-                                height: "44px",
-                                borderRadius: "50%",
-                                border: "2px dashed rgba(255,255,255,0.2)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontFamily: "serif",
-                                fontWeight: "bold",
-                                color: "rgba(255,255,255,0.7)",
-                                fontSize: "18px",
-                                textShadow: "1px 1px 2px rgba(0,0,0,0.5)",
-                                background: "#7f1d1d"
-                              }}
-                            >
+                            <div className="wax-seal-inner">
                               心
                             </div>
                           </button>
-                          <span 
-                            className="text-[10px] font-sans font-bold text-amber-500 tracking-wider animate-bounce select-none uppercase mt-1"
-                            style={{
-                              fontSize: "10px",
-                              fontWeight: "bold",
-                              color: "#f59e0b",
-                              letterSpacing: "0.05em",
-                              marginTop: "4px"
-                            }}
-                          >
+                          
+                          <span className="seal-help-text text-[10px] font-sans font-bold text-amber-500 tracking-wider animate-bounce select-none uppercase mt-1">
                             {t.sealHelp}
                           </span>
                         </div>

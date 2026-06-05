@@ -2,7 +2,7 @@ import json
 from src.processor.authority_checker import AuthorityChecker # 가정
 
 class TestAuthorityIntegration:
-    def __init__(self):
+    def setup_method(self):
         # 테스트 환경 초기화 및 시스템 ID 설정 (권위 확보를 위한 시뮬레이션)
         self.checker = AuthorityChecker(system_id="AI-ARC-20260603") 
         print("=======================================================")

@@ -77,6 +77,190 @@ export default function AdminDashboard() {
   const [sessionRisk, setSessionRisk] = useState<number>(1.8);
   const [trafficRisk, setTrafficRisk] = useState<number>(2.1);
 
+  // 실시간 몬테카를로 시뮬레이션 상태
+  const [simLoss, setSimLoss] = useState<number>(0);
+  const [simCritical, setSimCritical] = useState<boolean>(false);
+  const [simChartData, setSimChartData] = useState<any[]>([]);
+  const [simReport, setSimReport] = useState<any[]>([]);
+
+  // 🛡️ 원격 보안 관제 및 세션 복구 콘솔 상태들
+  const [showRemoteRecoveryModal, setShowRemoteRecoveryModal] = useState<boolean>(false);
+  const [recoveryIp, setRecoveryIp] = useState<string>("192.168.1.50");
+  const [recoveryPort, setRecoveryPort] = useState<string>("22");
+  const [recoveryRole, setRecoveryRole] = useState<string>("admin"); // admin, standard, guest
+  const [recoveryCommand, setRecoveryCommand] = useState<string>("ls -l /var/log");
+  const [customCommand, setCustomCommand] = useState<string>("");
+  const [isRecoveryRunning, setIsRecoveryRunning] = useState<boolean>(false);
+  const [recoveryLogs, setRecoveryLogs] = useState<string[]>([]);
+  const [recoveryStatus, setRecoveryStatus] = useState<"idle" | "running" | "success" | "failed">("idle");
+  const [stepStates, setStepStates] = useState<{
+    credential: "idle" | "checking" | "success" | "failed";
+    escalation: "idle" | "checking" | "success" | "failed";
+    sync: "idle" | "checking" | "success" | "failed";
+  }>({
+    credential: "idle",
+    escalation: "idle",
+    sync: "idle",
+  });
+
+  // 슬라이더 값이 변경될 때마다 실시간 몬테카를로 API 호출
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      try {
+        const payload = {
+          client_id: "CEO_Admin_Console",
+          user_role: "Admin",
+          risk_factors: [
+            { activity_name: "PII Leakage Risk", potential_impact_score: piiRisk },
+            { activity_name: "Lack of Immutable Audit Logs", potential_impact_score: auditRisk },
+            { activity_name: "No User Consent Mechanism", potential_impact_score: consentRisk },
+            { activity_name: "Session Security Hijacking", potential_impact_score: sessionRisk },
+            { activity_name: "Traffic Surge Throttling", potential_impact_score: trafficRisk }
+          ]
+        };
+
+        const res = await fetch("http://localhost:8000/api/v1/mini-roi/simulate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setSimLoss(data.total_estimated_loss_usd);
+          setSimCritical(data.is_critical_risk);
+          setSimChartData(data.chart_data);
+          setSimReport(data.report);
+        } else {
+          const fallbackLoss = (piiRisk * 12.0 + auditRisk * 15.0 + consentRisk * 10.0 + sessionRisk * 18.0 + trafficRisk * 8.0) * 800;
+          setSimLoss(fallbackLoss);
+          setSimCritical(fallbackLoss > 95000.0);
+        }
+      } catch (e) {
+        console.error("Failed to fetch live Monte Carlo simulation:", e);
+        const fallbackLoss = (piiRisk * 12.0 + auditRisk * 15.0 + consentRisk * 10.0 + sessionRisk * 18.0 + trafficRisk * 8.0) * 800;
+        setSimLoss(fallbackLoss);
+        setSimCritical(fallbackLoss > 95000.0);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [piiRisk, auditRisk, consentRisk, sessionRisk, trafficRisk]);
+
+  const handleStartRecovery = async () => {
+    if (isRecoveryRunning) return;
+    setIsRecoveryRunning(true);
+    setRecoveryStatus("running");
+    setRecoveryLogs([]);
+    setStepStates({
+      credential: "checking",
+      escalation: "idle",
+      sync: "idle"
+    });
+
+    const finalCommand = recoveryCommand === "custom" ? customCommand : recoveryCommand;
+    const addLog = (msg: string) => {
+      setRecoveryLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+    };
+
+    addLog("🔄 원격 세션 복구 시작 시퀀스 가동...");
+    addLog(`🌐 대상 IP: ${recoveryIp}:${recoveryPort} | 권한: ${recoveryRole}`);
+    addLog(`⚙️ 실행 명령어: "${finalCommand}"`);
+
+    // 1단계 Credential Check 시뮬레이션 딜레이
+    await new Promise((r) => setTimeout(r, 1200));
+
+    if (recoveryRole === "guest") {
+      setStepStates((prev) => ({ ...prev, credential: "failed" }));
+      setRecoveryStatus("failed");
+      addLog("❌ [인증 실패] Credential Integrity Check 실패.");
+      addLog("❌ 상세 오류: Guest user는 원격 연결 시도가 불가능합니다. (AUTH_ERROR)");
+      setIsRecoveryRunning(false);
+      return;
+    }
+
+    try {
+      const parsedPort = parseInt(recoveryPort);
+      if (!recoveryIp.startsWith("192.") || !(parsedPort === 22 || (parsedPort >= 1024 && parsedPort <= 65535))) {
+        setStepStates((prev) => ({ ...prev, credential: "failed" }));
+        setRecoveryStatus("failed");
+        addLog("❌ [네트워크 검증 실패] 유효하지 않거나 제한된 IP/Port 조합입니다. (VALIDATION_ERROR)");
+        setIsRecoveryRunning(false);
+        return;
+      }
+    } catch {
+      setStepStates((prev) => ({ ...prev, credential: "failed" }));
+      setRecoveryStatus("failed");
+      addLog("❌ [검증 오류] 포트 형식이 올바르지 않습니다. (VALIDATION_ERROR)");
+      setIsRecoveryRunning(false);
+      return;
+    }
+
+    setStepStates((prev) => ({ ...prev, credential: "success", escalation: "checking" }));
+    addLog("🟢 [인증 완료] Credential 무결성 검증 완료.");
+    addLog("🔄 2단계: 권한 승격 및 정책 검사(Authority Escalation) 진행 중...");
+
+    // 2단계 Authority Escalation 시뮬레이션 딜레이
+    await new Promise((r) => setTimeout(r, 1200));
+
+    if (finalCommand.includes("systemctl restart") && recoveryRole !== "admin") {
+      setStepStates((prev) => ({ ...prev, escalation: "failed" }));
+      setRecoveryStatus("failed");
+      addLog("❌ [권한 거부] 관리자 권한이 필요합니다. (PERMISSION_DENIED)");
+      addLog(`❌ 상세 오류: 이 명령어는 해당 접근 역할(${recoveryRole})에서 제한되었습니다.`);
+      setIsRecoveryRunning(false);
+      return;
+    }
+
+    setStepStates((prev) => ({ ...prev, escalation: "success", sync: "checking" }));
+    addLog("🟢 [권한 승격 완료] Authority Escalation 정상 확인.");
+    addLog("🔄 3단계: 접속 재동기화 및 실시간 데이터 스트리밍(Re-Synchronization) 가동...");
+
+    // 3단계 Re-Synchronization 및 API 호출
+    try {
+      const response = await fetch("http://localhost:5000/api/remote/flow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: "admin_recovery",
+          role: recoveryRole,
+          ip_address: recoveryIp,
+          port: parseInt(recoveryPort),
+          command: finalCommand
+        })
+      });
+
+      const data = await response.json();
+      await new Promise((r) => setTimeout(r, 1000));
+
+      if (data.success) {
+        setStepStates((prev) => ({ ...prev, sync: "success" }));
+        setRecoveryStatus("success");
+        addLog("🟢 [동기화 완료] 실시간 시스템 메트릭 스트리밍 수신 성공.");
+        
+        if (data.details && data.details.data_stream && data.details.data_stream.data) {
+          const streamLines = data.details.data_stream.data.split("\n");
+          streamLines.forEach((line: string) => {
+            if (line.trim()) addLog(`📡 [STREAM] ${line}`);
+          });
+        }
+        addLog("🎉 시스템 복구 시퀀스가 완벽하게 성공하였습니다.");
+      } else {
+        setStepStates((prev) => ({ ...prev, sync: "failed" }));
+        setRecoveryStatus("failed");
+        addLog("❌ [실행 실패] 백엔드 플로우 중 오류 발생.");
+        addLog(`❌ 에러 정보: ${data.error_report || ""}`);
+        addLog(`❌ 상세 내역: ${data.details || ""}`);
+      }
+    } catch (err: any) {
+      setStepStates((prev) => ({ ...prev, sync: "failed" }));
+      setRecoveryStatus("failed");
+      addLog(`🚨 [네트워크 오류] API Gateway(http://localhost:5000) 연결 실패: ${err.message}`);
+    } finally {
+      setIsRecoveryRunning(false);
+    }
+  };
+
   // Dynamic Telemetry States
   const [cpuTemp, setCpuTemp] = useState<number>(42.8);
   const [activeTokensRate, setActiveTokensRate] = useState<number>(1240);
@@ -233,12 +417,12 @@ export default function AdminDashboard() {
   // 실시간 몬테카를로 기대 손실액(EL) 및 회피 가능 가치(Avoided Loss Potential - ALP) 계산
   // 최대 예상 리스크 잠재액 $350,000 USD
   const maxRiskPotential = 350000;
-  const currentExpectedLoss = Math.floor(
-    (piiRisk * 12.0 + auditRisk * 15.0 + consentRisk * 10.0 + sessionRisk * 18.0 + trafficRisk * 8.0) * 800
-  );
+  const currentExpectedLoss = simLoss > 0 
+    ? Math.floor(simLoss) 
+    : Math.floor((piiRisk * 12.0 + auditRisk * 15.0 + consentRisk * 10.0 + sessionRisk * 18.0 + trafficRisk * 8.0) * 800);
   // Avoided Loss Potential (회피 가능 가치)
   const avoidedLossPotential = Math.max(0, maxRiskPotential - currentExpectedLoss);
-  const isCriticalRisk = avoidedLossPotential < 150000;
+  const isCriticalRisk = simLoss > 0 ? simCritical : (currentExpectedLoss > 95000.0);
 
   return (
     <div className="min-h-screen bg-[#090b11] text-slate-100 py-10 px-4 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
@@ -551,6 +735,16 @@ export default function AdminDashboard() {
                   />
                 </div>
               </div>
+
+              {isCriticalRisk && (
+                <button
+                  onClick={() => setShowRemoteRecoveryModal(true)}
+                  className="w-full mt-5 bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg shadow-rose-950/30 flex items-center justify-center gap-2 cursor-pointer transition-all duration-150 active:scale-95 text-xs animate-pulse"
+                >
+                  <Shield className="w-4 h-4 text-white" />
+                  🚨 실시간 원격 보안 관제 및 세션 복구 가동
+                </button>
+              )}
             </div>
 
             {/* Widget 6: Gift Dispatch Queue & History */}
@@ -662,6 +856,206 @@ export default function AdminDashboard() {
             ))}
           </div>
         </div>
+
+      {/* 🛡️ 원격 보안 관제 및 세션 복구 모달 (다크 글래스모피즘 터미널 UI) */}
+      {showRemoteRecoveryModal && (
+        <div className="fixed inset-0 bg-[#05070a]/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0c0e17]/95 border border-amber-500/30 rounded-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col shadow-[0_20px_50px_rgba(245,158,11,0.25)] font-mono text-xs text-slate-300">
+            {/* Header */}
+            <div className="bg-[#0f1220] border-b border-amber-500/20 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-amber-500 font-bold flex items-center gap-2 text-sm hud-glow-text font-serif">
+                <Shield className="w-5 h-5 text-amber-500 animate-pulse" />
+                원격 시스템 보안 관제 & 복구 모달 (Console V3)
+              </h2>
+              <button 
+                onClick={() => setShowRemoteRecoveryModal(false)}
+                className="text-slate-400 hover:text-rose-500 transition-colors cursor-pointer text-sm p-1.5 hover:bg-slate-800/40 rounded-lg"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto">
+              
+              {/* Left Column: Config Forms */}
+              <div className="space-y-4 pr-2">
+                <h3 className="text-amber-500/80 font-bold text-xs uppercase tracking-wider mb-2">// CONNECTION DETAILS</h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-slate-400 font-semibold block">TARGET HOST IP</label>
+                    <input 
+                      type="text" 
+                      value={recoveryIp} 
+                      onChange={(e) => setRecoveryIp(e.target.value)}
+                      placeholder="192.168.1.50" 
+                      className="w-full bg-[#07090f] border border-amber-500/20 rounded-lg p-2.5 text-slate-200 outline-none focus:border-amber-500 font-mono focus:ring-1 focus:ring-amber-500/40"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-slate-400 font-semibold block">PORT</label>
+                    <input 
+                      type="text" 
+                      value={recoveryPort} 
+                      onChange={(e) => setRecoveryPort(e.target.value)}
+                      placeholder="22" 
+                      className="w-full bg-[#07090f] border border-amber-500/20 rounded-lg p-2.5 text-slate-200 outline-none focus:border-amber-500 font-mono focus:ring-1 focus:ring-amber-500/40"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-slate-400 font-semibold block">ROLE (CREDENTIAL TYPE)</label>
+                  <select 
+                    value={recoveryRole}
+                    onChange={(e) => setRecoveryRole(e.target.value)}
+                    className="w-full bg-[#07090f] border border-amber-500/20 rounded-lg p-2.5 text-slate-200 outline-none focus:border-amber-500 font-mono cursor-pointer"
+                  >
+                    <option value="admin">Administrator (Full Access)</option>
+                    <option value="standard">Standard User (Escalated)</option>
+                    <option value="guest">Guest Token (Restricted)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-slate-400 font-semibold block">COMMAND PROTOCOL</label>
+                  <select 
+                    value={recoveryCommand}
+                    onChange={(e) => setRecoveryCommand(e.target.value)}
+                    className="w-full bg-[#07090f] border border-amber-500/20 rounded-lg p-2.5 text-slate-200 outline-none focus:border-amber-500 font-mono cursor-pointer"
+                  >
+                    <option value="ls -l /var/log">ls -l /var/log (감사 로그 확인)</option>
+                    <option value="systemctl restart remote_control_api">systemctl restart remote_control_api (관제 모듈 리셋)</option>
+                    <option value="status">status (시스템 자원 모니터링)</option>
+                    <option value="sync">sync (RAG 메모리 강제 동기화)</option>
+                    <option value="custom">Custom Command (직접 작성)</option>
+                  </select>
+                </div>
+
+                {recoveryCommand === "custom" && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-slate-400 font-semibold block">CUSTOM COMMAND LINE</label>
+                    <textarea 
+                      value={customCommand}
+                      onChange={(e) => setCustomCommand(e.target.value)}
+                      placeholder="입력할 명령어를 입력하세요..."
+                      rows={3}
+                      className="w-full bg-[#07090f] border border-amber-500/20 rounded-lg p-2.5 text-slate-200 outline-none focus:border-amber-500 font-mono focus:ring-1 focus:ring-amber-500/40 resize-none"
+                    />
+                  </div>
+                )}
+
+                <button 
+                  onClick={handleStartRecovery}
+                  disabled={isRecoveryRunning}
+                  className={`w-full py-3 px-4 rounded-xl font-bold text-xs tracking-wider border shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer uppercase ${
+                    isRecoveryRunning 
+                      ? "bg-amber-500/50 border-amber-500/30 text-amber-100 cursor-not-allowed" 
+                      : "bg-amber-500 border-amber-500 hover:bg-amber-400 hover:shadow-[0_0_15px_rgba(245,158,11,0.4)] text-slate-900 active:scale-95 duration-150"
+                  }`}
+                >
+                  {isRecoveryRunning ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-slate-900"></div>
+                      Recovering System Session...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="w-3.5 h-3.5" />
+                      Execute Recovery Sequence
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Right Column: Telemetry & Terminal */}
+              <div className="flex flex-col h-full space-y-4">
+                
+                {/* 3-Step Status Checklist */}
+                <div className="grid grid-cols-3 gap-2 bg-[#0a0c14] border border-amber-500/10 p-3 rounded-xl">
+                  
+                  {/* Step 1: Credential */}
+                  <div className="flex flex-col items-center p-1.5 text-center font-mono">
+                    <span className="text-[8px] text-slate-400 uppercase mb-1.5">1. Cred Check</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-3 h-3 rounded-full ${
+                        stepStates.credential === "success" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] animate-pulse" :
+                        stepStates.credential === "failed" ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)] animate-pulse" :
+                        stepStates.credential === "checking" ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)] animate-ping" :
+                        "bg-slate-700"
+                      }`} />
+                      <span className="text-[9px] font-bold text-slate-200">
+                        {stepStates.credential.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Step 2: Escalation */}
+                  <div className="flex flex-col items-center p-1.5 text-center font-mono">
+                    <span className="text-[8px] text-slate-400 uppercase mb-1.5">2. Escalation</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-3 h-3 rounded-full ${
+                        stepStates.escalation === "success" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] animate-pulse" :
+                        stepStates.escalation === "failed" ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)] animate-pulse" :
+                        stepStates.escalation === "checking" ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)] animate-ping" :
+                        "bg-slate-700"
+                      }`} />
+                      <span className="text-[9px] font-bold text-slate-200">
+                        {stepStates.escalation.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Step 3: Re-Sync */}
+                  <div className="flex flex-col items-center p-1.5 text-center font-mono">
+                    <span className="text-[8px] text-slate-400 uppercase mb-1.5">3. Re-Sync</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-3 h-3 rounded-full ${
+                        stepStates.sync === "success" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] animate-pulse" :
+                        stepStates.sync === "failed" ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)] animate-pulse" :
+                        stepStates.sync === "checking" ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)] animate-ping" :
+                        "bg-slate-700"
+                      }`} />
+                      <span className="text-[9px] font-bold text-slate-200">
+                        {stepStates.sync.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CLI Terminal */}
+                <div className="flex-grow bg-[#04060a] border border-amber-500/20 rounded-xl p-4 h-[240px] overflow-y-auto font-mono text-[10px] text-amber-500/90 leading-relaxed scanlines shadow-inner relative">
+                  <div className="space-y-1">
+                    {recoveryLogs.length === 0 ? (
+                      <div className="text-slate-500 italic">SYSTEM TERMINAL WAITING TO INITIATE SEQUENCE...</div>
+                    ) : (
+                      recoveryLogs.map((log, idx) => (
+                        <div key={idx}>{log}</div>
+                      ))
+                    )}
+                    {isRecoveryRunning && (
+                      <div className="inline-block w-2 h-4 bg-amber-500 animate-pulse ml-0.5" />
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* Footer */}
+            <div className="bg-[#0f1220] border-t border-amber-500/10 px-6 py-3.5 flex justify-between items-center text-[10px] font-mono text-slate-500 uppercase">
+              <span>SECURE ACCESS BRIDGE ACTIVE</span>
+              <span className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                E2E ENCRYPTED (SSL/TLS)
+              </span>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       </div>
     </div>

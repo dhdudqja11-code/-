@@ -79,3 +79,8 @@ _사용자가 직접 줄을 지우면 그 주장은 다시 미검증 상태로 �
 - [2026-06-04] * **결과:** 상대적으로 낮은 월 구독료 또는 One-time 진단 도구 형태로 포지셔닝하여 **Volume(유입량)** 극대화에 집중합니다. _(근거: Self-RAG)_
 - [2026-06-04] * **전략적 역할:** Free/Starter에서 발생한 경고(Alert)가 실제 돈으로 지불할 가치가 있는 '문제'로 인식되는 **UCR(Utility Conversion Rate)**을 최적화하는 핵심 구간입니다. _(근거: Self-RAG)_
 - [2026-06-04] * **$R$ 비율 결정:** 서비스 전체 가치를 포괄하는 가장 높은 $R_{\text{high}}$를 적용하며, **연간 계약(Annual Commitment)**을 통해 LTV 극대화를 목표로 합니다. _(근거: Self-RAG)_
+- [2026-06-04] * **핵심가치:** 단순한 컴플라이언스 준수 $\rightarrow$ **법적 근거를 통한 재무적 권위 확보 (Authority)** _(근거: 지난 의사결정 로그)_
+- [2026-06-04] * **KPI 2 (전환):** Utility Conversion Rate ($\text{UCR}$) = $\frac{\text{Utility Solver 구매자}}{\text{Alert 발생 사용자 수}}$ _(근거: Mini ROI 수익화 전략 보고서)_
+- [2026-06-04] * **$L_{reg}$ (법적 규제 벌금액):** Researcher가 제공할 데이터셋의 최대치 ($L_{\text{reg\_max}}$)를 기준으로 $\text{Estimated Loss}_{\text{Actual}}$을 설정합니다. _(근거: 지난 의사결정 로그)_
+- [2026-06-04] * **$\text{Avoided Loss}$ (회피 가능 손실):** 각 티어 도입으로 인해 절감되는 재무적 가치입니다. 이는 $L_{reg}$의 감소폭에 비례하며, **가장 큰 판매 근거**가 됩니다. _(근거: Mini ROI 수익화 전략 보고서)_
+- [2026-06-04] 1. **Total Addressable Market (TAM):** 모든 컴플라이언스 관련 리스크에 노출된 기업의 연간 총 예상 벌금액 ($\sum L_{reg}$). _(근거: CEO 지시)_

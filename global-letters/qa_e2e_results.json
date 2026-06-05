@@ -1,7 +1,7 @@
 {
   "beta": {
     "success": true,
-    "timeTaken": "0.82",
+    "timeTaken": "0.45",
     "data": {
       "cover": {
         "title": "마음을 위한 문장 처방전",
@@ -40,7 +40,7 @@
   },
   "deep": {
     "success": true,
-    "timeTaken": "0.34",
+    "timeTaken": "0.23",
     "data": {
       "cover": {
         "title": "깊은 마음 치유 문장 처방전",
@@ -100,7 +100,7 @@
   },
   "recovery": {
     "success": true,
-    "timeTaken": "0.30",
+    "timeTaken": "0.18",
     "data": {
       "cover": {
         "title": "7일간의 마음 회복 여정 편지",
@@ -166,7 +166,7 @@
   },
   "random": {
     "success": true,
-    "timeTaken": "0.29",
+    "timeTaken": "0.21",
     "data": {
       "cover": {
         "title": "오늘의 한 문장 처방",
@@ -196,7 +196,7 @@
   },
   "free": {
     "success": true,
-    "timeTaken": "0.28",
+    "timeTaken": "0.21",
     "data": {
       "cover": {
         "title": "당신을 위한 안부 편지",
