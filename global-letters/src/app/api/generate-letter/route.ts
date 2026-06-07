@@ -216,7 +216,7 @@ You must write the letter following the unique style of Master Oh Young-bum:
             parsedResponse.page_action = "";
             parsedResponse.recovery_days = [];
           } else {
-            // productType === "free" (무료 안부 편지) 가드레일 강화
+                        // productType === "free" (무료 안부 편지) 가드레일 강화
             if (productType === "free") {
               if (!Array.isArray(parsedResponse.page_letter_paragraphs)) {
                 parsedResponse.page_letter_paragraphs = [];
@@ -225,7 +225,7 @@ You must write the letter following the unique style of Master Oh Young-bum:
               if (currentText.length < 450 || currentText.length > 750 || parsedResponse.page_letter_paragraphs.length !== 2) {
                 parsedResponse.page_letter_paragraphs = isKo ? [
                   "많이 힘들었겠다. 괜찮다고 말하면서도 사실은 마음 한쪽에서 계속 무너지는 소리가 났을 것 같아. 사람들 앞에서는 웃고 아무렇지 않은 척 하루를 보내도 혼자가 되는 밤마다 네 마음은 오래 참아온 눈물을 가만히 삼켰겠지. 그런 너에게 더 힘을 내어 버티라고 말하고 싶지 않아. 너는 이미 오늘 하루도 충분히 많은 고단한 날들을 씩씩하게 버텨왔으니까. 오늘의 무거운 발걸음이 너를 자책하게 만들지 않았으면 좋겠어. 그 모든 아픔과 힘듦은 절대 네 잘못이 아니란다.",
-                  "오늘은 너무 괜찮으려고 애쓰지 않았으면 좋겠다. 울고 싶다면 잠시 울어도 괜찮고, 아무것도 할 수 없는 무기력한 밤이라면 그저 숨만 고르는 가만히 누워 쉬는 하루여도 다 괜찮아. 봄이 오기 전의 메마른 나뭇가지들도 한동안은 멈춘 것처럼 보이지만, 그 안에서는 다시 꽃을 피워낼 소중한 시간들이 가만히 흐르고 있잖아. 네 마음도 그랬으면 좋겠다. 오늘의 너를 너무 미워하지 말고, 여기까지 오느라 참 많이 애썼다고 스스로에게 다정하게 말해주길 바랄게. 언제나 네 곁에서 가만히 응원하고 있어."
+                  "오늘은 너무 괜찮으려고 애쓰지 않았으면 좋겠다. 울고 싶다면 잠시 울어도 괜찮고, 아무것도 할 수 없는 무기력한 밤이라면 그저 숨만 고르는 가만히 누워 쉬는 하루여도 다 괜찮아. 봄이 오기 전의 메마른 나뭇가지들도 한동안은 멈춘 것처럼 보이지만, 그 안에서는 다시 꽃을 피워낼 소중한 시간들이 가만히 흐르고 있단다. 네 마음도 그랬으면 좋겠다. 오늘의 너를 너무 미워하지 말고, 여기까지 오느라 참 많이 애썼다고 스스로에게 다정하게 말해주길 바랄게. 언제나 네 곁에서 가만히 응원하고 있어."
                 ] : [
                   "It must have been so hard for you. Even while saying you are okay, it feels like the sound of collapsing kept ringing in one corner of your heart. Even if you smiled in front of other people and spent the day pretending to be fine, every night when you were left alone, your heart must have gently swallowed the tears you held back for so long. I don't want to tell you to endure more. You have already survived enough difficult days. I hope today's heavy steps do not make you blame yourself, because all this pain and hardship is never your fault.",
                   "I hope you don't try too hard to be okay today. It's totally okay to cry for a while if you want to, and if it's a night when you can't do anything, it's fine to just catch your breath. Branches before spring comes look as if they have completely stopped for a while, but inside them, the time to bloom again is still silently flowing. I hope your heart behaves like that. Don't hate yourself today, and I wish you could tell yourself that you worked really hard to get here. I will always support you gently with all my heart."

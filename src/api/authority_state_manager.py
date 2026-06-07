@@ -98,6 +98,56 @@ class AuthorityStateManager:
 
         return state_data
 
+    def initialize_check(self, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """초기 상태 (Initial State) 검사를 수행합니다."""
+        return {
+            "status": "INITIAL",
+            "message": "Initial State established.",
+            "data": data
+        }
+
+    def check_authority(self, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """권위 상태를 진단하고 경고 혹은 적합한 상태를 판별합니다."""
+        if data is None:
+            return {
+                "status": "ERROR",
+                "message": "Input data is missing.",
+                "details": "Data integrity check failed: null payload."
+            }
+        
+        risk_score = data.get("risk_score", 0.0)
+        
+        # risk_score가 있고, 매우 낮은 경우 SOLUTION으로 간주
+        if "risk_score" in data and risk_score <= 0.2:
+            return {
+                "status": "SOLUTION",
+                "message": "Risk is low. Control secured.",
+                "details": "Low risk state automatically resolved."
+            }
+            
+        # risk_score가 높거나 경고 기준을 만족하는 경우
+        if risk_score >= 0.5 or data.get("source") == "External API":
+            print("🚨 [GLITCH ALERT] Authority compromised! System integrity check required.")
+            return {
+                "status": "WARNING",
+                "message": "Authority Warning: Risk detected.",
+                "details": "AuthorityWarning: System integrity check required."
+            }
+            
+        return {
+            "status": "INITIAL",
+            "message": "Initial State",
+            "details": "Internal data checked."
+        }
+
+    def resolve_check(self, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """문제를 해결하고 통제권을 복구한 상태를 반환합니다."""
+        return {
+            "status": "SOLUTION",
+            "message": "Control Secured: fallbacks deployed.",
+            "details": "Resolved successfully."
+        }
+
 # --- 3. 테스트 용도 코드 블록 (선택 사항) ---
 if __name__ == "__main__":
     print("--- Authority State Manager Self-Test Running ---")
