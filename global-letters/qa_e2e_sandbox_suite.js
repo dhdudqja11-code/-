@@ -158,6 +158,9 @@ async function runSuite() {
     try {
       // 5000번 포트로 통신 시도 (api_gateway.py)
       res = await makeRequest(opt, simulateData);
+      if (res.status === 404) {
+        throw new Error("404 Not Found, falling back to port 8000");
+      }
     } catch {
       // 만약 FastAPI가 8000번에서 작동 중일 경우 폴백
       opt.port = 8000;

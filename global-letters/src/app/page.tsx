@@ -13,7 +13,7 @@ interface LetterData {
   page_sentences: string[];
   page_questions: string[];
   page_action: string;
-  recovery_days?: { day: number; letter: string; action: string }[];
+  recovery_days?: { day: number; letter: string; sentence?: string; action: string; summary_sentences?: string[] }[];
   letter?: string;
   action?: string;
   scientific_reference?: {
@@ -1482,10 +1482,33 @@ export default function Home() {
                           <div key={`recovery-${idx}`} className="pdf-page w-[210mm] h-[297mm] bg-[#FDFBF7] p-[25mm] border-[8px] border-double border-slate-200 flex flex-col justify-between relative">
                             <div className="w-full h-full border border-slate-200 p-12 flex flex-col justify-between">
                               <div>
-                                <h2 className="text-3xl font-serif text-slate-800 mb-8 border-b border-slate-200 pb-3 inline-block">{dayData.day}{t.recoveryDayHeader}</h2>
-                                <p className="font-serif leading-[2.25] text-lg text-slate-700 whitespace-pre-wrap mb-16">{dayData.letter}</p>
+                                <h2 className="text-3xl font-serif text-slate-800 mb-6 border-b border-slate-200 pb-3 inline-block">{dayData.day}{t.recoveryDayHeader}</h2>
+                                <p className="font-serif leading-[2.25] text-lg text-slate-700 whitespace-pre-wrap mb-8">{dayData.letter}</p>
                               </div>
                               
+                              {/* 1개 문장 처방 */}
+                              {dayData.sentence && (
+                                <div className="mb-6 border-l-4 border-amber-300 pl-4 italic text-[16px] text-slate-600 font-serif leading-relaxed">
+                                  “ {dayData.sentence} ”
+                                </div>
+                              )}
+                              
+                              {/* 7일차 정리 문장 3개 */}
+                              {dayData.day === 7 && dayData.summary_sentences && (
+                                <div className="mb-8 p-6 bg-amber-50/20 border border-amber-100 rounded-2xl">
+                                  <h3 className="text-[14px] font-bold text-slate-700 mb-4 tracking-wide font-sans flex items-center gap-1.5 border-b border-amber-200/50 pb-2">
+                                    📜 {isKorean ? "7일간의 여정을 마무리하는 정리 문장" : "Closing summary sentences of the 7-day journey"}
+                                  </h3>
+                                  <div className="space-y-3">
+                                    {dayData.summary_sentences.map((s: string, sIdx: number) => (
+                                      <p key={sIdx} className="text-[14px] font-serif text-slate-600 italic pl-4 border-l-2 border-amber-300">
+                                        “ {s} ”
+                                      </p>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
                               <div className="mt-auto p-6 border border-amber-100 rounded-2xl bg-amber-50/20">
                                 <h3 className="text-lg mb-3 font-serif text-slate-900 font-semibold border-b border-amber-200/50 pb-2 inline-block">{t.premiumActionHeader}</h3>
                                 <p className="text-[15px] font-serif text-slate-600 leading-relaxed">{dayData.action}</p>
@@ -1656,7 +1679,31 @@ export default function Home() {
                               {letterData.recovery_days.map((dayData, idx) => (
                                 <div key={`web-recovery-${idx}`} className="mb-16 last:mb-0 rounded-2xl sm:rounded-[32px] border border-slate-200/70 bg-white/90 p-5 sm:p-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)]">
                                   <h2 className="text-2xl md:text-3xl font-serif text-slate-900 mb-6 border-b border-slate-200/60 pb-3 inline-block">{dayData.day}일차 회복 편지</h2>
-                                  <p className="leading-relaxed text-[1.01rem] md:text-lg whitespace-pre-wrap mb-10 text-slate-700">{dayData.letter}</p>
+                                  <p className="leading-relaxed text-[1.01rem] md:text-lg whitespace-pre-wrap mb-8 text-slate-700">{dayData.letter}</p>
+                                  
+                                  {/* 1개 문장 처방 */}
+                                  {dayData.sentence && (
+                                    <div className="mb-8 border-l-4 border-amber-300 pl-4 italic text-[1.01rem] text-slate-600 font-serif leading-relaxed">
+                                      “ {dayData.sentence} ”
+                                    </div>
+                                  )}
+                                  
+                                  {/* 7일차 정리 문장 3개 */}
+                                  {dayData.day === 7 && dayData.summary_sentences && (
+                                    <div className="mb-8 p-6 bg-amber-50/20 border border-amber-100 rounded-2xl">
+                                      <h3 className="text-base font-bold text-slate-700 mb-4 tracking-wide font-sans flex items-center gap-1.5 border-b border-amber-200/50 pb-2">
+                                        📜 {isKorean ? "7일간의 여정을 마무리하는 정리 문장" : "Closing summary sentences of the 7-day journey"}
+                                      </h3>
+                                      <div className="space-y-3">
+                                        {dayData.summary_sentences.map((s: string, sIdx: number) => (
+                                          <p key={sIdx} className="text-sm font-serif text-slate-600 italic pl-4 border-l-2 border-amber-300">
+                                            “ {s} ”
+                                          </p>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
                                   <div className="bg-slate-50/95 p-4 sm:p-6 rounded-2xl sm:rounded-[28px] border border-slate-200 shadow-[0_10px_40px_rgba(15,23,42,0.06)]">
                                     <h3 className="text-lg md:text-xl font-serif text-slate-900 mb-3 font-semibold">{t.premiumActionHeader}</h3>
                                     <p className="text-slate-600 text-[0.98rem] leading-7">{dayData.action}</p>

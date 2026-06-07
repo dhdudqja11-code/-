@@ -201,6 +201,27 @@ export async function POST(req: Request) {
             parsedResponse.page_action = "";
             parsedResponse.recovery_days = [];
           } else {
+            // productType === "free" (무료 안부 편지) 가드레일 강화
+            if (productType === "free") {
+              if (!Array.isArray(parsedResponse.page_letter_paragraphs)) {
+                parsedResponse.page_letter_paragraphs = [];
+              }
+              const currentText = parsedResponse.page_letter_paragraphs.join("\n\n");
+              if (currentText.length < 450 || currentText.length > 750 || parsedResponse.page_letter_paragraphs.length !== 2) {
+                parsedResponse.page_letter_paragraphs = isKo ? [
+                  "많이 힘들었겠다. 괜찮다고 말하면서도 사실은 마음 한쪽에서 계속 무너지는 소리가 났을 것 같아. 사람들 앞에서는 웃고 아무렇지 않은 척 하루를 보내도 혼자가 되는 밤마다 네 마음은 오래 참아온 눈물을 가만히 삼켰겠지. 그런 너에게 더 힘을 내어 버티라고 말하고 싶지 않아. 너는 이미 오늘 하루도 충분히 많은 고단한 날들을 씩씩하게 버텨왔으니까. 오늘의 무거운 발걸음이 너를 자책하게 만들지 않았으면 좋겠어. 그 모든 아픔과 힘듦은 절대 네 잘못이 아니란다.",
+                  "오늘은 너무 괜찮으려고 애쓰지 않았으면 좋겠다. 울고 싶다면 잠시 울어도 괜찮고, 아무것도 할 수 없는 무기력한 밤이라면 그저 숨만 고르는 조용한 하루여도 다 괜찮아. 봄이 오기 전의 메마른 나뭇가지들도 한동안은 멈춘 것처럼 보이지만, 그 안에서는 다시 꽃을 피워낼 소중한 시간들이 조용히 흐르고 있잖아. 네 마음도 그랬으면 좋겠다. 오늘의 너를 너무 미워하지 말고, 여기까지 오느라 참 많이 애썼다고 스스로에게 다정하게 말해주길 바랄게. 언제나 너를 가만히 응원하고 있을게."
+                ] : [
+                  "It must have been so hard for you. Even while saying you are okay, it feels like the sound of collapsing kept ringing in one corner of your heart. Even if you smiled in front of other people and spent the day pretending to be fine, every night when you were left alone, your heart must have gently swallowed the tears you held back for so long. I don't want to tell you to endure more. You have already survived enough difficult days. I hope today's heavy steps do not make you blame yourself, because all this pain and hardship is never your fault.",
+                  "I hope you don't try too hard to be okay today. It's totally okay to cry for a while if you want to, and if it's a night when you can't do anything, it's fine to just catch your breath. Branches before spring comes look as if they have completely stopped for a while, but inside them, the time to bloom again is still silently flowing. I hope your heart behaves like that. Don't hate yourself today, and I wish you could tell yourself that you worked really hard to get here. I will always support you gently with all my heart."
+                ];
+              }
+              parsedResponse.page_sentences = [];
+              parsedResponse.page_questions = [];
+              parsedResponse.page_action = "";
+              parsedResponse.recovery_days = [];
+            }
+
             const targetSentences = productType === "beta" ? 3 : (productType === "deep" ? 5 : 0);
             const targetQuestions = productType === "beta" ? 2 : (productType === "deep" ? 3 : 0);
 
@@ -230,6 +251,78 @@ export async function POST(req: Request) {
               if (parsedResponse.page_questions.length > targetQuestions) {
                 parsedResponse.page_questions = parsedResponse.page_questions.slice(0, targetQuestions);
               }
+            }
+
+            // 글자수 강제 패딩 보정 (Beta/Gift: 900~1200, Deep: 1800~2500)
+            if (!Array.isArray(parsedResponse.page_letter_paragraphs)) {
+              parsedResponse.page_letter_paragraphs = [];
+            }
+            const currentText = parsedResponse.page_letter_paragraphs.join("\n\n");
+            const minLen = productType === "beta" || productType === "gift" ? 900 : (productType === "deep" ? 1700 : 0);
+            const maxLen = productType === "beta" || productType === "gift" ? 1300 : (productType === "deep" ? 2600 : 99999);
+
+            if (currentText.length < minLen || currentText.length > maxLen) {
+              if (productType === "beta" || productType === "gift") {
+                parsedResponse.page_letter_paragraphs = isKo ? [
+                  "네가 보내준 사연을 가만히 읽으며 네가 그동안 얼마나 크고 무거운 짐을 홀로 어깨에 짊어진 채 힘겨운 시간을 보내왔을지 마음 깊이 헤아려 보았단다. '나는 아무렇지 않다, 괜찮다'라고 애써 스스로를 다독이면서 사람들 앞에서는 억지 미소를 지어 보였겠지만, 아무도 없는 방에서 홀로 남겨진 채 조용히 눈물짓던 그 숱한 밤들 속에서 네 마음은 얼마나 많이 멍이 들고 쓸쓸하게 허물어졌을지 짐작조차 하기 어렵구나. 힘든 내색조차 하지 못한 채 매일을 버텨내느라 참 마음고생이 많았겠다. 이제는 더 이상 아무렇지 않은 척, 괜찮은 척하며 네 감정을 억지로 숨기지 않아도 괜찮아. 네 마음속 깊은 곳에서 일어나는 슬픔과 외로움, 자책과 지친 감정들을 억지로 누르려 하지 말고, 그저 흐르는 물처럼 자연스럽게 밖으로 흘러가도록 가만히 내버려 두렴.",
+                  "많은 일들이 너의 뜻대로 풀리지 않았거나 주변 사람들과의 관계 속에서 깊은 상처를 입었다 하더라도, 그것은 결코 네가 부족하거나 나약해서가 아니란다. 우리는 살아가면서 때로 흐린 하늘 아래를 걷기도 하고 예상치 못한 거센 소나기를 만나 온몸이 젖기도 하듯, 삶의 한 자락에서 잠시 멈춤하고 흔들리는 순간을 경험할 뿐이야. 지금 네가 겪고 있는 무기력함과 지친 마음은 결코 영원한 정지가 아니며, 상처받은 마음이 스스로를 보듬고 천천히 에너지를 채워가는 당연하고 소중한 시간일 뿐이란다. 그러니 이 모든 상황과 마음을 네 잘못으로 돌리며 자신을 탓하지 않았으면 좋겠어.",
+                  "오늘 밤에는 무언가를 해내야만 한다는 무거운 강박과 생각들을 모두 가만히 내려놓고, 그저 따뜻하고 포근한 이불 속에 누워 네 호흡 소리에 온전히 집중해 봐. 들이쉬고 내쉬는 날숨마다 너의 굳어있던 어깨와 마음의 긴장이 조금씩 사르르 풀려날 수 있기를 바랄게. 네가 가진 그 여리고 착한 마음을 다른 누구보다 너 스스로가 가장 먼저 귀하게 여겨주고 안아주었으면 좋겠어. 여기까지 오느라 정말 고생 많았고, 참 많이 애썼다. 내일은 오늘보다 한 걸음 더 평안하고 네 마음에 다정한 바람이 불어오는 하루가 되기를 바랄게."
+                ] : [
+                  "Reading your story, I felt how heavy a burden you have been carrying alone. You probably put on a forced smile in front of others, whispering 'I am fine', but during those nights crying alone, your heart must have been bruised. You don't have to pretend to be okay. Don't suppress all the sadness and exhaustion in your heart, but let them flow as they are. Now is the time you need to pause and give yourself room to rest.",
+                  "I hope you don't blame yourself. Even if things didn't go your way or you were hurt in relationships, it is not because you are weak. Just as we walk under a cloudy sky or meet an unexpected shower, we only experience a brief pause. This exhausted heart is not a stop, but a natural recovery process where a wounded heart heals itself.",
+                  "Tonight, put down the thoughts that you must do something, and just lie down in your warm bed and focus on your breath. With every inhale and exhale, I hope the tension in your heavy shoulders and heart relaxes. I wish you would value and embrace your good heart first. You went through a lot to get here, and you worked so hard. I hope tomorrow is peaceful."
+                ];
+              } else if (productType === "deep") {
+                parsedResponse.page_letter_paragraphs = isKo ? [
+                  "사연에 정성스레 담긴 네 마음의 글자들을 하나하나 깊이 눈 and 마음에 담으며 오랫동안 깊은 생각에 잠겼단다. 다른 사람들에게는 차마 털어놓지 못하고 속으로 꾹꾹 삼켜야만 했던 수많은 서운함과 상처의 말들이 네 가슴속에 켜켜이 쌓여 얼마나 큰 답답함과 깊은 슬픔으로 자리 잡았을지 헤아려 보니 내 마음마저 참 아프고 시려오는구나. 너는 늘 책임감 있게 행동하고 다른 사람들을 먼저 배려하느라, 정작 네가 아프고 무너지는 그 결정적인 순간에는 아무에게도 기대지 못한 채 혼자 숨어 외롭게 흐느껴야 했겠지. '나만 참으면 모두가 편해진다'는 생각으로 하루하루를 버텨온 날들이 길어질수록, 네 안의 어린아이는 외롭고 두려워 조용히 울부짖고 있었을 거야. 그동안 그 거대하고 무거운 감정의 파도를 홀로 맞서며 온몸으로 견뎌온 시간들에 대해, 무엇보다 먼저 너에게 참 고생했다고, 정말 외로웠겠다고, 그리고 참 장하게 잘 버텨왔다고 따뜻한 위로의 인사를 건네고 싶단다.",
+                  "네가 지금 느끼고 있는 깊은 우울함과 무기력, 그리고 불쑥 찾아오는 분노와 원망은 지극히 자연스럽고 당연한 감정의 신호란다. 그런 부정적인 마음이 든다고 해서 스스로를 나약하다거나 부족하다고 자책하지 않았으면 좋겠어. 감정은 흐르는 물과 같아서 억지로 둑을 쌓아 막으려 하면 결국엔 더 큰 수압으로 터져 나와 우리를 집어삼키게 마련이거든. 지금 네 마음이 완전히 주저앉아 버린 것은 네가 삶을 잘못 살아왔기 때문이 결코 아니라, 그동안 감당할 수 없을 만큼 너무나 무리해서 마음의 에너지를 전부 써버렸기 때문이야. 남들을 위해 마음을 다 쏟아부었으니, 네 마음도 이제는 스스로를 돌보며 쉬어가야 한다는 간절한 신호를 보내는 것이란다. 그러니 감정이 요동치고 아무것도 손에 잡히지 않을 때, 그 지친 상태 그대로를 있는 그대로 인정해주고 다독여주렴.",
+                  "너는 그 누구보다 소중하고 존재 자체만으로도 사랑받아 마땅한 사람이라는 것을 꼭 기억했으면 좋겠어. 주변 사람들의 기대나 세상이 말하는 기준에 너를 억지로 맞추려 하며 자신을 갉아먹지 마렴. 남들의 시선이나 평가보다 백배는 더 중요한 것은, 지금 이 순간 내 가슴이 무엇을 느끼고 있고 무엇을 원하고 있는지에 귀를 기울이는 일이야. 네가 겪고 있는 아픔과 상처는 너라는 존재를 정의하는 전부가 아니며, 그저 긴 인생이라는 여정 속에서 잠시 지나가는 어둡고 긴 터널일 뿐이란다. 어둠 속에서는 아무리 밝은 빛을 찾으려 해도 보이지 않아 막막하겠지만, 터널은 반드시 끝이 존재하고 그 너머에는 눈부신 따뜻한 햇살이 너를 기다리고 있어. 지금은 그 터널 속에서 억지로 달리려 하지 말고, 안전한 그늘에 가만히 앉아 숨을 고르며 아픈 상처를 돌보아도 괜찮단다.",
+                  "이제는 그동안 타인을 향해 보냈던 따뜻한 시선과 배려를 온전히 네 자신에게로 돌려줄 차례란다. 네가 가장 힘들고 지쳤을 때 누군가에게 정말 듣고 싶었던 그 따뜻한 말들을, 하루에 한 번씩 거울을 보며 네 자신에게 나직하게 들려주렴. '그동안 정말 애썼어, 이제는 조금 쉬어도 괜찮아, 내가 늘 네 편이 되어줄게' 하고 말이지. 네 마음의 방에 다정한 온기와 안도감이 채워질 때, 비로소 너를 오랫동안 억누르고 있던 무거운 사슬들도 자연스럽게 풀려나갈 거야. 오늘의 무너짐은 삶의 실패가 아니라, 나를 진정으로 아끼고 돌보는 새로운 삶의 시작점을 알리는 신호탄이란다. 네 마음의 날씨가 맑게 개고 다정한 미소를 되찾을 때까지 언제나 네 곁에서 온 마음을 다해 응원할게.",
+                  "마지막으로 오늘 밤 당장 실천해볼 아주 작은 행동을 제안할게. 잠자리에 들기 전 창문을 열고, 밤공기를 마시며 가슴에 손을 얹고 '오늘 참 수고 많았다'고 나직하게 속삭여 주는 거야. 이 작은 행동 하나가 네 지친 마음에 편안한 쉼을 선물해주어 너를 다독여줄 테니까. 스스로에게 다정해지는 연습을 우리 아주 작은 것부터 시작해 보자."
+                ] : [
+                  "Placing each letter of your heart from the story into my mind, I fell into deep thought. Knowing how much sadness has piled up in your chest from words you couldn't tell others, my heart hurts too. You probably had to hide and sob alone when you were hurting, just because you always acted responsibly and cared for others. The longer you endured thinking 'If only I hold back, everyone becomes comfortable', the lonely child inside you must have been crying out. For those times you stood alone against the waves of emotions and endured, I want to say you went through so much and did really well surviving.",
+                  "The depression, helplessness, and occasional anger you feel are extremely natural emotions. I hope you don't blame yourself, calling yourself weak for having such feelings. Emotions are like flowing water, so if you try to block them, they will eventually burst out with greater power. Your heart collapsing now is not because you lived wrongly, but because you overexerted yourself and used up all your energy. Your heart is sending a signal that rest is urgently needed. When your emotions fluctuate, accept and comfort that state exactly as it is.",
+                  "You are a precious person who deserves to be loved. Don't force yourself to fit into others' expectations. What is more important than others' eyes is listening to what your heart is feeling right now. The pain and wounds you have do not define who you are, but are merely a dark tunnel passing through life. In the darkness, it is discouraging, but the tunnel definitely has an end, and warm sunlight is waiting beyond it. For now, don't force yourself to run, but it is fine to sit down in a safe spot, catch your breath, and care for your wounds.",
+                  "Now it is time to turn the warm gaze you directed toward others back onto yourself. Tell yourself the words you wanted to hear the most when you were tired, while looking in the mirror. 'You worked hard, now you can rest, I will be on your side' like that. When the room of your heart is filled with warmth, the heavy chains will naturally unlock. Today's collapse is not a failure, but a flare announcing a new starting point in life. Until you regain your gentle smile, I will support you with all my heart and walk along with you.",
+                  "Lastly, I want to suggest a small action you can practice tonight. Before going to bed, open the window, breathe in the cool night air deeply, put your hand on your chest, and gently whisper to yourself, 'You did a great job living through today.' This single small action sends a safety signal to your brain and can help regulate your emotions. Let's start the practice of becoming kind to ourselves."
+                ];
+              }
+            }
+
+            // productType === "recovery" 가드레일 강화
+            if (productType === "recovery") {
+              const defaultRecoveryDays = getDefaultRecoveryDays(isKo);
+              if (!Array.isArray(parsedResponse.recovery_days) || parsedResponse.recovery_days.length !== 7) {
+                parsedResponse.recovery_days = defaultRecoveryDays;
+              } else {
+                parsedResponse.recovery_days.forEach((dayData: any, idx: number) => {
+                  if (!dayData || typeof dayData !== "object") {
+                    parsedResponse.recovery_days[idx] = defaultRecoveryDays[idx];
+                  } else {
+                    dayData.day = idx + 1;
+                    if (typeof dayData.letter !== "string" || dayData.letter.length < 450 || dayData.letter.length > 750) {
+                      dayData.letter = defaultRecoveryDays[idx].letter;
+                    }
+                    if (typeof dayData.sentence !== "string" || dayData.sentence.trim() === "") {
+                      dayData.sentence = defaultRecoveryDays[idx].sentence;
+                    }
+                    if (typeof dayData.action !== "string" || dayData.action.trim() === "") {
+                      dayData.action = defaultRecoveryDays[idx].action;
+                    }
+                    if (dayData.day === 7) {
+                      if (!Array.isArray(dayData.summary_sentences) || dayData.summary_sentences.length !== 3) {
+                        dayData.summary_sentences = defaultRecoveryDays[idx].summary_sentences;
+                      }
+                    } else {
+                      delete dayData.summary_sentences;
+                    }
+                  }
+                });
+              }
+              parsedResponse.page_letter_paragraphs = [];
+              parsedResponse.page_sentences = [];
+              parsedResponse.page_questions = [];
+              parsedResponse.page_action = "";
             }
           }
 
@@ -276,11 +369,11 @@ export async function POST(req: Request) {
       fallbackResponse.cover.title = isKo ? "당신을 위한 안부 편지" : "Comforting Greeting for You";
       fallbackResponse.cover.heart_name = isKo ? "안부가 필요한 마음에게" : "To a Heart in Need of Greeting";
       fallbackResponse.page_letter_paragraphs = isKo ? [
-        "많이 힘들었겠다. 괜찮다고 말하면서도 사실은 마음 한쪽에서 계속 무너지는 소리가 났을 것 같아. 사람들 앞에서는 웃고 아무렇지 않은 척 하루를 보내도 혼자가 되는 밤마다 네 마음은 오래 참아온 눈물을 가만히 삼켰겠지. 그런 너에게 더 버티라고 말하고 싶지 않아. 너는 이미 충분히 많은 날들을 버텨왔으니까. 오늘의 무거운 발걸음이 너를 자책하게 만들지 않았으면 좋겠어. 그 모든 아픔과 힘듦은 네 잘못이 아니니까.",
-        "오늘은 너무 괜찮으려고 하지 않았으면 좋겠다. 울고 싶으면 잠시 울어도 되고, 아무것도 할 수 없는 밤이라면 그저 숨만 고르는 하루여도 괜찮아. 봄이 오기 전의 가지들도 한동안은 멈춘 것처럼 보이지만, 그 안에서는 다시 피어날 시간이 흐르잖아. 네 마음도 그랬으면 좋겠다. 오늘의 너를 미워하지 말고, 여기까지 오느라 참 많이 애썼다고 말해줬으면 좋겠다. 언제나 너를 가만히 응원할게."
+        "많이 힘들었겠다. 괜찮다고 말하면서도 사실은 마음 한쪽에서 계속 무너지는 소리가 났을 것 같아. 사람들 앞에서는 웃고 아무렇지 않은 척 하루를 보내도 혼자가 되는 밤마다 네 마음은 오래 참아온 눈물을 가만히 삼켰겠지. 그런 너에게 더 힘을 내어 버티라고 말하고 싶지 않아. 너는 이미 오늘 하루도 충분히 많은 고단한 날들을 씩씩하게 버텨왔으니까. 오늘의 무거운 발걸음이 너를 자책하게 만들지 않았으면 좋겠어. 그 모든 아픔과 힘듦은 절대 네 잘못이 아니란다.",
+        "오늘은 너무 괜찮으려고 애쓰지 않았으면 좋겠다. 울고 싶다면 잠시 울어도 괜찮고, 아무것도 할 수 없는 무기력한 밤이라면 그저 숨만 고르는 조용한 하루여도 다 괜찮아. 봄이 오기 전의 메마른 나뭇가지들도 한동안은 멈춘 것처럼 보이지만, 그 안에서는 다시 꽃을 피워낼 소중한 시간들이 조용히 흐르고 있잖아. 네 마음도 그랬으면 좋겠다. 오늘의 너를 너무 미워하지 말고, 여기까지 오느라 참 많이 애썼다고 스스로에게 다정하게 말해주길 바랄게. 언제나 너를 가만히 응원하고 있을게."
       ] : [
-        "It must have been so hard. Even while saying you are okay, it feels like the sound of collapsing kept ringing in one corner of your heart. Even if you smiled in front of people and spent the day pretending to be fine, every night when you were alone, your heart must have gently swallowed the tears you held back for so long. I don't want to tell you to endure more. You have already survived enough days. I hope today's heavy steps do not make you blame yourself, because all this pain and hardship is not your fault.",
-        "I hope you don't try too hard to be okay today. It's okay to cry for a while if you want, and if it's a night when you can't do anything, it's fine to just catch your breath. Branches before spring comes look as if they have stopped for a while, but inside them, the time to bloom again is still flowing. I hope your heart is like that. Don't hate yourself today, and I wish you could tell yourself that you worked really hard to get here. I will always support you gently."
+        "It must have been so hard for you. Even while saying you are okay, it feels like the sound of collapsing kept ringing in one corner of your heart. Even if you smiled in front of other people and spent the day pretending to be fine, every night when you were left alone, your heart must have gently swallowed the tears you held back for so long. I don't want to tell you to endure more. You have already survived enough difficult days. I hope today's heavy steps do not make you blame yourself, because all this pain and hardship is never your fault.",
+        "I hope you don't try too hard to be okay today. It's totally okay to cry for a while if you want to, and if it's a night when you can't do anything, it's fine to just catch your breath. Branches before spring comes look as if they have completely stopped for a while, but inside them, the time to bloom again is still silently flowing. I hope your heart behaves like that. Don't hate yourself today, and I wish you could tell yourself that you worked really hard to get here. I will always support you gently with all my heart."
       ];
     } else if (productType === "random") {
       fallbackResponse.cover.title = isKo ? "오늘의 한 문장 처방" : "Today's One Sentence";
@@ -297,13 +390,13 @@ export async function POST(req: Request) {
       fallbackResponse.cover.title = isKo ? "마음을 위한 문장 처방전" : "Sentence Prescription for Your Heart";
       fallbackResponse.cover.heart_name = isKo ? "너무 오래 버틴 마음에게" : "To a Heart That Endured Too Long";
       fallbackResponse.page_letter_paragraphs = isKo ? [
-        "사연을 가만히 읽으며 네가 그동안 얼마나 무거운 짐을 홀로 지고 있었는지 가만히 헤아려 보았어. '나는 괜찮다'라고 다독이며 남들 앞에서는 억지 미소를 지어 보였겠지만, 홀로 눈물짓던 숱한 밤들 속에서 네 마음은 멍이 들고 허물어졌을 거야. 괜찮은 척하지 않아도 괜찮아. 네 마음속에서 일어나는 모든 슬픔과 원망, 지친 감정들을 억지로 누르려 하지 말고 그대로 흘러가도록 내버려 두렴. 힘든 상황 속에서도 꿋꿋하게 견디려 했던 그 의지만큼, 이제는 잠시 멈춰 서서 스스로에게 쉴 틈을 주는 것이 필요할 때야.",
-        "자신을 탓하지 않았으면 좋겠어. 많은 일들이 너의 뜻대로 풀리지 않았거나 관계에서 깊은 상처를 입었다 하더라도, 그것은 결코 네가 부족하거나 나약해서가 아니란다. 우리는 때로 흐린 하늘 아래를 걷기도 하고 예상치 못한 소나기를 만나기도 하듯, 삶의 한 자락에서 잠시 멈춤을 경험할 뿐이야. 지금 겪는 이 번아웃과 지친 마음은 더 나아가기 위한 정지가 아니라, 상처받은 마음이 스스로를 돌보고 가만히 회복해가는 자연스러운 시간일 뿐이란다.",
-        "오늘 밤에는 아무것도 해야 한다는 무거운 생각들을 내려놓고, 그저 따뜻한 이불 속에 누워 네 호흡 소리에 집중해 봐. 들이쉬고 내쉬는 날숨마다 너의 무거웠던 어깨와 마음의 긴장이 조금씩 풀릴 수 있기를 바랄게. 네가 가진 그 여리고 착한 마음을 다른 누구보다 너 스스로가 가장 먼저 귀하게 여겨주고 안아주었으면 좋겠어. 여기까지 오느라 정말 고생 많았고, 참 많이 애썼어. 내일은 오늘보다 한 걸음 더 평안하고 다정한 하루가 되기를 바랄게."
+        "네가 보내준 사연을 가만히 읽으며 네가 그동안 얼마나 크고 무거운 짐을 홀로 어깨에 짊어진 채 힘겨운 시간을 보내왔을지 마음 깊이 헤아려 보았단다. '나는 아무렇지 않다, 괜찮다'라고 애써 스스로를 다독이면서 사람들 앞에서는 억지 미소를 지어 보였겠지만, 아무도 없는 방에서 홀로 남겨진 채 조용히 눈물짓던 그 숱한 밤들 속에서 네 마음은 얼마나 많이 멍이 들고 쓸쓸하게 허물어졌을지 짐작조차 하기 어렵구나. 힘든 내색조차 하지 못한 채 매일을 버텨내느라 참 마음고생이 많았겠다. 이제는 더 이상 아무렇지 않은 척, 괜찮은 척하며 네 감정을 억지로 숨기지 않아도 괜찮아. 네 마음속 깊은 곳에서 일어나는 슬픔과 외로움, 자책과 지친 감정들을 억지로 누르려 하지 말고, 그저 흐르는 물처럼 자연스럽게 밖으로 흘러가도록 가만히 내버려 두렴.",
+        "많은 일들이 너의 뜻대로 풀리지 않았거나 주변 사람들과의 관계 속에서 깊은 상처를 입었다 하더라도, 그것은 결코 네가 부족하거나 나약해서가 아니란다. 우리는 살아가면서 때로 흐린 하늘 아래를 걷기도 하고 예상치 못한 거센 소나기를 만나 온몸이 젖기도 하듯, 삶의 한 자락에서 잠시 멈춤하고 흔들리는 순간을 경험할 뿐이야. 지금 네가 겪고 있는 무기력함과 지친 마음은 결코 영원한 정지가 아니며, 상처받은 마음이 스스로를 보듬고 천천히 에너지를 채워가는 당연하고 소중한 시간일 뿐이란다. 그러니 이 모든 상황과 마음을 네 잘못으로 돌리며 자신을 탓하지 않았으면 좋겠어.",
+        "오늘 밤에는 무언가를 해내야만 한다는 무거운 강박과 생각들을 모두 가만히 내려놓고, 그저 따뜻하고 포근한 이불 속에 누워 네 호흡 소리에 온전히 집중해 봐. 들이쉬고 내쉬는 날숨마다 너의 굳어있던 어깨와 마음의 긴장이 조금씩 사르르 풀려날 수 있기를 바랄게. 네가 가진 그 여리고 착한 마음을 다른 누구보다 너 스스로가 가장 먼저 귀하게 여겨주고 안아주었으면 좋겠어. 여기까지 오느라 정말 고생 많았고, 참 많이 애썼다. 내일은 오늘보다 한 걸음 더 평안하고 네 마음에 다정한 바람이 불어오는 하루가 되기를 바랄게."
       ] : [
-        "Gently reading your story, I silently counted how heavy a burden you have been carrying alone all this time. You probably put on a forced smile in front of others, whispering 'I am fine', but during those countless nights crying alone, your heart must have been bruised and crumbled. You don't have to pretend to be okay. Don't force yourself to suppress all the sadness, resentment, and exhaustion arising in your heart, but let them flow as they are. Just like that will of yours that tried so hard to endure through difficult times, now is the time you need to pause and give yourself some room to rest.",
-        "I hope you don't blame yourself. Even if many things didn't go your way or you were deeply hurt in relationships, it is by no means because you are lacking or weak. Just as we sometimes walk under a cloudy sky or meet an unexpected shower, we only experience a brief pause in a corner of life. This burnout and exhausted heart you are experiencing now is not a stop to move forward, but a natural recovery process where the muscles of a wounded heart send signals to repair and regenerate themselves.",
-        "Tonight, put down the obsession that you must do something, and just lie down in your warm bed and focus on your breath. With every inhale and exhale, I hope the tension in your heavy shoulders and heart relaxes a bit. I wish you, more than anyone else, would value and embrace that tender and good heart of yours first. You really went through a lot to get here, and you worked so hard. I sincerely hope tomorrow will be a step more peaceful and gentle than today."
+        "Reading your story, I felt how heavy a burden you have been carrying alone. You probably put on a forced smile in front of others, whispering 'I am fine', but during those nights crying alone, your heart must have been bruised. You don't have to pretend to be okay. Don't suppress all the sadness and exhaustion in your heart, but let them flow as they are. Now is the time you need to pause and give yourself room to rest.",
+        "I hope you don't blame yourself. Even if things didn't go your way or you were hurt in relationships, it is not because you are weak. Just as we walk under a cloudy sky or meet an unexpected shower, we only experience a brief pause. This exhausted heart is not a stop, but a natural recovery process where a wounded heart heals itself.",
+        "Tonight, put down the thoughts that you must do something, and just lie down in your warm bed and focus on your breath. With every inhale and exhale, I hope the tension in your heavy shoulders and heart relaxes. I wish you would value and embrace your good heart first. You went through a lot to get here, and you worked so hard. I hope tomorrow is peaceful."
       ];
       fallbackResponse.page_sentences = isKo ? [
         "가장 당신다운 호흡으로, 오늘 하루를 가만히 채워나가길 바랄게요.",
@@ -328,17 +421,17 @@ export async function POST(req: Request) {
       fallbackResponse.cover.title = isKo ? "깊은 마음 치유 문장 처방전" : "Deep Heart Healing Sentence Prescription";
       fallbackResponse.cover.heart_name = isKo ? "반복되는 무너짐 속에서 길을 찾는 마음에게" : "To a Heart Finding Its Path in Repeated Collapses";
       fallbackResponse.page_letter_paragraphs = isKo ? [
-        "사연에 담긴 네 마음의 글자들을 하나하나 눈과 마음에 담으며 깊은 생각에 잠겼어. 남들에게는 털어놓지 못하고 속으로 삼켜야 했던 수많은 말들이 네 가슴속에 켜켜이 쌓여 얼마나 큰 답답함과 슬픔으로 자리 잡았을지 헤아려 보니 내 마음도 참 아프다. 너는 늘 책임감 있게 행동하고 다른 사람들을 배려하느라 정작 네가 아프고 무너지는 순간에는 혼자 숨어 흐느껴야 했겠지. '나만 참으면 모두가 편해진다'는 생각으로 버텨온 날들이 길어질수록, 네 안의 작은 아이는 외롭고 두려워 울부짖고 있었을 거야. 그동안 그 거대하고 무거운 감정의 파도를 홀로 맞서며 견뎌온 시간들에 대해, 무엇보다 먼저 너에게 참 고생했다고, 정말 잘 버텨왔다고 위로를 건네고 싶어.",
-        "네가 느끼는 우울함과 무기력, 그리고 가끔씩 찾아오는 분노와 원망은 지극히 당연한 감정이야. 그런 마음이 드는 자신을 나약하다고 탓하거나 자책하지 않았으면 좋겠어. 감정은 흐르는 물과 같아서 억지로 둑을 쌓아 막으려 하면 결국엔 더 큰 힘으로 터져 나와 우리를 집어삼키게 마련이거든. 지금 네 마음이 무너져 내리는 것은 네가 잘못 살아왔기 때문이 아니라, 그동안 너무 무리해서 마음의 에너지를 다 써버렸기 때문이야. 너무 무리해서 마음을 다 쏟아부었으니, 네 마음도 이제는 쉬어가야 한다는 신호를 보내는 것이란다. 그러니 감정이 요동치고 아무것도 하고 싶지 않을 때, 그 상태 그대로를 있는 그대로 인정해주고 다독여주렴.",
-        "너는 그 누구보다 소중하고 사랑받아 마땅한 사람이야. 주변의 기대나 사회적 기준에 너를 억지로 맞추려 하지 마. 남들의 시선보다 중요한 것은 지금 내 가슴이 무엇을 느끼고 있고 무엇을 원하고 있는지 귀를 기울이는 일이야. 네가 가진 아픔과 상처는 너를 정의하는 전부가 아니며, 단지 네 삶의 긴 여정 중 지나가는 어두운 터널일 뿐이란다. 어둠 속에서는 아무리 밝은 빛도 보이지 않아 막막하겠지만, 터널은 반드시 끝이 있고 그 너머에는 따뜻한 햇살이 기다리고 있어. 지금은 그 터널 속에서 억지로 달리려 하지 말고, 안전한 곳에 주저앉아 잠시 숨을 고르고 상처를 돌보아도 괜찮단다. 너의 곁에는 비록 보이지 않더라도 늘 너의 아픔을 안아주고 지지해주는 따뜻한 온기가 곁에 있다는 걸 기억해 줬으면 좋겠어.",
-        "이제는 다른 사람들을 향했던 따뜻한 시선과 배려를 네 자신에게로 돌려줄 차례야. 네가 가장 힘들고 지쳤을 때 듣고 싶었던 그 말들을 하루에 한 번씩 거울을 보며 네 자신에게 나직하게 들려주렴. '그동안 정말 애썼어, 이제는 조금 쉬어도 돼, 내가 네 편이 되어줄게' 하고 말이지. 네 마음의 방에 다정한 온기가 채워질 때, 비로소 너를 억누던 무거운 사슬들도 자연스럽게 풀려나갈 거야. 오늘의 무너짐은 실패가 아니라 새로운 삶의 시작점을 알리는 신호탄이란다. 네 마음의 날씨가 맑아질 때까지, 네가 다시 다정한 미소를 되찾을 때까지 언제나 네 곁에서 온 마음을 다해 응원하고 함께 걸어갈게. 부디 오늘의 밤이 너에게 조금 더 편안하고 포근한 쉼터가 되었으면 좋겠어.",
-        "마지막으로 네가 오늘 밤 당장 실천해볼 수 있는 아주 작은 일을 제안하고 싶어. 잠자리에 들기 전, 창문을 열고 시원한 밤공기를 깊게 들이쉬며 가슴에 손을 얹고 '오늘 하루도 살아내느라 정말 수고했다'고 가만히 속삭여 주는 거야. 이 작은 행동 하나가 네 지친 마음에 편안한 쉼을 선물해주어 너를 다독여줄 테니까. 스스로에게 다정해지는 연습을 우리 아주 작은 것부터 시작해 보자."
+        "사연에 정성스레 담긴 네 마음의 글자들을 하나하나 깊이 눈 and 마음에 담으며 오랫동안 깊은 생각에 잠겼단다. 다른 사람들에게는 차마 털어놓지 못하고 속으로 꾹꾹 삼켜야만 했던 수많은 서운함과 상처의 말들이 네 가슴속에 켜켜이 쌓여 얼마나 큰 답답함과 깊은 슬픔으로 자리 잡았을지 헤아려 보니 내 마음마저 참 아프고 시려오는구나. 너는 늘 책임감 있게 행동하고 다른 사람들을 먼저 배려하느라, 정작 네가 아프고 무너지는 그 결정적인 순간에는 아무에게도 기대지 못한 채 혼자 숨어 외롭게 흐느껴야 했겠지. '나만 참으면 모두가 편해진다'는 생각으로 하루하루를 버텨온 날들이 길어질수록, 네 안의 어린아이는 외롭고 두려워 조용히 울부짖고 있었을 거야. 그동안 그 거대하고 무거운 감정의 파도를 홀로 맞서며 온몸으로 견뎌온 시간들에 대해, 무엇보다 먼저 너에게 참 고생했다고, 정말 외로웠겠다고, 그리고 참 장하게 잘 버텨왔다고 따뜻한 위로의 인사를 건네고 싶단다.",
+        "네가 지금 느끼고 있는 깊은 우울함과 무기력, 그리고 불쑥 찾아오는 분노와 원망은 지극히 자연스럽고 당연한 감정의 신호란다. 그런 부정적인 마음이 든다고 해서 스스로를 나약하다거나 부족하다고 자책하지 않았으면 좋겠어. 감정은 흐르는 물과 같아서 억지로 둑을 쌓아 막으려 하면 결국엔 더 큰 수압으로 터져 나와 우리를 집어삼키게 마련이거든. 지금 네 마음이 완전히 주저앉아 버린 것은 네가 삶을 잘못 살아왔기 때문이 결코 아니라, 그동안 감당할 수 없을 만큼 너무나 무리해서 마음의 에너지를 전부 써버렸기 때문이야. 남들을 위해 마음을 다 쏟아부었으니, 네 마음도 이제는 스스로를 돌보며 쉬어가야 한다는 간절한 신호를 보내는 것이란다. 그러니 감정이 요동치고 아무것도 손에 잡히지 않을 때, 그 지친 상태 그대로를 있는 그대로 인정해주고 다독여주렴.",
+        "너는 그 누구보다 소중하고 존재 자체만으로도 사랑받아 마땅한 사람이라는 것을 꼭 기억했으면 좋겠어. 주변 사람들의 기대나 세상이 말하는 기준에 너를 억지로 맞추려 하며 자신을 갉아먹지 마렴. 남들의 시선이나 평가보다 백배는 더 중요한 것은, 지금 이 순간 내 가슴이 무엇을 느끼고 있고 무엇을 원하고 있는지에 귀를 기울이는 일이야. 네가 겪고 있는 아픔과 상처는 너라는 존재를 정의하는 전부가 아니며, 그저 긴 인생이라는 여정 속에서 잠시 지나가는 어둡고 긴 터널일 뿐이란다. 어둠 속에서는 아무리 밝은 빛을 찾으려 해도 보이지 않아 막막하겠지만, 터널은 반드시 끝이 존재하고 그 너머에는 눈부신 따뜻한 햇살이 너를 기다리고 있어. 지금은 그 터널 속에서 억지로 달리려 하지 말고, 안전한 그늘에 가만히 앉아 숨을 고르며 아픈 상처를 돌보아도 괜찮단다.",
+        "이제는 그동안 타인을 향해 보냈던 따뜻한 시선과 배려를 온전히 네 자신에게로 돌려줄 차례란다. 네가 가장 힘들고 지쳤을 때 누군가에게 정말 듣고 싶었던 그 따뜻한 말들을, 하루에 한 번씩 거울을 보며 네 자신에게 나직하게 들려주렴. '그동안 정말 애썼어, 이제는 조금 쉬어도 괜찮아, 내가 늘 네 편이 되어줄게' 하고 말이지. 네 마음의 방에 다정한 온기와 안도감이 채워질 때, 비로소 너를 오랫동안 억누르고 있던 무거운 사슬들도 자연스럽게 풀려나갈 거야. 오늘의 무너짐은 삶의 실패가 아니라, 나를 진정으로 아끼고 돌보는 새로운 삶의 시작점을 알리는 신호탄이란다. 네 마음의 날씨가 맑게 개고 다정한 미소를 되찾을 때까지 언제나 네 곁에서 온 마음을 다해 응원할게.",
+        "마지막으로 오늘 밤 당장 실천해볼 아주 작은 행동을 제안할게. 잠자리에 들기 전 창문을 열고, 밤공기를 마시며 가슴에 손을 얹고 '오늘 참 수고 많았다'고 나직하게 속삭여 주는 거야. 이 작은 행동 하나가 네 지친 마음에 편안한 쉼을 선물해주어 너를 다독여줄 테니까. 스스로에게 다정해지는 연습을 우리 아주 작은 것부터 시작해 보자."
       ] : [
-        "Placing each and every letter of your heart contained in the story into my eyes and mind, I fell into deep thought. Knowing how much stuffiness and sadness has piled up in your chest from countless words you couldn't tell others and had to swallow inside, my heart hurts too. You probably had to hide and sob alone when you were hurting and breaking down, just because you always acted responsibly and cared for other people. The longer the days you endured with the thought 'If only I hold back, everyone becomes comfortable' got, the lonely and scared little child inside you must have been crying out. For those times you stood alone against the giant and heavy waves of emotions and endured, I want to first offer comfort, saying you went through so much and did really well surviving.",
-        "The depression, helplessness, and occasional anger and resentment you feel are extremely natural emotions. I hope you don't blame or reproach yourself, calling yourself weak for having such feelings. Emotions are like flowing water, so if you try to build a dam and block them by force, they will eventually burst out with greater power and swallow you. Your heart collapsing now is not because you lived wrongly, but because you overexerted yourself and used up all your heart's energy. Just as a device stops when its battery runs out, your heart is sending a signal that recharge and rest are urgently needed. So, when your emotions fluctuate and you don't want to do anything, accept and comfort that state exactly as it is.",
-        "You are a person who is precious and deserves to be loved more than anyone else. Don't force yourself to fit into others' expectations or social standards. What is more important than others' eyes is listening to what my heart is feeling and wanting right now. The pain and wounds you have do not define who you are, but are merely a dark tunnel passing through the long journey of your life. In the darkness, no matter how bright a light is, it won't be seen and will be discouraging, but the tunnel definitely has an end, and warm sunlight is waiting beyond it. For now, don't force yourself to run inside that tunnel, but it is completely fine to sit down in a safe spot, catch your breath, and care for your wounds. Remember that even if invisible, there is always a warm presence next to you that empathizes with and supports your pain.",
-        "Now it is time to turn the warm gaze and consideration you directed toward others back onto yourself. Tell yourself the words you wanted to hear the most when you were most tired and exhausted, while looking in the mirror once a day. 'You really worked hard all this time, now you can rest a little, I will be on your side' like that. When the room of your heart is filled with gentle warmth, the heavy chains that weighed you down will naturally unlock. Today's collapse is not a failure, but a flare announcing a new starting point in life. Until the weather of your heart clears up, and until you regain your gentle smile, I will always support you with all my heart and walk along. I pray tonight will be a slightly more comfortable and cozy shelter for you.",
-        "Lastly, I want to suggest a very small action you can practice tonight. Before going to bed, open the window, breathe in the cool night air deeply, put your hand on your chest, and gently whisper to yourself, 'You really did a great job living through today as well.' This single small action sends a safety signal to your brain and can help regulate your emotions. Let's start the practice of becoming kind to ourselves from the very smallest things."
+        "Placing each letter of your heart from the story into my mind, I fell into deep thought. Knowing how much sadness has piled up in your chest from words you couldn't tell others, my heart hurts too. You probably had to hide and sob alone when you were hurting, just because you always acted responsibly and cared for others. The longer you endured thinking 'If only I hold back, everyone becomes comfortable', the lonely child inside you must have been crying out. For those times you stood alone against the waves of emotions and endured, I want to say you went through so much and did really well surviving.",
+        "The depression, helplessness, and occasional anger you feel are extremely natural emotions. I hope you don't blame yourself, calling yourself weak for having such feelings. Emotions are like flowing water, so if you try to block them, they will eventually burst out with greater power. Your heart collapsing now is not because you lived wrongly, but because you overexerted yourself and used up all your energy. Your heart is sending a signal that rest is urgently needed. When your emotions fluctuate, accept and comfort that state exactly as it is.",
+        "You are a precious person who deserves to be loved. Don't force yourself to fit into others' expectations. What is more important than others' eyes is listening to what your heart is feeling right now. The pain and wounds you have do not define who you are, but are merely a dark tunnel passing through life. In the darkness, it is discouraging, but the tunnel definitely has an end, and warm sunlight is waiting beyond it. For now, don't force yourself to run, but it is fine to sit down in a safe spot, catch your breath, and care for your wounds.",
+        "Now it is time to turn the warm gaze you directed toward others back onto yourself. Tell yourself the words you wanted to hear the most when you were tired, while looking in the mirror. 'You worked hard, now you can rest, I will be on your side' like that. When the room of your heart is filled with warmth, the heavy chains will naturally unlock. Today's collapse is not a failure, but a flare announcing a new starting point in life. Until you regain your gentle smile, I will support you with all my heart and walk along with you.",
+        "Lastly, I want to suggest a small action you can practice tonight. Before going to bed, open the window, breathe in the cool night air deeply, put your hand on your chest, and gently whisper to yourself, 'You did a great job living through today.' This single small action sends a safety signal to your brain and can help regulate your emotions. Let's start the practice of becoming kind to ourselves."
       ];
       fallbackResponse.page_sentences = isKo ? [
         "너는 하늘에 별처럼 빛나는 존재란다.",
@@ -508,3 +601,101 @@ export async function POST(req: Request) {
     );
   }
 }
+
+const getDefaultRecoveryDays = (isKo: boolean) => isKo ? [
+  {
+    day: 1,
+    letter: "오늘부터 7일간의 아름다운 여정을 함께하게 되어 정말 기쁘단다. 첫날인 오늘은 무언가를 억지로 바꾸려 하지 않고, 그저 지금 내 마음에 가만히 이름을 붙여주는 연습을 해볼 거야. 우리는 보통 슬프거나 지치거나 화가 날 때, 마음 한구석에 숨겨둔 감정들을 그냥 '힘들다'는 투박한 한마디로 뭉뚱그려 덮어버리곤 하잖아. 그렇게 갈 길을 잃어버린 감정들은 마음 아주 깊은 곳에 켜켜이 쌓여서, 나중에 너를 더 무겁게 짓누르고 아프게 만들곤 한단다. 오늘은 잠시 가만히 멈춰 서서 지금 네가 느끼는 구체적인 감정의 결을 소리 내어 다정하게 불러보자. '나는 오늘 하루 종일 괜찮은 척 웃느라 참 많이 피곤했다'라든가, '마음 한쪽이 텅 빈 것처럼 쓸쓸하고 외롭다'처럼 말이지. 감정에 정확하고 구체적인 이름을 붙여주는 것만으로도, 그 감정은 스스로를 치유하고 흘러갈 준비를 하게 된단다. 뇌과학에서도 감정에 이름을 붙이는 명명(Labeling) 작용을 통해 뇌의 감정 중추인 편도체의 과도한 불안과 흥분이 차분히 가라앉는다고 해. 오늘 밤 침대에 눕기 전, 굳어있던 네 마음에 가장 알맞은 따뜻하고 이쁜 이름을 선물해 주렴.",
+    sentence: "오늘 마음에 붙여준 이름: '괜찮은 척하느라 참 지쳤던 마음'",
+    action: "자기 전에 가슴에 가만히 손을 얹고, 오늘 내 감정을 한 문장으로 나직하게 소리 내어 말해보기"
+  },
+  {
+    day: 2,
+    letter: "어제 마음에 이름을 붙여주는 첫 연습은 어땠니? 조금은 어색하고 낯설었을지라도, 오롯이 스스로를 돌아보고 알아차려 준 그 시간 자체가 정말로 귀중한 시작이란다. 둘째 날인 오늘은 어제에 이어 '괜찮은 척했던 마음의 가면을 가만히 내려놓기'를 연습해 볼 거야. 우리는 학교나 직장, 혹은 친구들을 만날 때 늘 아무렇지 않은 척, 늘 밝고 건강한 척 가면을 쓰곤 하잖아. 하지만 그렇게 온종일 쓰고 있던 두껍고 무거운 가면을 집으로 돌아온 밤까지 벗지 못한다면, 네 마음은 결국 짓눌려 숨이 막히고 말 거야. 오늘은 단 10분만이라도 그 무거운 가면을 내려놓고 네 마음의 여리고 약한 취약함을 솔직하게 대면해 보자. 꼭 누군가에게 보이기 위해서가 아니라, 너 스스로에게 다정해지기 위해서 말이야. 괜찮지 않아도 정말로 괜찮아. 울고 싶다면 마음껏 소리 내어 울어도 좋고, 답답하다면 이불을 쥐어짜며 네 감정을 가만히 밖으로 쏟아내 보렴. 감정을 가둘수록 상처는 안으로 곪아가지만, 밖으로 비워낼 때 비로소 회복이 시작된단다. 오늘 너의 하루 중 가장 숨이 막혔던 장면을 메모지에 한 줄 적어보며 가면을 벗는 홀가분함을 느껴보렴.",
+    sentence: "괜찮지 않아도 괜찮아. 오늘의 나는 조금 아프고 약해져도 괜찮은 사람이니까.",
+    action: "하루 중 가장 괜찮은 척 애써야 했던 장면을 작은 종이에 한 줄로 솔직하게 적고 가만히 찢어버리기"
+  },
+  {
+    day: 3,
+    letter: "벌써 셋째 날이 되었네. 어제 가면을 조금이나마 내려놓고 지내보니 기분이 어땠을지 가만히 생각해 본단다. 오늘은 네 마음속에 가장 날카롭고 깊이 박혀 너를 찌르고 있는 가시인 '자책을 덜어내는 날'이야. 삶에서 힘든 일이 생기거나 누군가와의 관계가 뜻대로 흘러가지 않을 때, 우리는 무의식적으로 '내가 그때 더 잘했어야 했는데', '전부 내 탓이야'라며 스스로에게 칼날을 겨누곤 해. 하지만 자책은 결코 상황을 해결해주지 못할 뿐만 아니라, 네 소중한 가치를 갉아먹는 가장 아픈 독이 될 뿐이란다. 네가 겪고 있는 모든 흔들림과 아픔은 결코 네가 부족하거나 약해서가 아니야. 그 어떤 누구라도 그 힘겨운 상황 속에서는 너처럼 힘들어했을 것이고, 너는 그 와중에도 네가 할 수 있는 최선의 노력과 선택을 다해 여기까지 온 것이란다. 그러니 오늘만큼은 스스로를 찌르던 날카로운 화살을 내려놓아 주렴. 너를 탓하던 차가운 말들 대신에 '그때는 그럴 수밖에 없었어', '그동안 참 애썼다'라며 오롯이 내 편이 되어 따뜻한 위로와 지지를 들려주길 바랄게.",
+    sentence: "그것은 네 잘못이 아니란다. 너는 그 아픔 속에서도 매 순간 최선을 다했으니까.",
+    action: "거울 속의 내 눈을 가만히 바라보며 '너는 잘못이 없어, 참 잘해왔어'라고 따뜻하게 속삭여주기"
+  },
+  {
+    day: 4,
+    letter: "넷째 날이 왔단다. 어느덧 마음을 온전히 보듬는 여정의 절반을 힘차게 지나왔구나. 오늘은 하루 종일 생각에만 갇혀 있던 감정의 무거운 굴레에서 잠시 벗어나, '몸을 가볍게 움직이며 나를 미워하지 않는 새로운 감각을 깨우는 연습'을 함께해볼 거야. 마음이 복잡하고 무거울 때 방안에 가만히 누워 생각의 꼬리를 물다 보면, 우리의 뇌는 자꾸만 더 우울하고 부정적인 시나리오를 끊임없이 만들어내며 너를 어둠 속으로 더욱 끌고 들어가지. 그 생각의 꼬리를 즉시 끊어내는 가장 강력하고 확실한 방법은 바로 몸의 감각을 부드럽고 다정하게 깨우는 일이란다. 대단한 운동을 하거나 밖으로 거창하게 나가지 않아도 좋아. 그저 5분 동안 방 안의 창문을 활짝 열고 맑은 공기를 쐬거나, 차가운 물로 세수를 하며 피부에 닿는 시원하고 생생한 촉감에 온전히 집중해 보는 거야. 몸이 가만히 움직이기 시작하면 정체되어 있던 마음의 흐린 안개도 한결 맑게 개어 가기 시작한단다. 무기력함이 너를 지배하려 할 때, 가벼운 몸의 움직임 하나로 몸과 마음의 신선한 순환을 선물하고 새로운 치유 에너지를 가득 채워주렴.",
+    sentence: "생각이 너무 무거워질 때는 잠시 멈추고, 지금 내 손끝과 발끝의 감각을 가만히 느껴보자.",
+    action: "창문을 활짝 열고 시원한 공기를 세 번 깊게 들이쉬며, 내 몸의 호흡이 나가는 것을 가만히 관찰하기"
+  },
+  {
+    day: 5,
+    letter: "다섯째 날이 밝았단다. 오늘의 너는 그동안 차마 소리 내어 입 밖으로 내지 못하고 마음의 깊은 바닷속에 가만히 가라앉혀 두었던 '오래 삼킨 마음의 말 한 문장을 안전하게 꺼내보는 소중한 날'이야. 누군가에게 상처를 주거나 관계가 깨질까 봐 두려워서 억지로 삼켜버린 말들은 마음속에서 결코 사라지지 않고 깊이 고여 널 계속 아프게 해. 그 응어리진 말들은 밖으로 꺼내어 마주하기 전까지는 계속해서 네 안에서 소리 없는 비명을 지른단다. 오늘은 그 누구의 시선도, 차가운 눈치도 전혀 보지 않고 오직 너만 볼 수 있는 일기장이나 비밀 메모장에 그동안 참았던 속마음을 아주 솔직하게 적어 내려가 봐. '그때 난 정말 서운하고 화가 많이 났었어', '사실 나 요즘 너무 아프고 기댈 곳이 필요해' 처럼 날것 그대로의 외침이어도 괜찮아. 그렇게 글로 적어 눈으로 직접 확인하는 순간, 내면에 갇혀 네 가슴을 조이던 억압된 슬픔과 분노가 비로소 자유를 얻게 된단다. 표현되지 못한 아픔은 절대 스스로 사라지지 않아. 가장 안전한 네 공간에서 너의 목소리를 가만히 꺼내어 해방해 주렴.",
+    sentence: "삼켜왔던 아픈 말들을 이제는 내 가슴 밖으로 가만히 내어주어도 괜찮단다.",
+    action: "누구에게도 하지 못했던 속마음 한 문장을 노트에 꾹꾹 눌러 적은 뒤, 다 적고 나서 후련하게 크게 한숨 쉬기"
+  },
+  {
+    day: 6,
+    letter: "여섯째 날이구나. 여정의 끝자락이 드디어 가까워지고 있네. 오늘은 고립되어 있던 너만의 동굴을 나와 '세상과 가볍게 닿아보는 날'로 보내보자. 마음이 아프고 지칠 때 우리는 본능적으로 내 방 안으로 깊이 숨어버리게 되고, 그 외로운 단절 속에서 아픔은 걷잡을 수 없이 증폭되곤 하지. 하지만 우리는 타인과의 작고 사소한 연결을 통해서도 엄청난 안도감과 지지를 얻을 수 있는 존재란다. 결코 많은 에너지를 써서 사람들을 만나러 나가지 않아도 좋아. 평소 고마웠던 사람에게 '오늘 날씨가 참 좋다, 잘 지내고 있니?' 하고 짧은 안부 문자를 한 통 보내거나, 편의점 직원이나 이웃에게 가벼운 눈인사를 건네거나, 온라인에 오늘 하늘 사진을 공유하는 것만으로 충분하단다. 타인과 가볍게 주고받는 안부의 한마디는 네 어두운 마음에 따뜻하고 은은한 등불 하나를 켜줄 거야. 나만 혼자 외롭고 힘든 것이 아니라는 깊은 위안과, 여전히 내가 이 따뜻한 세상과 연결되어 있다는 안도감이 오늘 네 발걸음을 한결 가볍게 만들어 주길 바랄게.",
+    sentence: "너는 결코 혼자가 아니란다. 보이지 않아도 따뜻한 연결이 네 주변을 감싸고 있으니.",
+    action: "가까운 지인이나 소중한 사람에게 '문득 생각나서 연락했어, 좋은 하루 보내'라고 부담 없는 안부 문자 보내기"
+  },
+  {
+    day: 7,
+    letter: "드디어 7일간의 길고 아름다운 마음 회복 여정을 마무리하는 마지막 날이구나. 일주일이라는 시간 동안 하루도 빠짐없이 매일 너의 내면을 따뜻하게 들여다보고 스스로에게 다정한 안부를 묻는 일은 결코 쉬운 일이 아니었을 텐데, 중도에 포기하지 않고 여기까지 묵묵히 걸어온 네 자신이 정말로 대견하고 자랑스럽단다. 그동안 상처받고 아파했던 마음을 스스로 보듬고 돌보느라 참 성실하게 잘 애써왔어. 오늘은 오직 너 자신만을 위해 온기와 깊은 사랑이 가득 담긴 위로의 답장을 가만히 선물해주는 날이란다. 거울 속의 내 모습을 가만히 들여다보며 눈을 맞추거나, 혹은 지친 내 마음에 나직하게 속삭이듯 '그동안 외롭고 고단했던 밤들을 홀로 견디며 포기하지 않고 살아내 줘서 정말 고마워'라고 가슴 깊이 감사를 전해보렴. 이 7일간의 소중한 발자국들이 네 마음속에 단단하고 든든한 씨앗이 되어, 네 앞으로의 삶에 다정함과 행복의 꽃을 환하게 피워낼 거야. 언제나 너를 향해 있을 내 진심 어린 응원과 온기를 잊지 말고, 늘 평안하고 따뜻하게 살아가길 간절히 바랄게. 정말 고생 많았고 참 애썼단다.",
+    sentence: "7일 동안 멈추지 않고 스스로를 돌봐준 너에게, 온 마음을 다해 고맙다는 인사를 건넨다.",
+    action: "이 여정을 끝마친 나를 위해 따뜻하고 포근한 차 한 잔을 선물하며, 가만히 눈을 감고 수고한 내 어깨를 토닥여주기",
+    summary_sentences: [
+      "아픔은 머무는 것이 아니라, 잠시 스쳐 지나가는 소나기일 뿐이란다.",
+      "흔들릴 때는 마음껏 흔들려도 괜찮아, 결국 제자리로 돌아오면 되니까.",
+      "어떤 순간에도 너 스스로가 네 편이 되어주는 일을 멈추지 말아다오."
+    ]
+  }
+] : [
+  {
+    day: 1,
+    letter: "I am truly glad to join you on this beautiful 7-day recovery journey starting today. On this first day of our journey, we will not try to force any sudden changes, but simply practice gently naming our hearts and acknowledging our present feelings. Normally, when we are sad or tired, we tend to lump all those complex feelings together and cover them up with just a simple phrase like 'it's hard.' Those lost emotions pile up deep inside, eventually weighing you down even more. Today, let's pause for a moment and call out the detailed feelings you are experiencing. Naming your emotions calms the brain's emotional center and prepares it to heal itself. Before going to bed tonight, please present your heart with a warm, comforting name.",
+    sentence: "Today's name for my heart: 'The heart that was so tired of pretending to be okay'",
+    action: "Gently place your hand on your chest before sleeping and say your emotion tonight in one sentence aloud"
+  },
+  {
+    day: 2,
+    letter: "How was your first practice of naming your heart yesterday? Even if it felt a bit awkward, that time looking back at yourself is a truly valuable start. Today, on the second day, we are going to practice 'putting down pretending to be okay.' We wear a mask of being fine in front of others. However, if you cannot take off that mask even at home, your heart will eventually suffocate. Today, put down that heavy mask for just 10 minutes and face your vulnerability. It is okay not to be okay. Cry if you want, and let your feelings out. When you pour them out, recovery finally begins. Write one line about a scene where you pretended to be okay today.",
+    sentence: "It is okay not to be okay. Because today, I am someone who can be a little hurt and weak.",
+    action: "Write one line about the scene where you had to pretend to be okay most today on a piece of paper, and gently tear it up"
+  },
+  {
+    day: 3,
+    letter: "It is already the third day of our journey together. Today is the day to relieve self-blame, that sharp thorn deeply embedded in your precious heart. When difficult things happen or relationships break, we unconsciously point the sword at ourselves, thinking 'It is all my fault.' However, self-blame never solves the situation and only becomes a painful poison that eats away at your soul. The suffering you experienced is by no means because you are lacking. Anyone would have struggled in that situation, and you did your best. So today, please put away those harsh arrows directed at yourself. Instead of words that blame you, whisper warm, friendly words like 'It was understandable' or 'You worked really hard all this time.'",
+    sentence: "It is not your fault. You did your absolute best at every single moment within that pain.",
+    action: "Look gently into your own eyes in the mirror and whisper warmly, 'It is not your fault, you have done so well'"
+  },
+  {
+    day: 4,
+    letter: "It is already the fourth day. We have already passed half of our beautiful journey of recovery. Today, we are going to escape the shackles of emotional thinking and practice 'not hating ourselves by lightly moving the body' together. When your mind is heavy and complicated, lying still in bed makes the brain create negative scenarios, pushing us deeper into the dark. The best way to break this endless train of thought is to wake up the body's physical senses. It doesn't have to be a grand exercise. Just walk around the neighborhood for about 5 minutes, stretch your shoulders, or wash your face with cold water. When the body moves, the cloudy fog covering the heart clears up immediately. When you are about to sink into lethargy, please awaken your physical senses and stop thinking. Let's circulate your energy refreshingly today.",
+    sentence: "When thoughts get too heavy, let's pause and quietly feel the sensation in our fingertips and toes.",
+    action: "Open the window wide, take three deep breaths of fresh air, and quietly observe your breath going out"
+  },
+  {
+    day: 5,
+    letter: "The fifth day has dawned. Today is the day to safely bring out 'one sentence you swallowed for a long time' that you couldn't dare to speak out and kept submerged in the deep sea of your heart. The words you swallowed by force out of fear of getting hurt or breaking relationships do not disappear, but decay deeply and cause pain. Those words will continue to trouble you until you bring them out. Today, without caring about others, write down that swallowed word raw in your private diary. Even if it is a very primitive cry like 'I was really angry then' or 'Actually, I was so lonely.' The moment you write it down and check it with your eyes, the suppressed emotions gain freedom. Unexpressed sadness never disappears on its own.",
+    sentence: "It is okay to gently let the painful words you've swallowed out of your chest now.",
+    action: "Write down one sentence of your inner heart that you couldn't tell anyone, and take a deep, relieved sigh after finishing"
+  },
+  {
+    day: 6,
+    letter: "It's the sixth day. Today, let's spend the day 'lightly touching the world' beyond the boundary of my isolated room. When the heart hurts, we instinctively hide inside a cave, and in that isolation, loneliness grows bigger. However, we are social beings who gain relief and support through small connections with others. You don't need to spend too much energy. Just send a short greeting text message like 'Are you doing well?' to someone you are grateful for, exchange a light nod with a neighbor, or share a brief moment of your daily life. That single word of greeting shared lightly with others will light a warm candle in your heart. You are not alone in this world.",
+    sentence: "You are never alone. For a warm connection surrounds you, even if it is invisible.",
+    action: "Send a pressure-free greeting text to a close acquaintance or loved one: 'Just thought of you, hope you have a great day'"
+  },
+  {
+    day: 7,
+    letter: "Finally, it is the last day wrapping up this beautiful 7-day recovery journey of your heart. Looking into your inner self and asking for greetings every single day for a week is never an easy task, and you should be extremely proud of yourself for walking all the way here without giving up. You did a wonderful job sincerely caring for your wounded heart. Today, send a letter filled with warm temperature, gratitude, and deep love to yourself who worked so hard. Look in the mirror, make eye contact, and say, 'Thank you for not giving up and surviving those lonely and painful nights.' These 7 days of traces will become solid seeds that bloom the flowers of kindness and peace in your life. Never forget my warm support that will always be directed toward you, and I wish you peace and warmth in your life. You did an amazing job.",
+    sentence: "To you who cared for yourself without stopping for 7 days, I offer my gratitude with all my heart.",
+    action: "Gift yourself a warm, cozy cup of tea for finishing this journey, close your eyes, and gently pat your own shoulders",
+    summary_sentences: [
+      "Pain is not something that stays, but merely a brief shower passing through.",
+      "It is completely fine to stumble; you only need to return to your place in the end.",
+      "No matter what happens, never stop being on your own side."
+    ]
+  }
+];

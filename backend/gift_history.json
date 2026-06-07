@@ -48,5 +48,82 @@
     },
     "sentAt": "2026-06-03T14:31:11.894Z",
     "status": "SUCCESS"
+  },
+  {
+    "id": "fkh2fcg",
+    "timestamp": "2026-06-06T08:04:23.989Z",
+    "recipientName": "사랑하는 지우",
+    "recipientEmail": "jiwoo@example.com",
+    "senderName": "마스터 오영범",
+    "letterData": {
+      "cover": {
+        "title": "지우님을 위한 문장 처방전",
+        "heart_name": "괜찮은 척하느라 지친 마음에게"
+      },
+      "page_letter_paragraphs": [
+        "참 많이 애썼구나. 괜찮아."
+      ],
+      "page_sentences": [
+        "너는 너무 오래 버틴 사람이다."
+      ],
+      "page_questions": [
+        "내가 삼킨 말은 무엇일까?"
+      ],
+      "page_action": "네 마음에 이름을 붙여주렴."
+    },
+    "sentAt": "2026-06-06T08:04:23.997Z",
+    "status": "SUCCESS"
+  },
+  {
+    "id": "fg4xnng",
+    "timestamp": "2026-06-06T08:05:48.614Z",
+    "recipientName": "사랑하는 지우",
+    "recipientEmail": "jiwoo@example.com",
+    "senderName": "마스터 오영범",
+    "letterData": {
+      "cover": {
+        "title": "지우님을 위한 문장 처방전",
+        "heart_name": "괜찮은 척하느라 지친 마음에게"
+      },
+      "page_letter_paragraphs": [
+        "참 많이 애썼구나. 괜찮아."
+      ],
+      "page_sentences": [
+        "너는 너무 오래 버틴 사람이다."
+      ],
+      "page_questions": [
+        "내가 삼킨 말은 무엇일까?"
+      ],
+      "page_action": "네 마음에 이름을 붙여주렴."
+    },
+    "sentAt": "2026-06-06T08:05:48.621Z",
+    "status": "SUCCESS"
+  },
+  {
+    "id": "mz1ldr9",
+    "timestamp": "2026-06-06T08:08:12.379Z",
+    "recipientName": "사랑하는 지우",
+    "recipientEmail": "jiwoo@example.com",
+    "senderName": "마스터 오영범",
+    "letterData": {
+      "cover": {
+        "title": "지우님을 위한 문장 처방전",
+        "heart_name": "괜찮은 척하느라 지친 마음에게"
+      },
+      "page_letter_paragraphs": [
+        "많이 힘들었겠다. 괜찮다고 말하면서도 마음속에서는 더 이상 괜찮을 수 없는 날들이 많았을 것 같아...",
+        "오늘은 너무 괜찮으려고 하지 않았으면 좋겠다. 울고 싶으면 잠시 울어도 되고..."
+      ],
+      "page_sentences": [
+        "너는 멈춘 사람이 아니라, 너무 오래 버틴 사람이다.",
+        "너무 괜찮으려고 하지 않아도 된다."
+      ],
+      "page_questions": [
+        "요즘 내가 괜찮은 척하느라 삼킨 말은 무엇일까?"
+      ],
+      "page_action": "오늘 밤 침대에 눕기 전에, 네 마음에 이름 하나만 붙여줬으면 좋겠어."
+    },
+    "sentAt": "2026-06-06T08:08:12.395Z",
+    "status": "SUCCESS"
   }
 ]
