@@ -336,6 +336,8 @@ export async function POST(req: Request) {
 
           // 🧠 공감 프로파일러 다차원 감정 지표 (Web UI 렌더링용) SSoT 데이터 이식
           parsedResponse.emotions = emotionProfile.emotions;
+          parsedResponse.defense_mechanism = emotionProfile.defense_mechanism;
+          parsedResponse.core_pain_point = emotionProfile.core_pain_point;
 
           return NextResponse.json(parsedResponse);
         }
@@ -362,7 +364,9 @@ export async function POST(req: Request) {
         source_url: scientificPrescription.source_url,
         insight_ko: scientificPrescription.insight_ko
       },
-      emotions: emotionProfile.emotions
+      emotions: emotionProfile.emotions,
+      defense_mechanism: emotionProfile.defense_mechanism,
+      core_pain_point: emotionProfile.core_pain_point
     };
 
     if (productType === "free") {

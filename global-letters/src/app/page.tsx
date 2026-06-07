@@ -23,6 +23,8 @@ interface LetterData {
     insight_ko: string;
   };
   emotions?: Record<string, number>;
+  defense_mechanism?: string;
+  core_pain_point?: string;
 }
 
 const TIERS = [
@@ -1390,7 +1392,7 @@ export default function Home() {
                           {/* 하단 브랜드 푸터 */}
                           <div className="w-full flex justify-between items-center text-[10px] text-slate-400 font-sans tracking-wider border-t border-slate-100 pt-6">
                             <span>{t.footerBrand} @young_beom_oh</span>
-                            <span>PAGE 1 OF {(!letterData.recovery_days || letterData.recovery_days.length === 0) ? (getPaginatedParagraphs().length + 2) : (letterData.recovery_days.length + 1)}</span>
+                            <span>PAGE 1 OF {(!letterData.recovery_days || letterData.recovery_days.length === 0) ? (getPaginatedParagraphs().length + (letterData.emotions ? 3 : 2)) : (letterData.recovery_days.length + 1)}</span>
                           </div>
                         </div>
 
@@ -1412,10 +1414,93 @@ export default function Home() {
                                     <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
                                     <span>{isKorean ? "당신의 마음을 듣습니다" : "Listening to your heart"} @young_beom_oh</span>
                                   </div>
-                                  <span>PAGE {pageIdx + 2} OF {getPaginatedParagraphs().length + 2}</span>
+                                  <span>PAGE {pageIdx + 2} OF {getPaginatedParagraphs().length + (letterData.emotions ? 3 : 2)}</span>
                                 </div>
                               </div>
                             ))}
+
+                            {/* 신규 3페이지: 심리 분석 프로파일 리포트 (마음의 무늬) */}
+                            {letterData && letterData.emotions && (
+                              <div className="pdf-page w-[210mm] h-[297mm] bg-[#FDFBF7] p-[25mm] border-[8px] border-double border-slate-200 flex flex-col justify-between relative">
+                                <div className="w-full h-full border border-slate-200 p-12 flex flex-col justify-center space-y-8">
+                                  <div className="text-center border-b border-slate-200 pb-4">
+                                    <h3 className="text-2xl font-serif text-slate-800 font-bold mb-2">
+                                      🧠 {isKorean ? "마음의 무늬 (심리 분석 리포트)" : "Inner Heart Profile Report"}
+                                    </h3>
+                                    <p className="text-xs text-slate-400 font-sans tracking-wide">
+                                      {isKorean 
+                                        ? "오영범 마스터의 공감 프로파일러 에이전트가 진단한 감정 상태 리포트입니다." 
+                                        : "Diagnostic emotional state report from Empathy Profiler Agent."}
+                                    </p>
+                                  </div>
+
+                                  {/* 5대 감정 프로그레스바 게이지 (PDF용 컴팩트 레이아웃) */}
+                                  <div className="space-y-4 my-6">
+                                    {Object.entries(letterData.emotions).map(([key, val]) => {
+                                      const labelMap: Record<string, string> = {
+                                        anxiety: isKorean ? "불안 (Anxiety)" : "Anxiety",
+                                        helplessness: isKorean ? "무기력 (Helplessness)" : "Helplessness",
+                                        self_blame: isKorean ? "자책 (Self-Blame)" : "Self-Blame",
+                                        sadness: isKorean ? "슬픔 (Sadness)" : "Sadness",
+                                        loneliness: isKorean ? "고독 (Loneliness)" : "Loneliness"
+                                      };
+                                      const colorMap: Record<string, string> = {
+                                        anxiety: "bg-indigo-500",
+                                        helplessness: "bg-zinc-500",
+                                        self_blame: "bg-red-500",
+                                        sadness: "bg-blue-500",
+                                        loneliness: "bg-orange-500"
+                                      };
+                                      const percent = Math.round(val * 100);
+                                      return (
+                                        <div key={key} className="space-y-1">
+                                          <div className="flex justify-between text-xs font-sans text-slate-600">
+                                            <span>{labelMap[key] || key}</span>
+                                            <span className="font-bold text-slate-800">{percent}%</span>
+                                          </div>
+                                          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                            <div 
+                                              className={`h-full rounded-full ${colorMap[key] || "bg-amber-400"}`}
+                                              style={{ width: `${percent}%` }}
+                                            />
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {/* 방어기제 및 핵심 아픔 진단서 */}
+                                  <div className="space-y-4">
+                                    {letterData.defense_mechanism && (
+                                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
+                                        <h4 className="text-[10px] font-bold text-slate-400 tracking-wider uppercase mb-1">
+                                          🛡️ {isKorean ? "주요 심리적 방어기제 (Defense Mechanism)" : "Defense Mechanism"}
+                                        </h4>
+                                        <p className="text-[13px] font-serif text-slate-700 leading-relaxed">
+                                          {letterData.defense_mechanism}
+                                        </p>
+                                      </div>
+                                    )}
+                                    {letterData.core_pain_point && (
+                                      <div className="p-4 rounded-xl bg-amber-50/20 border border-amber-100/60">
+                                        <h4 className="text-[10px] font-bold text-amber-600/70 tracking-wider uppercase mb-1">
+                                          🎯 {isKorean ? "핵심 마음의 아픔 (Core Pain Point)" : "Core Pain Point"}
+                                        </h4>
+                                        <p className="text-[13px] font-serif text-slate-700 leading-relaxed">
+                                          {letterData.core_pain_point}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* 하단 브랜드 푸터 */}
+                                <div className="w-full flex justify-between items-center text-[10px] text-slate-400 font-sans tracking-wider border-t border-slate-100 pt-6 mt-6">
+                                  <span>{t.footerBrand} @young_beom_oh</span>
+                                  <span>PAGE {getPaginatedParagraphs().length + 2} OF {getPaginatedParagraphs().length + (letterData.emotions ? 3 : 2)}</span>
+                                </div>
+                              </div>
+                            )}
 
                             {/* 부록 페이지: 문장, 질문, 작은 행동, SHA-256 서명 */}
                             <div className="pdf-page w-[210mm] h-[297mm] bg-[#FDFBF7] p-[25mm] border-[8px] border-double border-slate-200 flex flex-col justify-between relative">
@@ -1472,7 +1557,7 @@ export default function Home() {
                               {/* 하단 브랜드 푸터 */}
                               <div className="w-full flex justify-between items-center text-[10px] text-slate-400 font-sans tracking-wider border-t border-slate-100 pt-6 mt-6">
                                 <span>{t.footerBrand} @young_beom_oh</span>
-                                <span>PAGE {getPaginatedParagraphs().length + 2} OF {getPaginatedParagraphs().length + 2}</span>
+                                <span>PAGE {getPaginatedParagraphs().length + (letterData.emotions ? 3 : 2)} OF {getPaginatedParagraphs().length + (letterData.emotions ? 3 : 2)}</span>
                               </div>
                             </div>
                           </>
@@ -1654,6 +1739,79 @@ export default function Home() {
                               {(letterData?.page_letter_paragraphs?.length ? letterData.page_letter_paragraphs : [letterData?.letter || ""]).map((para, idx) => (
                                 <p key={`web-para-${idx}`} className="mb-8 first:mt-0 text-justify tracking-[0.01em] indent-4">{para}</p>
                               ))}
+                              
+                              {/* 🧠 오영범 마스터의 공감 심리 분석 프로파일 (Empathy Profiler Web UI) */}
+                              {letterData && letterData.emotions && (
+                                <div className="mt-12 bg-white/95 backdrop-blur-[1px] p-6 sm:p-8 rounded-2xl sm:rounded-[32px] border border-slate-200/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_20px_50px_rgba(15,23,42,0.05)]">
+                                  <h3 className="text-xl md:text-2xl font-serif text-slate-900 font-bold mb-2 flex items-center gap-2">
+                                    🧠 {isKorean ? "마음의 무늬 (심리 프로파일)" : "Inner Heart Profile"}
+                                  </h3>
+                                  <p className="text-xs text-slate-400 font-sans tracking-wide mb-6">
+                                    {isKorean 
+                                      ? "사연에서 읽어낸 당신의 감정 지표와 심리적 메커니즘 분석서입니다." 
+                                      : "An analysis of your emotional indices and psychological defense mechanisms."}
+                                  </p>
+                                  
+                                  {/* 5대 감정 프로그레스바 게이지 */}
+                                  <div className="space-y-4 mb-8">
+                                    {Object.entries(letterData.emotions).map(([key, val]) => {
+                                      const labelMap: Record<string, string> = {
+                                        anxiety: isKorean ? "불안 (Anxiety)" : "Anxiety",
+                                        helplessness: isKorean ? "무기력 (Helplessness)" : "Helplessness",
+                                        self_blame: isKorean ? "자책 (Self-Blame)" : "Self-Blame",
+                                        sadness: isKorean ? "슬픔 (Sadness)" : "Sadness",
+                                        loneliness: isKorean ? "고독 (Loneliness)" : "Loneliness"
+                                      };
+                                      const colorMap: Record<string, string> = {
+                                        anxiety: "from-indigo-400 to-indigo-600",
+                                        helplessness: "from-zinc-400 to-zinc-600",
+                                        self_blame: "from-rose-400 to-red-600",
+                                        sadness: "from-sky-400 to-blue-600",
+                                        loneliness: "from-amber-400 to-orange-600"
+                                      };
+                                      const percent = Math.round(val * 100);
+                                      return (
+                                        <div key={key} className="space-y-1.5">
+                                          <div className="flex justify-between text-xs font-sans font-medium text-slate-600">
+                                            <span>{labelMap[key] || key}</span>
+                                            <span className="font-bold text-slate-800">{percent}%</span>
+                                          </div>
+                                          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                                            <div 
+                                              className={`h-full rounded-full bg-gradient-to-r ${colorMap[key] || "from-amber-400 to-amber-500"} transition-all duration-1000 ease-out`}
+                                              style={{ width: `${percent}%` }}
+                                            />
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {/* 방어기제 및 고민 포인트 카드 */}
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {letterData.defense_mechanism && (
+                                      <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/60">
+                                        <h4 className="text-xs font-bold text-slate-400 tracking-wider uppercase mb-2">
+                                          🛡️ {isKorean ? "주요 방어기제" : "Defense Mechanism"}
+                                        </h4>
+                                        <p className="text-[14px] font-medium text-slate-800 font-serif leading-relaxed">
+                                          {letterData.defense_mechanism}
+                                        </p>
+                                      </div>
+                                    )}
+                                    {letterData.core_pain_point && (
+                                      <div className="p-5 rounded-2xl bg-amber-50/20 border border-amber-100/60">
+                                        <h4 className="text-xs font-bold text-amber-600/70 tracking-wider uppercase mb-2">
+                                          🎯 {isKorean ? "핵심 마음의 아픔" : "Core Pain Point"}
+                                        </h4>
+                                        <p className="text-[14px] font-medium text-slate-800 font-serif leading-relaxed">
+                                          {letterData.core_pain_point}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                               
                               <div className="mt-16 bg-white/90 backdrop-blur-[1px] p-5 sm:p-8 rounded-2xl sm:rounded-[32px] border border-amber-100/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_25px_60px_rgba(15,23,42,0.08)]">
                                 <h3 className="text-2xl mb-6 font-serif text-slate-900 font-semibold border-b border-amber-100 pb-3 inline-block">오래 간직할 문장</h3>
