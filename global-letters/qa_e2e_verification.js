@@ -1,5 +1,93 @@
 const fs = require('fs');
 
+function verifySuffixNoRepetition(text, errors, pathLabel) {
+  if (typeof text !== 'string' || text.trim() === '') return;
+  
+  // Split by sentence ending punctuation (. ? !)
+  const sentences = text.split(/[.?!]+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+
+  const matchedEndings = [];
+  const endingsToTrack = ["바랍니다", "습니다", "합니다", "좋겠어", "란다", "단다", "지요", "니다", "구나", "겠다", "군요", "고요", "렴", "어", "지", "요", "다", "죠"];
+  
+  sentences.forEach((s) => {
+    const cleaned = s.replace(/[.?!\"'\s\])]+$/, '').trim();
+    if (cleaned.length === 0) return;
+    
+    let foundEnding = null;
+    for (const ending of endingsToTrack) {
+      if (cleaned.endsWith(ending)) {
+        foundEnding = ending;
+        break;
+      }
+    }
+    if (!foundEnding) {
+      foundEnding = cleaned.charAt(cleaned.length - 1);
+    }
+    matchedEndings.push({ sentence: s, ending: foundEnding });
+  });
+
+  // Check for consecutive duplicates
+  for (let i = 0; i < matchedEndings.length - 1; i++) {
+    const current = matchedEndings[i];
+    const next = matchedEndings[i + 1];
+    
+    let currentStyle = current.ending;
+    let nextStyle = next.ending;
+    
+    const hapsyoStyle = ["습니다", "합니다", "바랍니다", "니다"];
+    const haeyoStyle = ["요", "지요", "죠", "군요", "고요"];
+    const informalStyle = ["어", "좋겠어"];
+    const dandaStyle = ["란다", "단다"];
+
+    if (hapsyoStyle.includes(currentStyle)) currentStyle = "니다_STYLE";
+    if (hapsyoStyle.includes(nextStyle)) nextStyle = "니다_STYLE";
+    
+    if (haeyoStyle.includes(currentStyle)) currentStyle = "요_STYLE";
+    if (haeyoStyle.includes(nextStyle)) nextStyle = "요_STYLE";
+    
+    if (informalStyle.includes(currentStyle)) currentStyle = "어_STYLE";
+    if (informalStyle.includes(nextStyle)) nextStyle = "어_STYLE";
+
+    if (dandaStyle.includes(currentStyle)) currentStyle = "단다_STYLE";
+    if (dandaStyle.includes(nextStyle)) nextStyle = "단다_STYLE";
+
+    if (currentStyle === nextStyle) {
+      errors.push(`Consecutive sentence-ending suffix repetition at ${pathLabel}: "${current.ending}" matches "${next.ending}" (consecutive style repeated):
+  1) "${current.sentence}"
+  2) "${next.sentence}"`);
+    }
+  }
+}
+
+function verifyToneAndPronouns(tier, text, errors, pathLabel) {
+  if (typeof text !== 'string' || text.trim() === '') return;
+
+  const isFree = (tier === "free" || tier === "random");
+  
+  if (isFree) {
+    const formalWords = ["당신", "귀하", "습니다", "합니다", "하십니까", "바랍니다", "해요", "이지요.", "때문이죠."];
+    formalWords.forEach(word => {
+      if (text.includes(word)) {
+        errors.push(`Tone mismatch at ${pathLabel} (FREE tier has formal word/ending): "${word}" found in text.`);
+      }
+    });
+  } else {
+    const informalPronounRegex = /\b너\b|\b너는\b|\b너를\b|\b너에게\b|\b네가\b|\b네\b|\b네\s+마음\b/;
+    if (informalPronounRegex.test(text)) {
+      errors.push(`Tone mismatch at ${pathLabel} (PAID tier has informal pronoun): "너" or "네" pronoun found in text.`);
+    }
+
+    const informalEndings = ["구나", "하렴", "되렴", "했으면 해", "란다", "단다"];
+    informalEndings.forEach(ending => {
+      if (text.includes(ending)) {
+        errors.push(`Tone mismatch at ${pathLabel} (PAID tier has informal ending): "${ending}" found in text.`);
+      }
+    });
+  }
+}
+
 const stories = [
   "요즘 너무 우울해요. 매일 밤 혼자 우는 게 일상이 되었어요.",
   "회사 상사 때문에 스트레스를 너무 받아서 다 그만두고 싶어요.",
@@ -56,26 +144,28 @@ async function verifyTier(tier, story) {
       if (typeof data.cover.heart_name !== 'string') errors.push("Missing or invalid 'cover.heart_name'");
     }
     
-    if (!Array.isArray(data.page_letter_paragraphs)) {
-      errors.push("Missing or invalid 'page_letter_paragraphs' array");
-    } else if (data.page_letter_paragraphs.length === 0) {
-      errors.push("'page_letter_paragraphs' is empty");
-    }
-    
-    if (!Array.isArray(data.page_sentences)) {
-      errors.push("Missing or invalid 'page_sentences' array");
-    }
-    
-    if (!Array.isArray(data.page_questions)) {
-      errors.push("Missing or invalid 'page_questions' array");
-    }
-    
-    if (typeof data.page_action !== 'string') {
-      errors.push("Missing or invalid 'page_action' string");
-    }
-    
-    if (!Array.isArray(data.recovery_days)) {
-      errors.push("Missing or invalid 'recovery_days' array");
+    if (tier !== "recovery") {
+      if (!Array.isArray(data.page_letter_paragraphs)) {
+        errors.push("Missing or invalid 'page_letter_paragraphs' array");
+      } else if (data.page_letter_paragraphs.length === 0) {
+        errors.push("'page_letter_paragraphs' is empty");
+      }
+      
+      if (!Array.isArray(data.page_sentences)) {
+        errors.push("Missing or invalid 'page_sentences' array");
+      }
+      
+      if (!Array.isArray(data.page_questions)) {
+        errors.push("Missing or invalid 'page_questions' array");
+      }
+      
+      if (typeof data.page_action !== 'string') {
+        errors.push("Missing or invalid 'page_action' string");
+      }
+    } else {
+      if (!Array.isArray(data.recovery_days)) {
+        errors.push("Missing or invalid 'recovery_days' array");
+      }
     }
     
     // Tier-specific validation
@@ -109,6 +199,22 @@ async function verifyTier(tier, story) {
         });
       }
     }
+
+  // Suffix repetition and tone validation
+  if (tier !== "recovery" && Array.isArray(data.page_letter_paragraphs)) {
+    data.page_letter_paragraphs.forEach((para, pIdx) => {
+      verifySuffixNoRepetition(para, errors, `page_letter_paragraphs[${pIdx}]`);
+      verifyToneAndPronouns(tier, para, errors, `page_letter_paragraphs[${pIdx}]`);
+    });
+  }
+  if (tier === "recovery" && Array.isArray(data.recovery_days)) {
+    data.recovery_days.forEach((dayData, dIdx) => {
+      if (dayData && typeof dayData.letter === 'string') {
+        verifySuffixNoRepetition(dayData.letter, errors, `recovery_days[${dIdx}].letter`);
+        verifyToneAndPronouns(tier, dayData.letter, errors, `recovery_days[${dIdx}].letter`);
+      }
+    });
+  }
     
     if (errors.length > 0) {
       console.log("❌ Structure Validation Errors:");
