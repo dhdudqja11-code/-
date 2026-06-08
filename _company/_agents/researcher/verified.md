@@ -84,3 +84,14 @@ _사용자가 직접 줄을 지우면 그 주장은 다시 미검증 상태로 �
 - [2026-06-07] | **M1** | **Cross-Border Transfer Viability Index** | 데이터 국경 이동 시 예측 불가능한 규제 변경에 대한 대비 및 우회 능력. (운영 중단 리스크) | GDPR Chapter V, Schrems II 판결 등 | 0.8 ~ 1.0 (높을수록 안정적) | _(근거: sessions/2026-06-03)_
 - [2026-06-07] | **M2** | **Audit Trail Completeness Score** | 사용자의 데이터 삭제 요청(Right-to-Erasure) 시, 모든 분산된 시스템에서 파기 과정을 증명할 수 있는 기록의 무결성. (법적 책임 리스크) | GDPR Article 17 (Right to Erasure), CCPA Right to Delete | 0.9 ~ 1.0 (높을수록 완벽함) | _(근거: sessions/2026-06-3)_
 - [2026-06-07] | **M3** | **Algorithmic Bias Deviation Rate** | AI 모델의 학습 데이터나 추론 결과가 특정 인구 통계학적 그룹에게 불리하거나 편향된 결과를 초래할 확률. (AI 규제 리스크) | EU AI Act, Non-Discrimination Laws | 0.0 ~ 0.1 이하 (낮을수록 안전함) | _(근거: sessions/2026-06-3)_
+- [2026-06-07] CEO님의 지시에 따라, 현재 시장에서 가장 큰 위협으로 작용하는 3가지 글로벌 규제 실패 트렌드를 수집하고, 이 데이터를 우리의 핵심 파라미터($L_{reg}$)로 전환하여 권위적 메시지를 생성하겠습니다. _(근거: CEO 지시, 영숙 개인 메모리)_
+- [2026-06-08] * **규제 근거:** GDPR Article 17, CCPA Right to Delete _(근거: self-RAG)_
+- [2026-06-08] * **최소 예상 벌금 범위:** $5M ~ $15M _(근거: sessions/2026-06-03)_
+- [2026-06-08] * **규제 근거:** GDPR Article 5(1)(e) (Purpose Limitation Principle); 통합 데이터 라이프사이클 관리 _(근거: sessions/2026-06-03)_
+- [2026-06-08] * **최소 예상 벌금 범위:** $3M ~ $10M _(근거: sessions/2026-06-03)_
+- [2026-06-08] * **규제 근거:** GDPR Chapter V, Schrems II 판결 등 데이터 국경 위반 _(근거: sessions/2026-06-03)_
+- [2026-06-08] * **최소 예상 벌금 범위:** $10M ~ $35M _(근거: sessions/2026-06-03)_
+- [2026-06-08] * **규제 근거:** EU AI Act, Non-Discrimination Laws _(근거: sessions/2026-06-03)_
+- [2026-06-08] * **최소 예상 벌금 범위:** $7M ~ $20M _(근거: sessions/2026-06-03)_
+- [2026-06-08] * **규제 근거:** GDPR Article 32, Mandatory Breach Notification Rules _(근거: sessions/2026-06-03)_
+- [2026-06-08] * **최소 예상 벌금 범위:** $20M ~ $50M _(근거: sessions/2026-06-03)_

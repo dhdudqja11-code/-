@@ -40,3 +40,26 @@
 
 ---
 *작성일: 2026-06-05*
+
+## 🔄 E2E 검증 추가 수행 결과 (2026-06-07)
+`src/tests/test_authority_meter.py`를 활용한 E2E 통합 테스트 수행 결과, 총 4개의 핵심 시나리오 및 경계 조건 테스트가 모두 성공적으로 통과했습니다.
+
+- **테스트 일시:** 2026-06-07
+- **테스트 환경:** Python 3.12.10, pytest-9.0.3
+- **테스트 수행 명령:** `$env:PYTHONPATH="."; pytest src/tests/test_authority_meter.py`
+- **결과:** **4 Passed (100% 성공)**
+
+```
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.0.3, pluggy-1.6.0
+collected 4 items
+
+src\tests\test_authority_meter.py ....                                   [100%]
+
+============================== 4 passed in 0.24s ==============================
+```
+
+- **상태 관리 동작 검증:** 
+  1. `AuthorityStateManager`의 `initialize_check`, `check_authority`, `resolve_check` API 규격이 정상 작동함을 확인.
+  2. 예외 및 Edge Case(Null Payload 및 Low Risk) 상황에 대한 상태 분기 필터링(Error, Solution) 검증 완료.
+  3. 경고(Warning) 단계 진입 시, 시스템이 패닉하지 않고 지시에 부합하는 경고 로그를 정상 생성함을 확인.
