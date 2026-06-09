@@ -62,6 +62,7 @@ export default function AdminDashboard() {
   const [giftHistory, setGiftHistory] = useState<any[]>([]);
   const [isLoadingGifts, setIsLoadingGifts] = useState(false);
   const [isSendingGifts, setIsSendingGifts] = useState(false);
+  const [adminSecret, setAdminSecret] = useState("");
 
   // Live Terminal Logs State
   const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
@@ -270,7 +271,8 @@ export default function AdminDashboard() {
   const fetchGifts = async () => {
     setIsLoadingGifts(true);
     try {
-      const response = await fetch("/api/send-gift?view=true");
+      const storedSecret = localStorage.getItem("admin_secret_key") || "";
+      const response = await fetch(`/api/send-gift?view=true&secret=${encodeURIComponent(adminSecret || storedSecret)}`);
       const data = await response.json();
       if (data.success) {
         setGiftQueue(data.queue || []);
@@ -284,7 +286,21 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    fetchGifts();
+    const savedSecret = localStorage.getItem("admin_secret_key") || "";
+    setAdminSecret(savedSecret);
+    
+    // Fetch with stored secret initially
+    setIsLoadingGifts(true);
+    fetch(`/api/send-gift?view=true&secret=${encodeURIComponent(savedSecret)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setGiftQueue(data.queue || []);
+          setGiftHistory(data.history || []);
+        }
+      })
+      .catch(err => console.error("Initial queue load failed:", err))
+      .finally(() => setIsLoadingGifts(false));
     
     // 초기 터미널 로그 빌드
     const initialLogs = Array.from({ length: 6 }).map(() => {
@@ -294,6 +310,11 @@ export default function AdminDashboard() {
     });
     setTerminalLogs(initialLogs);
   }, []);
+
+  const handleSecretChange = (val: string) => {
+    setAdminSecret(val);
+    localStorage.setItem("admin_secret_key", val);
+  };
 
   // 1. 실시간 터미널 타이핑 업데이트 시뮬레이터
   useEffect(() => {
@@ -387,6 +408,11 @@ export default function AdminDashboard() {
 
   // 이메일 선물 일괄 전송 API 실행
   const handleDispatchGifts = async () => {
+    if (!adminSecret) {
+      alert("관리자 보안 키를 입력해 주세요.");
+      return;
+    }
+
     if (giftQueue.length === 0) {
       alert("전송할 대기 중인 편지가 없습니다.");
       return;
@@ -398,7 +424,7 @@ export default function AdminDashboard() {
 
     setIsSendingGifts(true);
     try {
-      const response = await fetch("/api/send-gift");
+      const response = await fetch(`/api/send-gift?secret=${encodeURIComponent(adminSecret)}`);
       const data = await response.json();
       if (data.success) {
         alert(`✨ 성공적으로 ${data.count}개의 선물 엽서가 발송되었습니다!\n(전송 방식: ${data.mode})`);
@@ -452,6 +478,15 @@ export default function AdminDashboard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            {/* Admin Security Key Input */}
+            <input
+              type="password"
+              placeholder="보안 키 입력"
+              value={adminSecret}
+              onChange={(e) => handleSecretChange(e.target.value)}
+              className="bg-[#0f1420] border border-amber-500/20 rounded-xl px-3 py-2 text-xs font-mono text-amber-500 outline-none w-36 focus:border-amber-500/50"
+            />
+
             <button 
               onClick={fetchGifts}
               disabled={isLoadingGifts}

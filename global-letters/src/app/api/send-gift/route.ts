@@ -260,22 +260,45 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const viewOnly = searchParams.get("view") === "true";
+    
+    // 🛡️ Security Check: Validate ADMIN_SECRET_KEY to prevent unauthorized triggers or queue purging
+    const authHeader = req.headers.get("authorization");
+    let clientKey = searchParams.get("secret");
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      clientKey = authHeader.substring(7);
+    }
+
+    const adminSecretKey = process.env.ADMIN_SECRET_KEY || "dev-secret-key-1234";
+
+    if (!clientKey || clientKey !== adminSecretKey) {
+      console.warn(`[Security Warning] Unauthorized attempt to trigger send-gift batch dispatcher.`);
+      return NextResponse.json(
+        { error: "Unauthorized. Valid admin secret key is required." },
+        { status: 401 }
+      );
+    }
+
     const { queuePath, historyPath } = getQueuePaths();
 
+    // Read queue with fallback lock parsing
     let queue: any[] = [];
     if (fs.existsSync(queuePath)) {
       try {
         queue = JSON.parse(fs.readFileSync(queuePath, 'utf8'));
-      } catch {
+      } catch (e) {
+        console.error("Failed to parse queue file. Queue might be corrupted or locked:", e);
         queue = [];
       }
     }
 
+    // Read history with fallback lock parsing
     let history: any[] = [];
     if (fs.existsSync(historyPath)) {
       try {
         history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
-      } catch {
+      } catch (e) {
+        console.error("Failed to parse history file:", e);
         history = [];
       }
     }
@@ -363,19 +386,33 @@ export async function GET(req: Request) {
       }
     }
 
-    // Append to history
-    if (fs.existsSync(historyPath)) {
-      try {
-        history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
-      } catch {
-        history = [];
+    // Safe Append to History (Write to temp file then atomic rename if possible, fallback to overwrite)
+    try {
+      if (fs.existsSync(historyPath)) {
+        try {
+          history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
+        } catch {
+          history = [];
+        }
       }
+      history.push(...historyEntries);
+      const tempHistoryPath = `${historyPath}.tmp`;
+      fs.writeFileSync(tempHistoryPath, JSON.stringify(history, null, 2), 'utf8');
+      fs.renameSync(tempHistoryPath, historyPath);
+    } catch (writeErr) {
+      console.error("Failed secure history logging, falling back to direct write:", writeErr);
+      fs.writeFileSync(historyPath, JSON.stringify(history, null, 2), 'utf8');
     }
-    history.push(...historyEntries);
-    fs.writeFileSync(historyPath, JSON.stringify(history, null, 2), 'utf8');
 
-    // Clear queue
-    fs.writeFileSync(queuePath, JSON.stringify([], null, 2), 'utf8');
+    // Safe Clear Queue
+    try {
+      const tempQueuePath = `${queuePath}.tmp`;
+      fs.writeFileSync(tempQueuePath, JSON.stringify([], null, 2), 'utf8');
+      fs.renameSync(tempQueuePath, queuePath);
+    } catch (writeErr) {
+      console.error("Failed secure queue clearing, falling back to direct write:", writeErr);
+      fs.writeFileSync(queuePath, JSON.stringify([], null, 2), 'utf8');
+    }
 
     console.log(`[Batch Gift Dispatch] Completed batch run. Successfully sent: ${successCount}/${queue.length}`);
 

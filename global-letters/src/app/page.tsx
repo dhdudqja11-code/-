@@ -327,6 +327,45 @@ const generateSHA256 = async (message: string): Promise<string> => {
   }
 };
 
+const getRecoveryTextScale = (text: string) => {
+  const len = text ? text.length : 0;
+  if (len > 1000) {
+    return {
+      fontSize: "text-[12px] md:text-[13px]",
+      lineHeight: "leading-[1.7]",
+      paragraphMargin: "mb-3",
+      containerPadding: "p-[15mm] border-[4px]",
+      actionMargin: "mt-2 p-3 text-[12px]",
+      titleSize: "text-xl",
+      sentenceSize: "text-[12px] mb-3",
+      summaryMargin: "mb-4 p-4",
+    };
+  } else if (len > 700) {
+    return {
+      fontSize: "text-[13px] md:text-[14px]",
+      lineHeight: "leading-[1.8]",
+      paragraphMargin: "mb-4",
+      containerPadding: "p-[20mm] border-[6px]",
+      actionMargin: "mt-4 p-4 text-[13px]",
+      titleSize: "text-2xl",
+      sentenceSize: "text-[13px] mb-4",
+      summaryMargin: "mb-5 p-5",
+    };
+  } else {
+    return {
+      fontSize: "text-[15px] md:text-[16px]",
+      lineHeight: "leading-[2.0]",
+      paragraphMargin: "mb-6",
+      containerPadding: "p-[25mm] border-[8px]",
+      actionMargin: "mt-6 p-5 text-[15px]",
+      titleSize: "text-3xl",
+      sentenceSize: "text-[15px] mb-6",
+      summaryMargin: "mb-8 p-6",
+    };
+  }
+};
+
+
 export default function Home() {
   const [view, setView] = useState<ViewState>("tier");
   const [envelopeOpen, setEnvelopeOpen] = useState(false);
@@ -1563,80 +1602,116 @@ export default function Home() {
                           </>
                         )}
 
-                        {letterData.recovery_days && letterData.recovery_days.map((dayData, idx) => (
-                          <div key={`recovery-${idx}`} className="pdf-page w-[210mm] h-[297mm] bg-[#FDFBF7] p-[25mm] border-[8px] border-double border-slate-200 flex flex-col justify-between relative">
-                            <div className="w-full h-full border border-slate-200 p-12 flex flex-col justify-between">
-                              <div>
-                                <h2 className="text-3xl font-serif text-slate-800 mb-6 border-b border-slate-200 pb-3 inline-block">{dayData.day}{t.recoveryDayHeader}</h2>
-                                <p className="font-serif leading-[2.25] text-lg text-slate-700 whitespace-pre-wrap mb-8">{dayData.letter}</p>
-                              </div>
-                              
-                              {/* 1개 문장 처방 */}
-                              {dayData.sentence && (
-                                <div className="mb-6 border-l-4 border-amber-300 pl-4 italic text-[16px] text-slate-600 font-serif leading-relaxed">
-                                  “ {dayData.sentence} ”
+                        {letterData.recovery_days && letterData.recovery_days.map((dayData, idx) => {
+                          const scale = getRecoveryTextScale(dayData.letter);
+                          const dayBgUrl = aestheticBackgrounds[(dayData.day - 1) % aestheticBackgrounds.length];
+                          
+                          return (
+                            <div key={`recovery-${idx}`} className={`pdf-page w-[210mm] h-[297mm] flex flex-col justify-between relative ${scale.containerPadding} border-double border-[#e6dec9]/70 bg-gradient-to-b from-[#fdfbf7] via-[#faf6f0] to-[#f4eee3] overflow-hidden`}>
+                              {/* 1. Static Unsplash Image Layer */}
+                              <div
+                                className="absolute inset-0 z-0 bg-cover bg-center"
+                                style={{
+                                  backgroundImage: `url('${dayBgUrl}')`,
+                                }}
+                              />
+                              {/* 2. Glassmorphic Gradient Overlay Layer */}
+                              <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#fdfbf7]/92 to-[#f4eee3]/97" />
+                              {/* 3. Pure CSS 아날로그 red grid paper micro-texture Layer */}
+                              <div 
+                                className="absolute inset-0 z-0 pointer-events-none opacity-40 mix-blend-multiply" 
+                                style={{
+                                  backgroundImage: `linear-gradient(90deg, rgba(220,50,50,0.03) 50%, transparent 50%), 
+                                                    linear-gradient(rgba(220,50,50,0.03) 50%, transparent 50%)`,
+                                  backgroundSize: '4px 4px'
+                                }}
+                              />
+                              {/* 4. Vintage Postage Stamp (Top-Right Decor) */}
+                              <div className="absolute top-4 right-4 z-20 pointer-events-none">
+                                <div className="vintage-stamp shadow-sm border border-dashed border-[#e6dec9] bg-white/60 backdrop-blur-sm">
+                                  <span className="text-[7px] font-sans font-bold text-[#b91c1c] tracking-widest uppercase">KOREA</span>
+                                  <div className="text-sm my-1 text-slate-600 font-serif">心</div>
+                                  <span className="text-[6px] font-sans text-slate-400">2026</span>
                                 </div>
-                              )}
-                              
-                              {/* 7일차 정리 문장 3개 */}
-                              {dayData.day === 7 && dayData.summary_sentences && (
-                                <div className="mb-8 p-6 bg-amber-50/20 border border-amber-100 rounded-2xl">
-                                  <h3 className="text-[14px] font-bold text-slate-700 mb-4 tracking-wide font-sans flex items-center gap-1.5 border-b border-amber-200/50 pb-2">
-                                    📜 {isKorean ? "7일간의 여정을 마무리하는 정리 문장" : "Closing summary sentences of the 7-day journey"}
-                                  </h3>
-                                  <div className="space-y-3">
-                                    {dayData.summary_sentences.map((s: string, sIdx: number) => (
-                                      <p key={sIdx} className="text-[14px] font-serif text-slate-600 italic pl-4 border-l-2 border-amber-300">
-                                        “ {s} ”
-                                      </p>
-                                    ))}
+                              </div>
+
+                              <div className="relative z-10 w-full h-full border border-[#e6dec9]/60 p-8 flex flex-col justify-between">
+                                <div>
+                                  <h2 className={`${scale.titleSize} font-serif text-slate-900 mb-4 border-b border-[#e6dec9]/60 pb-2 inline-block font-bold`}>
+                                    {dayData.day}{t.recoveryDayHeader}
+                                  </h2>
+                                  <p className={`font-serif ${scale.lineHeight} ${scale.fontSize} text-slate-700 whitespace-pre-wrap ${scale.paragraphMargin} text-justify tracking-[0.01em] indent-4`}>
+                                    {dayData.letter}
+                                  </p>
+                                </div>
+                                
+                                {/* 1개 문장 처방 */}
+                                {dayData.sentence && (
+                                  <div className={`border-l-4 border-amber-300 pl-4 italic ${scale.sentenceSize} text-slate-600 font-serif leading-relaxed`}>
+                                    “ {dayData.sentence} ”
                                   </div>
-                                </div>
-                              )}
+                                )}
+                                
+                                {/* 7일차 정리 문장 3개 */}
+                                {dayData.day === 7 && dayData.summary_sentences && (
+                                  <div className={`${scale.summaryMargin} bg-amber-50/20 border border-amber-100 rounded-2xl`}>
+                                    <h3 className="text-[13px] font-bold text-slate-700 mb-3 tracking-wide font-sans flex items-center gap-1.5 border-b border-amber-200/50 pb-2">
+                                      📜 {isKorean ? "7일간의 여정을 마무리하는 정리 문장" : "Closing summary sentences of the 7-day journey"}
+                                    </h3>
+                                    <div className="space-y-2">
+                                      {dayData.summary_sentences.map((s: string, sIdx: number) => (
+                                        <p key={sIdx} className="text-[13px] font-serif text-slate-600 italic pl-3 border-l-2 border-amber-300">
+                                          “ {s} ”
+                                        </p>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
 
-                              <div className="mt-auto p-6 border border-amber-100 rounded-2xl bg-amber-50/20">
-                                <h3 className="text-lg mb-3 font-serif text-slate-900 font-semibold border-b border-amber-200/50 pb-2 inline-block">{t.premiumActionHeader}</h3>
-                                <p className="text-[15px] font-serif text-slate-600 leading-relaxed">{dayData.action}</p>
+                                <div className={`${scale.actionMargin} border border-amber-200/50 rounded-2xl bg-white/80 backdrop-blur-sm shadow-sm`}>
+                                  <h3 className="text-sm font-serif text-slate-900 font-bold border-b border-amber-200/50 pb-1.5 mb-2 inline-block">{t.premiumActionHeader}</h3>
+                                  <p className="text-[13px] font-serif text-slate-600 leading-relaxed">{dayData.action}</p>
+                                </div>
+
+                                {/* 🧠 뇌과학적 등불 (Scientific Reference) - RAG 문헌 각인 */}
+                                {idx === letterData.recovery_days!.length - 1 && letterData.scientific_reference && (
+                                  <div className="mt-4 border border-amber-200/50 p-4 rounded-xl bg-amber-50/20 text-left font-serif max-w-[500px] self-end shadow-sm">
+                                    <h4 className="font-bold text-[10px] text-amber-800 flex items-center gap-1.5 mb-1.5 font-sans tracking-wide">
+                                      🧠 {isKorean ? "뇌과학적 등불 (Scientific Reference)" : "Scientific Reference"}
+                                    </h4>
+                                    <p className="text-[11px] font-medium text-slate-800 mb-0.5 leading-relaxed">
+                                      {letterData.scientific_reference.title}
+                                    </p>
+                                    <p className="text-[9px] text-slate-500 mb-1.5 font-sans">
+                                      By {letterData.scientific_reference.authors} | <a href={letterData.scientific_reference.source_url} target="_blank" rel="noopener noreferrer" className="underline text-amber-700 hover:text-amber-800 cursor-pointer">prescribed research</a>
+                                    </p>
+                                    <p className="text-[10px] text-slate-600 pl-2.5 border-l-2 border-amber-300 italic">
+                                      "{letterData.scientific_reference.insight_ko}"
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* 마지막 페이지(7일차)에 SHA-256 서명 각인 */}
+                                {idx === letterData.recovery_days!.length - 1 && sha256Hash && (
+                                  <div className="mt-4 border border-slate-200/60 p-4 rounded-xl bg-white/70 flex flex-col gap-1 text-[9px] font-mono text-slate-400 self-end w-fit shadow-inner">
+                                    <span className="font-bold text-[10px] text-slate-500 font-sans tracking-wide">🛡️ B2B SECURE DIGITAL SIGNATURE</span>
+                                    <span>HASH: {sha256Hash}</span>
+                                    <span>VERIFIED BY MASTER O.Y.B INTEGRITY ENGINE</span>
+                                  </div>
+                                )}
                               </div>
 
-                              {/* 🧠 뇌과학적 등불 (Scientific Reference) - RAG 문헌 각인 */}
-                              {idx === letterData.recovery_days!.length - 1 && letterData.scientific_reference && (
-                                <div className="mt-8 border border-amber-200/50 p-4 rounded-xl bg-amber-50/20 text-left font-serif max-w-[500px] self-end">
-                                  <h4 className="font-bold text-[10px] text-amber-800 flex items-center gap-1.5 mb-1.5 font-sans tracking-wide">
-                                    🧠 {isKorean ? "뇌과학적 등불 (Scientific Reference)" : "Scientific Reference"}
-                                  </h4>
-                                  <p className="text-[11px] font-medium text-slate-800 mb-0.5 leading-relaxed">
-                                    {letterData.scientific_reference.title}
-                                  </p>
-                                  <p className="text-[9px] text-slate-500 mb-1.5 font-sans">
-                                    By {letterData.scientific_reference.authors} | <a href={letterData.scientific_reference.source_url} target="_blank" rel="noopener noreferrer" className="underline text-amber-700 hover:text-amber-800 cursor-pointer">prescribed research</a>
-                                  </p>
-                                  <p className="text-[10px] text-slate-600 pl-2.5 border-l-2 border-amber-300 italic">
-                                    "{letterData.scientific_reference.insight_ko}"
-                                  </p>
+                              {/* 하단 브랜드 푸터 */}
+                              <div className="relative z-10 w-full flex justify-between items-center text-[10px] text-slate-400 font-sans tracking-wider border-t border-[#e6dec9]/60 pt-4 mt-4">
+                                <div className="flex items-center gap-1">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                                  <span>{isKorean ? "당신의 마음을 듣습니다" : "Listening to your heart"} @young_beom_oh</span>
                                 </div>
-                              )}
-
-                              {/* 마지막 페이지(7일차)에 SHA-256 서명 각인 */}
-                              {idx === letterData.recovery_days!.length - 1 && sha256Hash && (
-                                <div className="mt-8 border border-slate-200/60 p-4 rounded-xl bg-white/70 flex flex-col gap-1 text-[9px] font-mono text-slate-400 self-end w-fit">
-                                  <span className="font-bold text-[10px] text-slate-500 font-sans tracking-wide">🛡️ B2B SECURE DIGITAL SIGNATURE</span>
-                                  <span>HASH: {sha256Hash}</span>
-                                  <span>VERIFIED BY MASTER O.Y.B INTEGRITY ENGINE</span>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* 하단 브랜드 푸터 */}
-                            <div className="w-full flex justify-between items-center text-[10px] text-slate-400 font-sans tracking-wider border-t border-slate-100 pt-6 mt-6">
-                              <div className="flex items-center gap-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
-                                <span>{isKorean ? "당신의 마음을 듣습니다" : "Listening to your heart"} @young_beom_oh</span>
+                                <span>PAGE {idx + 2} OF {letterData.recovery_days!.length + 1}</span>
                               </div>
-                              <span>PAGE {idx + 2} OF {letterData.recovery_days!.length + 1}</span>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
 
@@ -1834,40 +1909,78 @@ export default function Home() {
                             </div>
                           ) : (
                             <div className="font-serif text-slate-700 space-y-16">
-                              {letterData.recovery_days.map((dayData, idx) => (
-                                <div key={`web-recovery-${idx}`} className="mb-16 last:mb-0 rounded-2xl sm:rounded-[32px] border border-slate-200/70 bg-white/90 p-5 sm:p-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)]">
-                                  <h2 className="text-2xl md:text-3xl font-serif text-slate-900 mb-6 border-b border-slate-200/60 pb-3 inline-block">{dayData.day}일차 회복 편지</h2>
-                                  <p className="leading-relaxed text-[1.01rem] md:text-lg whitespace-pre-wrap mb-8 text-slate-700">{dayData.letter}</p>
-                                  
-                                  {/* 1개 문장 처방 */}
-                                  {dayData.sentence && (
-                                    <div className="mb-8 border-l-4 border-amber-300 pl-4 italic text-[1.01rem] text-slate-600 font-serif leading-relaxed">
-                                      “ {dayData.sentence} ”
-                                    </div>
-                                  )}
-                                  
-                                  {/* 7일차 정리 문장 3개 */}
-                                  {dayData.day === 7 && dayData.summary_sentences && (
-                                    <div className="mb-8 p-6 bg-amber-50/20 border border-amber-100 rounded-2xl">
-                                      <h3 className="text-base font-bold text-slate-700 mb-4 tracking-wide font-sans flex items-center gap-1.5 border-b border-amber-200/50 pb-2">
-                                        📜 {isKorean ? "7일간의 여정을 마무리하는 정리 문장" : "Closing summary sentences of the 7-day journey"}
-                                      </h3>
-                                      <div className="space-y-3">
-                                        {dayData.summary_sentences.map((s: string, sIdx: number) => (
-                                          <p key={sIdx} className="text-sm font-serif text-slate-600 italic pl-4 border-l-2 border-amber-300">
-                                            “ {s} ”
-                                          </p>
-                                        ))}
+                              {letterData.recovery_days.map((dayData, idx) => {
+                                const scale = getRecoveryTextScale(dayData.letter);
+                                const dayBgUrl = aestheticBackgrounds[(dayData.day - 1) % aestheticBackgrounds.length];
+                                
+                                return (
+                                  <div key={`web-recovery-${idx}`} className="mb-16 last:mb-0 rounded-[32px] p-6 sm:p-12 md:p-16 border border-[#e6dec9]/70 bg-gradient-to-b from-[#fdfbf7] via-[#faf6f0] to-[#f4eee3] overflow-hidden relative shadow-[0_25px_70px_rgba(27,24,17,0.05)] text-left">
+                                    {/* 1. Static Unsplash Image Layer */}
+                                    <div
+                                      className="absolute inset-0 z-0 bg-cover bg-center"
+                                      style={{
+                                        backgroundImage: `url('${dayBgUrl}')`,
+                                      }}
+                                    />
+                                    {/* 2. Glassmorphic Gradient Overlay Layer */}
+                                    <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#fdfbf7]/92 to-[#f4eee3]/97" />
+                                    {/* 3. Pure CSS 아날로그 red grid paper micro-texture Layer */}
+                                    <div 
+                                      className="absolute inset-0 z-0 pointer-events-none opacity-40 mix-blend-multiply" 
+                                      style={{
+                                        backgroundImage: `linear-gradient(90deg, rgba(220,50,50,0.03) 50%, transparent 50%), 
+                                                          linear-gradient(rgba(220,50,50,0.03) 50%, transparent 50%)`,
+                                        backgroundSize: '4px 4px'
+                                      }}
+                                    />
+                                    {/* 4. Vintage Postage Stamp (Top-Right Decor) */}
+                                    <div className="absolute top-4 right-4 z-20 pointer-events-none">
+                                      <div className="vintage-stamp shadow-sm border border-dashed border-[#e6dec9] bg-white/60 backdrop-blur-sm">
+                                        <span className="text-[7px] font-sans font-bold text-[#b91c1c] tracking-widest uppercase">KOREA</span>
+                                        <div className="text-sm my-1 text-slate-600 font-serif">心</div>
+                                        <span className="text-[6px] font-sans text-slate-400">2026</span>
                                       </div>
                                     </div>
-                                  )}
 
-                                  <div className="bg-slate-50/95 p-4 sm:p-6 rounded-2xl sm:rounded-[28px] border border-slate-200 shadow-[0_10px_40px_rgba(15,23,42,0.06)]">
-                                    <h3 className="text-lg md:text-xl font-serif text-slate-900 mb-3 font-semibold">{t.premiumActionHeader}</h3>
-                                    <p className="text-slate-600 text-[0.98rem] leading-7">{dayData.action}</p>
+                                    <div className="relative z-10">
+                                      <h2 className={`${scale.titleSize} font-serif text-slate-900 mb-6 border-b border-[#e6dec9]/60 pb-3 inline-block font-bold`}>
+                                        {dayData.day}일차 회복 편지
+                                      </h2>
+                                      <p className={`leading-relaxed text-[1.01rem] md:text-lg whitespace-pre-wrap ${scale.paragraphMargin} text-slate-700 text-justify tracking-[0.01em] indent-4`}>
+                                        {dayData.letter}
+                                      </p>
+                                      
+                                      {/* 1개 문장 처방 */}
+                                      {dayData.sentence && (
+                                        <div className="mb-8 border-l-4 border-amber-300 pl-4 italic text-[1.01rem] text-slate-600 font-serif leading-relaxed">
+                                          “ {dayData.sentence} ”
+                                        </div>
+                                      )}
+                                      
+                                      {/* 7일차 정리 문장 3개 */}
+                                      {dayData.day === 7 && dayData.summary_sentences && (
+                                        <div className="mb-8 p-6 bg-amber-50/20 border border-amber-100 rounded-2xl">
+                                          <h3 className="text-base font-bold text-slate-700 mb-4 tracking-wide font-sans flex items-center gap-1.5 border-b border-amber-200/50 pb-2">
+                                            📜 {isKorean ? "7일간의 여정을 마무리하는 정리 문장" : "Closing summary sentences of the 7-day journey"}
+                                          </h3>
+                                          <div className="space-y-3">
+                                            {dayData.summary_sentences.map((s: string, sIdx: number) => (
+                                              <p key={sIdx} className="text-sm font-serif text-slate-600 italic pl-4 border-l-2 border-amber-300">
+                                                “ {s} ”
+                                              </p>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      <div className="bg-white/80 backdrop-blur-sm p-5 sm:p-6 rounded-2xl border border-amber-200/50 shadow-sm">
+                                        <h3 className="text-lg md:text-xl font-serif text-slate-900 mb-3 font-semibold border-b border-amber-200/50 pb-2 inline-block">{t.premiumActionHeader}</h3>
+                                        <p className="text-slate-600 text-[0.98rem] leading-7">{dayData.action}</p>
+                                      </div>
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           )}
 
