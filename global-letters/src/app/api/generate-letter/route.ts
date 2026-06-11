@@ -196,20 +196,20 @@ You must write the letter following the unique style of Master Oh Young-bum:
 
           // productType === "random" (무료 문장 뽑기) 방어 로직 추가
           if (productType === "random") {
-            // 문장 뽑기는 30자~100자의 단 1~2문장이어야 하며, 문단/편지 배제
+            // 문장 뽑기는 단 1문장, 50자 안팎(15자~50자 범위)이어야 하며, 문단/편지 배제
             // page_letter_paragraphs 에만 단 하나의 문장이 들어있어야 qa_e2e_verification.js 통과 가능
             if (!Array.isArray(parsedResponse.page_letter_paragraphs) || parsedResponse.page_letter_paragraphs.length === 0) {
               parsedResponse.page_letter_paragraphs = isKo ? [
-                "너무 애쓰지 않아도 괜찮아. 오늘의 너는 그저 살아 숨 쉬는 것만으로도 충분히 잘 해냈으니까."
+                "오늘도 견디느라 참 많이 수고했어. 마음 편히 쉬어가자."
               ] : [
-                "You don't have to try too hard. You did well today just by breathing and surviving."
+                "You did well today. Let your heart rest."
               ];
             } else {
               let singleParagraph = parsedResponse.page_letter_paragraphs[0] || "";
-              if (singleParagraph.length < 20 || singleParagraph.length > 150) {
+              if (singleParagraph.length < 15 || singleParagraph.length > 50) {
                 singleParagraph = isKo 
-                  ? "너무 애쓰지 않아도 괜찮아. 오늘의 너는 그저 살아 숨 쉬는 것만으로도 충분히 잘 해냈으니까."
-                  : "You don't have to try too hard. You did well today just by breathing and surviving.";
+                  ? "오늘도 견디느라 참 많이 수고했어. 마음 편히 쉬어가자."
+                  : "You did well today. Let your heart rest.";
               }
               parsedResponse.page_letter_paragraphs = [singleParagraph];
             }
@@ -403,9 +403,9 @@ You must write the letter following the unique style of Master Oh Young-bum:
       fallbackResponse.cover.title = isKo ? "오늘의 한 문장 처방" : "Today's One Sentence";
       fallbackResponse.cover.heart_name = isKo ? "위로가 필요한 너에게" : "To You in Need of Comfort";
       fallbackResponse.page_letter_paragraphs = isKo ? [
-        "너무 애쓰지 않아도 괜찮아. 오늘의 너는 그저 살아 숨 쉬는 것만으로도 충분히 잘 해냈으니까."
+        "오늘도 견디느라 참 많이 수고했어. 마음 편히 쉬어가자."
       ] : [
-        "You don't have to try too hard. You did well today just by breathing and surviving."
+        "You did well today. Let your heart rest."
       ];
       fallbackResponse.page_sentences = [];
       fallbackResponse.page_questions = [];

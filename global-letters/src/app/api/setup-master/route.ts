@@ -47,7 +47,7 @@ export async function GET() {
 사용자의 [MODE] 지시에 따라 아래의 상품별 룰을 준수하십시오:
 
 - [MODE: RANDOM_GREETING]
-  - 사용자의 사연이 없는 무작위 방문자입니다. 마음을 흔드는 아주 짧고 강렬한 '오늘의 위로 문장' (1~2문장, 최대 100자 이내) 하나를 작성해 주세요. **다정한 반말체 및 어미 반복 금지 규칙**을 준수하십시오. (단락 구분하여 page_letter_paragraphs의 첫 번째 요소에 넣어주세요. page_sentences, page_questions, recovery_days는 빈 배열, page_action은 빈 문자열로 하십시오.)
+  - 사용자의 사연이 없는 무작위 방문자입니다. 마음을 흔드는 아주 짧고 강렬한 단 1문장의 '오늘의 위로 문장' (공백 포함 최대 50자 이내 필수!) 하나를 작성해 주세요. **다정한 반말체 및 어미 반복 금지 규칙**을 준수하십시오. (단락 구분하여 page_letter_paragraphs의 첫 번째 요소에 넣어주세요. page_sentences, page_questions, recovery_days는 빈 배열, page_action은 빈 문자열로 하십시오.)
 
 - [MODE: FREE_GREETING]
   - '문장 처방전 00' 룰 적용. 반드시 공백 포함 600자 내외(550~650자 범위 필수)의 짧고 다정한 안부 편지. 단락은 정확히 2개 문단으로 구성하세요. **다정한 반말체 및 어미 반복 금지 규칙**을 준수하십시오. (단락 구분하여 page_letter_paragraphs에 담아주세요. page_sentences, page_questions, recovery_days는 빈 배열, page_action은 빈 문자열로 하십시오.)

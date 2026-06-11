@@ -16,10 +16,11 @@ async function main() {
       { name: '문장 처방전 00.md', path: 'c:\\Users\\user\\AI 기업 두뇌\\내 작업들\\문장 처방전 00 무료 안부 편지.md' },
       { name: '문장 처방전 02.md', path: 'c:\\Users\\user\\AI 기업 두뇌\\내 작업들\\문장 처방전 02 beta 5000원.md' },
       { name: '문장 처방전 03.md', path: 'c:\\Users\\user\\AI 기업 두뇌\\내 작업들\\문장 처방전 03 깊은 beta 9000원.md' },
-      { name: '문장 처방전 04.md', path: 'c:\\Users\\user\\AI 기업 두뇌\\내 작업들\\문장 처방전 04 7일 회복 편지.md' }
+      { name: '문장 처방전 04.md', path: 'c:\\Users\\user\\AI 기업 두뇌\\내 작업들\\문장 처방전 04 7일 회복 편지.md' },
+      { name: '본 계정 글.txt', path: 'c:\\Users\\user\\AI 기업 두뇌\\내 작업들\\본 계정 글.txt' }
     ];
 
-    console.log("🚀 Uploading all 6 documents...");
+    console.log("🚀 Uploading all 7 documents...");
     const uploadedFileIds = [];
     for (const f of filesToUpload) {
       console.log(`Uploading ${f.name}...`);
