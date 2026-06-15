@@ -140,3 +140,6 @@ _사용자가 직접 줄을 지우면 그 주장은 다시 미검증 상태로 �
 - [2026-06-11] * **기술적/규제 근거:** GDPR Article 17 (Right to Erasure); CCPA Right to Delete. _(근거: sessions/2026-06-03)_
 - [2026-06-11] * **충격 포인트 (재무적 리스크):** $20M ~ $50M까지 확장되는 최대 규모의 법적 책임 및 운영 중단 비용(Worst-Case Scenario). _(근거: sessions/2026-06-03)_
 - [2026-06-11] * **기술적/규제 근거:** GDPR Article 32 (Security of Processing); Mandatory Breach Notification Rules. _(근거: sessions/2026-06-03)_
+- [2026-06-11] * **** GDPR Article 17 (Right to Erasure) 개념을 시간과 존재론적 차원으로 확장하여 적용 가능합니다. _(근거: 자가검증된 지식)_
+- [2026-06-11] * **** EU AI Act (High-Risk AI System) 및 Bias & Discriminatory Outcome Audit 모듈과 연관됩니다. _(근거: 자가검증된 지식)_
+- [2026-06-11] * **** '데이터 트랜잭션의 출처 추적 불가' 리스크와 연계하여, SSI가 이 위험을 근본적으로 해결할 수 있음을 제시합니다. _(근거: 자가검증된 지식)_

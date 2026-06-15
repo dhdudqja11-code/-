@@ -26,9 +26,15 @@ class AuthorityCheckResponseSchema:
 # --- 2. AuthorityClient (API 호출 시뮬레이터) ---
 class AuthorityClient:
     """외부 데이터 API 호출을 모방합니다. 실패 주입 로직을 담당합니다."""
-    @staticmethod
-    def get_authority(data: Dict[str, Any], simulate_failure: bool = False, breach: bool = False) -> AuthorityCheckResponseSchema:
-        if simulate_failure:
+    def __init__(self, simulate_failure: bool = False, breach: bool = False):
+        self.simulate_failure = simulate_failure
+        self.breach = breach
+
+    def get_authority(self, data: Dict[str, Any], simulate_failure: bool = None, breach: bool = None) -> AuthorityCheckResponseSchema:
+        sim_fail = simulate_failure if simulate_failure is not None else self.simulate_failure
+        sim_breach = breach if breach is not None else self.breach
+
+        if sim_fail:
             print("--- [⚠️ API FAILURE SIMULATION] ---")
             # 통신 시간 초과 또는 서버 내부 에러 시뮬레이션
             return AuthorityCheckResponseSchema(
@@ -38,14 +44,14 @@ class AuthorityClient:
                 root_cause="외부 서비스 API Timeout (504). 트랜잭션 무결성 검증 불가.", 
                 mitigation_steps=["1. 네트워크 환경 점검", "2. 재시도 로직(Retry Logic) 구현"]
             )
-        if breach:
+        if sim_breach:
             print("--- [🚨 COMPLIANCE BREACH SIMULATION] ---")
             # 규정 위반이 발생했을 때의 구조화된 경고 반환
             return AuthorityCheckResponseSchema(
                 status="WARNING", 
                 authority_score=0.3, 
                 diagnosis="규제 준수 임계치 초과 (Authority Breach).", 
-                root_cause=f"KPI 위반: {data['kpi']} 지표가 규정 기준 이하입니다.", 
+                root_cause=f"KPI 위반: {data.get('kpi', 'Compliance Breach Flag')} 지표가 규정 기준 이하입니다.", 
                 mitigation_steps=["1. 데이터 출처 재검토", "2. 권한 확보 보고서 작성"]
             )
         
@@ -118,10 +124,10 @@ class AuthorityE2ETestSuite(unittest.TestCase):
         print("\n=============================================")
         print("⚠️ 테스트 시작: [Compliance Breach Test]")
         mock_data = {"Proof of Erasure Score": 0.5, "Data Integrity Check": 1, "Compliance Breach Flag": 0}
-        client = AuthorityClient()
+        client = AuthorityClient(breach=True)
         manager = StateManager(mock_data)
         # 강제로 위반 상태를 주입하여 테스트 (Breach=True)
-        result = manager.run_full_cycle(AuthorityClient().get_authority(mock_data, simulate_failure=False, breach=True)) 
+        result = manager.run_full_cycle(client) 
         print("--- [TEST RESULT] ---")
         print(f"Status: {STATUS[result.status]} | Score: {result.authority_score}")
         self.assertEqual(result.status, "WARNING", "경고 시나리오 실패: Warning 상태로 전환되지 않음.")
@@ -131,10 +137,10 @@ class AuthorityE2ETestSuite(unittest.TestCase):
         print("\n=============================================")
         print("💣 테스트 시작: [API Failure Test]")
         mock_data = {} # 데이터는 중요하지 않음, 실패 자체가 목적
-        client = AuthorityClient()
+        client = AuthorityClient(simulate_failure=True)
         manager = StateManager(mock_data)
         # 강제로 API 실패를 주입하여 테스트 (simulate_failure=True)
-        result = manager.run_full_cycle(AuthorityClient()) 
+        result = manager.run_full_cycle(client) 
         print("--- [TEST RESULT] ---")
         print(f"Status: {STATUS[result.status]} | Score: {result.authority_score}")
         self.assertEqual(result.status, "ERROR", "API 실패 시나리오 실패: Error 상태로 전환되지 않음.")

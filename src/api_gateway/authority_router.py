@@ -30,7 +30,7 @@ class AuthorityCheckResponse(BaseModel):
     warning_details: dict | None = None 
 
 
-@app.post("/api/v1/authority/check_score", response_model=AuthorityCheckResponse)
+@app.post("/api/v1/authority/check_score", response_model=AuthorityCheckResponse, response_model_exclude_none=True)
 async def check_authority_score(request: AuthorityCheckRequest):
     """
     트랜잭션 데이터 기반으로 권위 점수를 체크하고 시스템 상태를 결정하는 핵심 엔드포인트.

@@ -134,3 +134,19 @@ def test_authority_logic():
 
     print("✅ Authority Manager Unit Tests Passed Successfully.")
     return True
+
+
+class AuthorityStateManager:
+    """
+    State manager responsible for evaluating authority level based on transaction risk score.
+    """
+    def evaluate(self, request):
+        score = request.risk_score
+        if score <= 0.05:
+            return "AUTHORITY", 100.0 - (score * 100.0), None
+        elif score >= 0.5:
+            return "WARNING", 100.0 - (score * 100.0), {
+                "action": "Immediate manual audit required on source system.",
+                "reason": f"Risk score ({score}) exceeded high threshold."
+            }
+        return "IDLE", 100.0 - (score * 100.0), None
