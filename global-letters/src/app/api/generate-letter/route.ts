@@ -136,10 +136,10 @@ You must write the letter following the unique style of Master Oh Young-bum:
 1. Tone and Manner Separation:
    - For FREE and RANDOM tiers ('free', 'random'): You MUST use warm, comforting, and poetic informal Korean in a 수평적 친구 말투 (horizontal friend-like tone). Use friendly informal endings like "~했겠다", "~하길 바라", "~했으면 좋겠어", "~아/어", "~지", "~잖아", "~겠어", "~네", "~군". NEVER, under any circumstances, use patronizing or adult-to-child endings like "~렴", "~단다", "~란다", "~구나", "~되렴". For the target addressee (pronouns), strictly use "너" or "네" or "네 마음". NEVER use formal terms like "당신", "귀하", or polite endings like "~요", "~습니다", "~합니다", "~바랍니다", "~해요", "~이지요", "~때문이죠".
    - For PAID tiers ('beta', 'deep', 'recovery', 'gift'): You MUST use warm, comforting, and polite honorific Korean (존댓말체). Use endings like "~요", "~습니다", "~합니다", "~지요", "~바랍니다", "~군요", "~지요", "~죠". For the target addressee (pronouns), strictly use "당신", "당신의", "당신의 마음" or the recipient's name with "님" (e.g., "${giftRecipient || "소중한 분"}님"). NEVER use informal pronouns like "너", "네", "네 마음" or informal endings like "~구나", "~렴", "~되렴", "~했으면 해", "~란다", "~단다", "~어", "~좋겠어".
-2. Strict Ending Repetition Prevention Rule (CRITICAL):
-   - You must NEVER use the same ending style consecutively in 2 or more sentences. You must alternate the endings.
-   - For FREE/RANDOM: Alternate between Group A endings ("~어/아/해/야/겠어") and Group B endings ("~지/잖아/좋겠어/바라/네/군"). You MUST alternate these styles between consecutive sentences.
-   - For PAID (BETA/DEEP/RECOVERY/GIFT): Alternate between Hapsyo-style ("~습니다", "~합니다", "~바랍니다", "~니다") and Haeyo-style ("~요", "~지요", "~죠", "~군요", "~고요"). You MUST alternate these styles between consecutive sentences (e.g. sentence 1: Hapsyo-style -> sentence 2: Haeyo-style -> sentence 3: Hapsyo-style -> sentence 4: Haeyo-style).
+2. Tone Consistency (CRITICAL):
+   - You must NEVER alternate or mix different politeness levels or ending styles within a single letter. Maintain a 100% consistent tone.
+   - For FREE/RANDOM: Maintain a warm, friendly informal tone throughout the entire letter.
+   - For PAID (BETA/DEEP/RECOVERY/GIFT): Maintain a dignified and formal honorific tone throughout the entire letter. Prefer refined formal endings like "~습니다", "~합니다", "~바랍니다", "~마십시오", "~됩니다", and avoid alternating them with casual "~요" style sentences within the same paragraph.
 3. Frequently weave in natural, comforting phrases like "참 ~했다" (e.g., "참 많이 애썼다", "참 고생했다", "참 길었겠다" for free/random, or "참 많이 애쓰셨습니다", "참 고생하셨습니다", "참 길었겠습니다" for paid).
 4. Avoid dry, cognitive-analytical counselling tones or physical/technological analogies (do NOT use analogies like "battery", "discharge", "brain signal sending", "circuit", etc.). Instead, use soft natural metaphors (e.g., "겨울 나무", "소나기", "밤하늘의 별", "갈대", "봄 꽃", "따뜻한 온기").
 5. Maintain empathy and warm acceptance above advice or directives. Allow for silent comfort and margins of rest.
@@ -218,96 +218,60 @@ You must write the letter following the unique style of Master Oh Young-bum:
             parsedResponse.page_action = "";
             parsedResponse.recovery_days = [];
           } else {
-                        // productType === "free" (무료 안부 편지) 가드레일 강화
+            // productType === "free" (무료 안부 편지) 가드레일 강화
             if (productType === "free") {
-              if (!Array.isArray(parsedResponse.page_letter_paragraphs)) {
-                parsedResponse.page_letter_paragraphs = [];
-              }
-              const currentText = parsedResponse.page_letter_paragraphs.join("\n\n");
-              if (currentText.length < 450 || currentText.length > 750 || parsedResponse.page_letter_paragraphs.length !== 2) {
-                parsedResponse.page_letter_paragraphs = isKo ? [
-                  "많이 힘들었겠다. 괜찮다고 말하면서도 사실은 마음 한쪽에서 계속 무너지는 소리가 났을 것 같아. 사람들 앞에서는 웃고 아무렇지 않은 척 하루를 보내도 혼자가 되는 밤마다 네 마음은 오래 참아온 눈물을 가만히 삼켰겠지. 그런 너에게 더 힘을 내어 버티라고 말하고 싶지 않아. 너는 이미 오늘 하루도 충분히 많은 고단한 날들을 씩씩하게 버텨왔으니까. 오늘의 무거운 발걸음이 너를 자책하게 만들지 않았으면 좋겠어. 그 모든 아픔과 힘듦은 절대 네 잘못이 아니야.",
-                  "오늘은 너무 괜찮으려고 애쓰지 않았으면 좋겠어. 울고 싶다면 잠시 울어도 괜찮고, 아무것도 할 수 없는 무기력한 밤이라면 그저 숨만 고르는 가만히 누워 쉬는 하루여도 다 괜찮아. 봄이 오기 전의 메마른 나뭇가지들도 한동안은 멈춘 것처럼 보이지만, 그 안에서는 다시 꽃을 피워낼 소중한 시간들이 가만히 흐르고 있지. 네 마음도 그랬으면 좋겠어. 오늘의 너를 너무 미워하지 말고, 여기까지 오느라 참 많이 애썼다고 스스로에게 다정하게 말해주길 바랄게. 언제나 네 곁에서 가만히 응원하고 있어."
-                ] : [
-                  "It must have been so hard for you. Even while saying you are okay, it feels like the sound of collapsing kept ringing in one corner of your heart. Even if you smiled in front of other people and spent the day pretending to be fine, every night when you were left alone, your heart must have gently swallowed the tears you held back for so long. I don't want to tell you to endure more. You have already survived enough difficult days. I hope today's heavy steps do not make you blame yourself, because all this pain and hardship is never your fault.",
-                  "I hope you don't try too hard to be okay today. It's totally okay to cry for a while if you want to, and if it's a night when you can't do anything, it's fine to just catch your breath. Branches before spring comes look as if they have completely stopped for a while, but inside them, the time to bloom again is still silently flowing. I hope your heart behaves like that. Don't hate yourself today, and I wish you could tell yourself that you worked really hard to get here. I will always support you gently with all my heart."
-                ];
-              }
+              parsedResponse.page_letter_paragraphs = adjustFreeLetter(parsedResponse.page_letter_paragraphs || [], isKo);
               parsedResponse.page_sentences = [];
               parsedResponse.page_questions = [];
               parsedResponse.page_action = "";
               parsedResponse.recovery_days = [];
-            }
+            } else if (productType === "beta" || productType === "gift" || productType === "deep") {
+              const targetSentences = productType === "beta" || productType === "gift" ? 3 : 5;
+              const targetQuestions = productType === "beta" || productType === "gift" ? 2 : 3;
+              const targetTier = productType === "deep" ? "deep" : "beta";
 
-            const targetSentences = productType === "beta" ? 3 : (productType === "deep" ? 5 : 0);
-            const targetQuestions = productType === "beta" ? 2 : (productType === "deep" ? 3 : 0);
+              // 1. Adjust letter paragraphs to meet target length (900~1300 or 1700~2600) and paragraph count (3 or 5)
+              parsedResponse.page_letter_paragraphs = adjustPaidLetter(parsedResponse.page_letter_paragraphs || [], isKo, targetTier);
 
-            if (targetSentences > 0) {
+              // 2. Adjust sentences count
               if (!Array.isArray(parsedResponse.page_sentences)) {
                 parsedResponse.page_sentences = [];
               }
               while (parsedResponse.page_sentences.length < targetSentences) {
                 parsedResponse.page_sentences.push(isKo 
-                  ? "가장 너다운 호흡으로, 오늘 하루를 가만히 채워나가길 바랄게."
+                  ? "가장 당신다운 호흡으로, 오늘 하루를 가만히 채워나가길 바랍니다."
                   : "I hope you gently fill your day today with your own unique breath.");
               }
               if (parsedResponse.page_sentences.length > targetSentences) {
                 parsedResponse.page_sentences = parsedResponse.page_sentences.slice(0, targetSentences);
               }
-            }
 
-            if (targetQuestions > 0) {
+              // 3. Adjust questions count
               if (!Array.isArray(parsedResponse.page_questions)) {
                 parsedResponse.page_questions = [];
               }
               while (parsedResponse.page_questions.length < targetQuestions) {
                 parsedResponse.page_questions.push(isKo
-                  ? "오늘 밤 침대에 눕기 전, 내 마음의 날씨는 어떤 단어로 표현할 수 있을까?"
+                  ? "오늘 밤 침대에 눕기 전, 내 마음의 날씨는 어떤 단어로 표현할 수 있을까요?"
                   : "Before lying down in bed tonight, what word can express the weather of my heart?");
               }
               if (parsedResponse.page_questions.length > targetQuestions) {
                 parsedResponse.page_questions = parsedResponse.page_questions.slice(0, targetQuestions);
               }
-            }
 
-            // 글자수 강제 패딩 보정 (Beta/Gift: 900~1200, Deep: 1800~2500)
-            if (!Array.isArray(parsedResponse.page_letter_paragraphs)) {
-              parsedResponse.page_letter_paragraphs = [];
-            }
-            const currentText = parsedResponse.page_letter_paragraphs.join("\n\n");
-            const minLen = productType === "beta" || productType === "gift" ? 900 : (productType === "deep" ? 1700 : 0);
-            const maxLen = productType === "beta" || productType === "gift" ? 1300 : (productType === "deep" ? 2600 : 99999);
-
-            if (currentText.length < minLen || currentText.length > maxLen) {
-              if (productType === "beta" || productType === "gift") {
-                parsedResponse.page_letter_paragraphs = isKo ? [
-                  "당신이 보내주신 사연을 가만히 읽으며 그동안 얼마나 무겁고 힘겨운 짐을 홀로 어깨에 짊어진 채 지내오셨을지 마음 깊이 헤아려 봅니다. 아무렇지 않은 척 억지로 미소를 지어 보였겠지만, 홀로 남겨진 밤마다 마음에 쌓인 눈물을 가만히 삼키셨을 것 같아요. 참 많이 애쓰셨고 힘드셨겠습니다. 이제는 더 이상 무리해서 괜찮은 척을 하거나 당신의 감정을 억지로 숨기지 않으셔도 괜찮아요. 마음속 깊은 곳에서 일어나는 슬픔과 외로움을 억누르려 하지 말고 자연스럽게 흘러가도록 내버려 두시기를 바랍니다.",
-                  "하고 있는 일들이 뜻대로 풀리지 않거나 주변 사람들과의 관계 속에서 큰 상처를 받았더라도, 이것은 결코 당신이 부족해서가 아니에요. 우리는 살아가면서 때로 흐린 하늘 아래를 걷기도 하고 예상치 못한 거센 소나기를 만나 온몸이 젖기도 합니다. 지금 겪고 있는 무기력함과 지친 마음은 영원한 정지가 아니며, 상처받은 마음이 스스로를 보듬고 천천히 에너지를 채워가는 자연스러운 여정이지요. 그러니 이 모든 상황을 당신의 잘못으로 돌리며 너무 자책하지 마십시오.",
-                  "오늘 밤에는 무언가를 해내야만 한다는 무거운 생각들을 모두 가만히 내려놓고 편안하게 누워 호흡 소리에 집중해 보세요. 들이쉬고 내쉬는 숨결마다 굳어있던 어깨와 마음의 긴장이 사르르 풀려나기를 바랍니다. 당신이 가진 소중하고 따뜻한 마음을 스스로가 가장 먼저 귀하게 안아주셨으면 좋겠습니다. 여기까지 오시느라 정말 고생 많으셨고 참 애쓰셨습니다. 내일은 오늘보다 한 걸음 더 평안하고 다정한 바람이 마음속에 불어오기를 바랍니다."
-                ] : [
-                  "Reading your story, I felt how heavy a burden you have been carrying alone. You probably put on a forced smile in front of others, whispering 'I am fine', but during those nights crying alone, your heart must have been bruised. You don't have to pretend to be okay. Don't suppress all the sadness and exhaustion in your heart, but let them flow as they are. Now is the time you need to pause and give yourself room to rest.",
-                  "I hope you don't blame yourself. Even if things didn't go your way or you were hurt in relationships, it is not because you are weak. Just as we walk under a cloudy sky or meet an unexpected shower, we only experience a brief pause. This exhausted heart is not a stop, but a natural recovery process where a wounded heart heals itself.",
-                  "Tonight, put down the thoughts that you must do something, and just lie down in your warm bed and focus on your breath. With every inhale and exhale, I hope the tension in your heavy shoulders and heart relaxes. I wish you would value and embrace your good heart first. You went through a lot to get here, and you worked so hard. I hope tomorrow is peaceful."
-                ];
-              } else if (productType === "deep") {
-                parsedResponse.page_letter_paragraphs = isKo ? [
-                  "사연에 정성스레 담아주신 당신의 아프고 고단한 이야기를 읽으며 마음 깊이 헤아려 보았습니다. 다른 사람들에게는 차마 털어놓지 못하고 속으로 꾹꾹 삼켜야만 했던 상처들이 얼마나 큰 슬픔으로 자리 잡았을지 헤아려 보니 마음이 참 아프군요. 당신은 항상 책임감 있게 행동하고 타인을 배려하느라 정작 스스로가 무너지는 순간에는 아무에게도 기대지 못하셨습니다. ‘나만 참으면 모두가 편해진다’는 생각으로 버텨온 날들이 길어질수록 마음속 외로움은 더욱 커져갔을 것 같아요. 그 무거운 감정의 파도를 홀로 맞서며 온몸으로 견뎌온 시간들에 대해 무엇보다 먼저 따뜻한 위로를 건냅니다. 참 고생 많으셨고 많이 애쓰셨습니다.",
-                  "당신이 느끼는 무기력과 깊은 우울함은 상처받은 마음이 보내오는 지극히 당연한 치유의 신호입니다. 이런 부정적인 마음이 든다고 해서 스스로를 나약하다며 탓하거나 자책하지 않으셨으면 좋겠습니다. 감정은 흐르는 물과 같아서 억지로 막으려 하면 결국엔 더 큰 수압으로 터져 나와 우리를 집어삼킵니다. 마음이 무너져 내린 것은 인생을 잘못 살았기 때문이 결코 아니라 마음의 에너지를 전부 소진했기 때문이에요. 남들을 위해 마음을 다 쏟아부었으니 이제는 스스로를 돌보며 쉬어가야 한다는 마음의 경고에 가깝습니다. 그러니 지친 상태 그대로를 있는 그대로 인정해주고 다독여주시기를 바랍니다.",
-                  "당신은 그 누구보다 귀하고 존재 자체만으로도 사랑받아 마땅한 사람임을 꼭 기억해 주시기를 바랍니다. 주변 사람들의 기대나 세상이 말하는 기준에 억지로 맞추려 하며 자신을 갉아먹지 마십시오. 타인의 시선이나 평가보다 백배는 더 중요한 것은 지금 이 순간 내 마음에 귀를 기울이는 일입니다. 지금 겪는 아픔은 당신이라는 존재의 전부가 아니며 인생이라는 긴 여정 속에서 잠시 지나가는 어둡고 긴 터널일 뿐이지요. 어둠 속에서는 아무리 빛을 찾으려 해도 보이지 않아 막막하겠지만 터널은 반드시 끝이 있습니다. 지금은 억지로 달리려 하지 말고 안전한 그늘에 가만히 앉아 숨을 고르며 아픈 상처를 돌보셔도 괜찮습니다.",
-                  "이제는 타인을 향해 보냈던 따뜻한 시선과 배려를 온전히 당신 자신에게로 돌려줄 차례입니다. 가장 힘들고 지쳤을 때 누군가에게 정말 듣고 싶었던 그 따뜻한 말들을 스스로에게 들려주십시오. ‘그동안 정말 고생 많으셨습니다, 이제는 조금 쉬어도 괜찮습니다’라며 당신의 편이 되어 나직하게 속삭여 줍니다. 마음속에 다정한 온기와 안도감이 채워질 때 우리를 억누르고 있던 무거운 사슬들도 자연스럽게 풀려갈 것입니다. 오늘의 무너짐은 실패가 아니라 나를 진정으로 아끼고 돌보는 새로운 시작을 알리는 신호입니다. 어떤 순간에도 스스로를 포기하지 마십시오. 언제나 당신의 곁에서 온 마음을 다해 응원하겠습니다.",
-                  "마음을 가꾸는 마지막으로 오늘 밤 당장 실천해볼 수 있는 아주 작은 행동을 제안해 드립니다. 잠자리에 들기 전 창문을 활짝 열고 밤공기를 가만히 마시는 것이지요. 그다음 가만히 가슴에 손을 얹고 나의 호흡을 느껴봅니다. 스스로에게 ‘오늘 참 애썼습니다’라고 따뜻하게 위로해 주어도 좋습니다. 지친 마음에 편안한 쉼을 선물해주시기 바랍니다. 스스로에게 다정해지는 연습을 이렇게 작은 일에서부터 시작해 보세요. 오늘 밤 당신에게 편안한 안식이 깃들기를 기원합니다."
-                ] : [
-                  "Placing each letter of your heart from the story into my mind, I fell into deep thought. Knowing how much sadness has piled up in your chest from words you couldn't tell others, my heart hurts too. You probably had to hide and sob alone when you were hurting, just because you always acted responsibly and cared for others. The longer you endured thinking 'If only I hold back, everyone becomes comfortable', the lonely child inside you must have been crying out. For those times you stood alone against the waves of emotions and endured, I want to say you went through so much and did really well surviving.",
-                  "The depression, helplessness, and occasional anger you feel are extremely natural emotions. I hope you don't blame yourself, calling yourself weak for having such feelings. Emotions are like flowing water, so if you try to block them, they will eventually burst out with greater power. Your heart collapsing now is not because you lived wrongly, but because you overexerted yourself and used up all your energy. Your heart is sending a signal that rest is urgently needed. When your emotions fluctuate, accept and comfort that state exactly as it is.",
-                  "You are a precious person who deserves to be loved. Don't force yourself to fit into others' expectations. What is more important than others' eyes is listening to what your heart is feeling right now. The pain and wounds you have do not define who you are, but are merely a dark tunnel passing through life. In the darkness, it is discouraging, but the tunnel definitely has an end, and warm sunlight is waiting beyond it. For now, don't force yourself to run, but it is fine to sit down in a safe spot, catch your breath, and care for your wounds.",
-                  "Now it is time to turn the warm gaze you directed toward others back onto yourself. Tell yourself the words you wanted to hear the most when you were tired, while looking in the mirror. 'You worked hard, now you can rest, I will be on your side' like that. When the room of your heart is filled with warmth, the heavy chains will naturally unlock. Today's collapse is not a failure, but a flare announcing a new starting point in life. Until you regain your gentle smile, I will support you with all my heart and walk along with you.",
-                  "Lastly, I want to suggest a small action you can practice tonight. Before going to bed, open the window, breathe in the cool night air deeply, put your hand on your chest, and gently whisper to yourself, 'You did a great job living through today.' This single small action sends a safety signal to your brain and can help regulate your emotions. Let's start the practice of becoming kind to ourselves."
-                ];
+              // 4. Handle page_action for deep
+              if (productType === "deep") {
+                if (typeof parsedResponse.page_action !== "string" || parsedResponse.page_action.trim() === "") {
+                  parsedResponse.page_action = isKo
+                    ? "오늘 밤 잠들기 전, 따뜻한 차 한 잔을 마시며 수고한 나에게 가만히 고마움을 전해 봅니다."
+                    : "Before falling asleep tonight, drink a warm cup of tea and gently express gratitude to yourself.";
+                }
+              } else {
+                parsedResponse.page_action = "";
               }
-            }
 
-            // productType === "recovery" 가드레일 강화
-            if (productType === "recovery") {
+              parsedResponse.recovery_days = [];
+            } else if (productType === "recovery") {
               const defaultRecoveryDays = getDefaultRecoveryDays(isKo);
               if (!Array.isArray(parsedResponse.recovery_days) || parsedResponse.recovery_days.length !== 7) {
                 parsedResponse.recovery_days = defaultRecoveryDays;
@@ -317,9 +281,10 @@ You must write the letter following the unique style of Master Oh Young-bum:
                     parsedResponse.recovery_days[idx] = defaultRecoveryDays[idx];
                   } else {
                     dayData.day = idx + 1;
-                    if (typeof dayData.letter !== "string" || dayData.letter.length < 450 || dayData.letter.length > 750) {
-                      dayData.letter = defaultRecoveryDays[idx].letter;
-                    }
+                    
+                    // Use dynamic recovery day letter adjuster instead of static fallback override
+                    dayData.letter = adjustRecoveryDayLetter(dayData.letter || "", isKo);
+                    
                     if (typeof dayData.sentence !== "string" || dayData.sentence.trim() === "") {
                       dayData.sentence = defaultRecoveryDays[idx].sentence;
                     }
@@ -327,8 +292,16 @@ You must write the letter following the unique style of Master Oh Young-bum:
                       dayData.action = defaultRecoveryDays[idx].action;
                     }
                     if (dayData.day === 7) {
-                      if (!Array.isArray(dayData.summary_sentences) || dayData.summary_sentences.length !== 3) {
-                        dayData.summary_sentences = defaultRecoveryDays[idx].summary_sentences;
+                      if (!Array.isArray(dayData.summary_sentences)) {
+                        dayData.summary_sentences = [];
+                      }
+                      while (dayData.summary_sentences.length < 3) {
+                        dayData.summary_sentences.push(isKo 
+                          ? "오늘 하루의 안부를 묻는 일부터 천천히 시작해보세요."
+                          : "Start slowly by checking in on yourself today.");
+                      }
+                      if (dayData.summary_sentences.length > 3) {
+                        dayData.summary_sentences = dayData.summary_sentences.slice(0, 3);
                       }
                     } else {
                       delete dayData.summary_sentences;
@@ -650,6 +623,212 @@ const getDefaultRecoveryDays = (isKo: boolean) => isKo ? [
 function postProcessEndingTone(text: string, toneType: 'formal' | 'informal'): string {
   if (!text) return text;
   
+  const formalPre = [
+    { pat: /(하렴|려무나)$/, rep: "해 보세요" },
+    { pat: /되렴$/, rep: "되세요" },
+    { pat: /렴$/, rep: "세요" },
+    { pat: /단다$/, rep: "습니다" },
+    { pat: /(자|바)란다$/, rep: "$1랍니다" },
+    { pat: /란다$/, rep: "입니다" },
+    { pat: /(었|았)구나$/, rep: "$1겠네요" },
+    { pat: /겠구나$/, rep: "겠네요" },
+    { pat: /이구나$/, rep: "이군요" },
+    { pat: /구나$/, rep: "군요" },
+    { pat: /(있|없|같)다$/, rep: "$1습니다" }
+  ];
+
+  const informalPre = [
+    { pat: /하렴$/, rep: "해봐" },
+    { pat: /되렴$/, rep: "돼" },
+    { pat: /려무나$/, rep: "어" },
+    { pat: /렴$/, rep: "어" },
+    { pat: /자랑스럽단다$/, rep: "자랑스러워" },
+    { pat: /사랑스럽단다$/, rep: "사랑스러워" },
+    { pat: /다행스럽단다$/, rep: "다행스러워" },
+    { pat: /자연스럽단다$/, rep: "자연스러워" },
+    { pat: /조심스럽단다$/, rep: "조심스러워" },
+    { pat: /수고스럽단다$/, rep: "수고스러워" },
+    { pat: /혼란스럽단다$/, rep: "혼란스러워" },
+    { pat: /경이롭단다$/, rep: "경이로워" },
+    { pat: /외롭단다$/, rep: "외로워" },
+    { pat: /고맙단다$/, rep: "고마워" },
+    { pat: /반갑단다$/, rep: "반가워" },
+    { pat: /아름답단다$/, rep: "아름다워" },
+    { pat: /쉽단다$/, rep: "쉬워" },
+    { pat: /어렵단다$/, rep: "어려워" },
+    { pat: /무겁단다$/, rep: "무거워" },
+    { pat: /가볍단다$/, rep: "가벼워" },
+    { pat: /새롭단다$/, rep: "새로워" },
+    { pat: /두렵단다$/, rep: "두려워" },
+    { pat: /단다$/, rep: "어" },
+    { pat: /(자|바)란다$/, rep: "$1라" },
+    { pat: /란다$/, rep: "야" },
+    { pat: /(었|았)구나$/, rep: "$1네" },
+    { pat: /겠구나$/, rep: "겠네" },
+    { pat: /이구나$/, rep: "이네" },
+    { pat: /구나$/, rep: "네" }
+  ];
+
+  const formalAToB = [
+    { pat: /(하|하셨|하겠|겠|았|었|했|였|갔|왔|셨|됐|되었습니다|않았|않겠|있었|없었)습니다$/, rep: "$1어요" },
+    { pat: /이었습니다$/, rep: "이었어요" },
+    { pat: /였습니다$/, rep: "였어요" },
+    { pat: /자랑스럽습니다$/, rep: "자랑스러워요" },
+    { pat: /사랑스럽습니다$/, rep: "사랑스러워요" },
+    { pat: /다행스럽습니다$/, rep: "다행스러워요" },
+    { pat: /자연스럽습니다$/, rep: "자연스러워요" },
+    { pat: /조심스럽습니다$/, rep: "조심스러워요" },
+    { pat: /수고스럽습니다$/, rep: "수고스러워요" },
+    { pat: /혼란스럽습니다$/, rep: "혼란스러워요" },
+    { pat: /경이롭습니다$/, rep: "경이로워요" },
+    { pat: /외롭습니다$/, rep: "외로워요" },
+    { pat: /고맙습니다$/, rep: "고마워요" },
+    { pat: /반갑습니다$/, rep: "반가워요" },
+    { pat: /아름답습니다$/, rep: "아름다워요" },
+    { pat: /쉽습니다$/, rep: "쉬워요" },
+    { pat: /어렵습니다$/, rep: "어려워요" },
+    { pat: /무겁습니다$/, rep: "무거워요" },
+    { pat: /가볍습니다$/, rep: "가벼워요" },
+    { pat: /새롭습니다$/, rep: "새로워요" },
+    { pat: /두렵습니다$/, rep: "두려워요" },
+    { pat: /힘듭니다$/, rep: "힘들어요" },
+    { pat: /만듭니다$/, rep: "만들어요" },
+    { pat: /알립니다$/, rep: "알려요" },
+    { pat: /올립니다$/, rep: "올려요" },
+    { pat: /흘립니다$/, rep: "흘려요" },
+    { pat: /들립니다$/, rep: "들려요" },
+    { pat: /열립니다$/, rep: "열려요" },
+    { pat: /풀립니다$/, rep: "풀려요" },
+    { pat: /달립니다$/, rep: "달려요" },
+    { pat: /걸립니다$/, rep: "걸려요" },
+    { pat: /드립니다$/, rep: "드려요" },
+    { pat: /기다립니다$/, rep: "기다려요" },
+    { pat: /내립니다$/, rep: "내려요" },
+    { pat: /봅니다$/, rep: "봐요" },
+    { pat: /압니다$/, rep: "알아요" },
+    { pat: /웁니다$/, rep: "울어요" },
+    { pat: /좋습니다$/, rep: "좋아요" },
+    { pat: /많습니다$/, rep: "많아요" },
+    { pat: /적습니다$/, rep: "적어요" },
+    { pat: /좁습니다$/, rep: "좁아요" },
+    { pat: /깊습니다$/, rep: "깊어요" },
+    { pat: /높습니다$/, rep: "높아요" },
+    { pat: /같습니다$/, rep: "같아요" },
+    { pat: /맞습니다$/, rep: "맞아요" },
+    { pat: /있습니다$/, rep: "있어요" },
+    { pat: /없습니다$/, rep: "없어요" },
+    { pat: /않습니다$/, rep: "않아요" },
+    { pat: /주십시오$/, rep: "주세요" },
+    { pat: /보십시오$/, rep: "보세요" },
+    { pat: /마십시오$/, rep: "마세요" },
+    { pat: /믿습니다$/, rep: "믿어요" },
+    { pat: /받습니다$/, rep: "받아요" },
+    { pat: /듣습니다$/, rep: "들어요" },
+    { pat: /웃습니다$/, rep: "웃어요" },
+    { pat: /씻습니다$/, rep: "씻어요" },
+    { pat: /찾습니다$/, rep: "찾아요" },
+    { pat: /합니다$/, rep: "해요" },
+    { pat: /바랍니다$/, rep: "바랄게요" },
+    { pat: /입니다$/, rep: "이지요" },
+    { pat: /아닙니다$/, rep: "아니지요" }
+  ];
+
+  const formalBToA = [
+    { pat: /(하|하셨|하겠|겠|았|었|했|였|갔|왔|셨|됐|되었습니다|않았|않겠|있었|없었)어요$/, rep: "$1습니다" },
+    { pat: /이었어요$/, rep: "이었습니다" },
+    { pat: /였어요$/, rep: "였습니다" },
+    { pat: /아니에요$/, rep: "아닙니다" },
+    { pat: /아니지요$/, rep: "아닙니다" },
+    { pat: /이지요$/, rep: "입니다" },
+    { pat: /자랑스러워요$/, rep: "자랑스럽습니다" },
+    { pat: /사랑스러워요$/, rep: "사랑스럽습니다" },
+    { pat: /다행스러워요$/, rep: "다행스럽습니다" },
+    { pat: /자연스러워요$/, rep: "자연스럽습니다" },
+    { pat: /조심스러워요$/, rep: "조심스럽습니다" },
+    { pat: /수고스러워요$/, rep: "수고스럽습니다" },
+    { pat: /혼란스러워요$/, rep: "혼란스럽습니다" },
+    { pat: /경이로워요$/, rep: "경이롭습니다" },
+    { pat: /외로워요$/, rep: "외롭습니다" },
+    { pat: /고마워요$/, rep: "고맙습니다" },
+    { pat: /반가워요$/, rep: "반갑습니다" },
+    { pat: /아름다워요$/, rep: "아름답습니다" },
+    { pat: /쉬워요$/, rep: "쉽습니다" },
+    { pat: /어려워요$/, rep: "어렵습니다" },
+    { pat: /무거워요$/, rep: "무겁습니다" },
+    { pat: /가벼워요$/, rep: "가볍습니다" },
+    { pat: /새로워요$/, rep: "새롭습니다" },
+    { pat: /두려워요$/, rep: "두렵습니다" },
+    { pat: /힘들어요$/, rep: "힘듭니다" },
+    { pat: /만들어요$/, rep: "만듭니다" },
+    { pat: /알려요$/, rep: "알립니다" },
+    { pat: /올려요$/, rep: "올립니다" },
+    { pat: /흘려요$/, rep: "흘립니다" },
+    { pat: /들려요$/, rep: "들립니다" },
+    { pat: /열려요$/, rep: "열립니다" },
+    { pat: /풀려요$/, rep: "풀립니다" },
+    { pat: /달려요$/, rep: "달립니다" },
+    { pat: /걸려요$/, rep: "걸립니다" },
+    { pat: /드려요$/, rep: "드립니다" },
+    { pat: /기다려요$/, rep: "기다립니다" },
+    { pat: /내려요$/, rep: "내립니다" },
+    { pat: /봐요$/, rep: "봅니다" },
+    { pat: /알아요$/, rep: "압니다" },
+    { pat: /울어요$/, rep: "웁니다" },
+    { pat: /좋아요$/, rep: "좋습니다" },
+    { pat: /많아요$/, rep: "많습니다" },
+    { pat: /적어요$/, rep: "적습니다" },
+    { pat: /좁아요$/, rep: "좁습니다" },
+    { pat: /깊어요$/, rep: "깊습니다" },
+    { pat: /높아요$/, rep: "높습니다" },
+    { pat: /같아요$/, rep: "같습니다" },
+    { pat: /맞아요$/, rep: "맞습니다" },
+    { pat: /있어요$/, rep: "있습니다" },
+    { pat: /없어요$/, rep: "없습니다" },
+    { pat: /않아요$/, rep: "않습니다" },
+    { pat: /해요$/, rep: "합니다" },
+    { pat: /바랄게요$/, rep: "바랍니다" },
+    { pat: /주세요$/, rep: "주십시오" },
+    { pat: /보세요$/, rep: "보십시오" },
+    { pat: /마세요$/, rep: "마십시오" }
+  ];
+
+  const informalAToB = [
+    { pat: /(했|었|았|였|갔|왔|셨|됐|되었습니다|있었|없었)어$/, rep: "$1지" },
+    { pat: /겠어$/, rep: "겠지" },
+    { pat: /해$/, rep: "하지" },
+    { pat: /야$/, rep: "잖아" },
+    { pat: /어$/, rep: "지" },
+    { pat: /아$/, rep: "지" }
+  ];
+
+  const informalBToA = [
+    { pat: /(했|었|았|였|갔|왔|셨|됐|되었습니다|있었|없었)지$/, rep: "$1어" },
+    { pat: /겠지$/, rep: "겠어" },
+    { pat: /하지$/, rep: "해" },
+    { pat: /있잖아$/, rep: "있어" },
+    { pat: /없잖아$/, rep: "없어" },
+    { pat: /않잖아$/, rep: "않아" },
+    { pat: /하잖아$/, rep: "해" },
+    { pat: /이잖아$/, rep: "이야" },
+    { pat: /아니잖아$/, rep: "아니야" },
+    { pat: /잖아$/, rep: "야" },
+    { pat: /좋겠어$/, rep: "좋겠어" },
+    { pat: /바랄게$/, rep: "바랄게" },
+    { pat: /바라$/, rep: "바라" },
+    { pat: /지$/, rep: "어" },
+    { pat: /네$/, rep: "어" },
+    { pat: /군$/, rep: "어" }
+  ];
+
+  const runSwap = (cleanText: string, rules: { pat: RegExp; rep: string }[]): string => {
+    for (const rule of rules) {
+      if (rule.pat.test(cleanText)) {
+        return cleanText.replace(rule.pat, rule.rep);
+      }
+    }
+    return cleanText;
+  };
+  
   const sentenceRegex = /([^.?!]+[.?!]+)(\s*)/g;
   let match;
   const sentences: { text: string; postSpace: string }[] = [];
@@ -670,193 +849,19 @@ function postProcessEndingTone(text: string, toneType: 'formal' | 'informal'): s
     });
   }
   
-  if (sentences.length <= 1) return text;
-  
-  const getEndingGroup = (sentenceText: string): 'A' | 'B' | null => {
-    const clean = sentenceText.trim().replace(/[.?!]/g, "");
-    if (!clean) return null;
-    
-    if (toneType === 'formal') {
-      if (clean.endsWith("요") || clean.endsWith("죠") || clean.endsWith("군요") || clean.endsWith("고요")) {
-        return 'B';
-      }
-      if (clean.endsWith("습니다") || clean.endsWith("합니다") || clean.endsWith("바랍니다") || clean.endsWith("니다") || clean.endsWith("다")) {
-        return 'A';
-      }
-    } else {
-      if (clean.endsWith("지") || clean.endsWith("잖아") || clean.endsWith("좋겠어") || clean.endsWith("바라") || clean.endsWith("바랄게") || clean.endsWith("네") || clean.endsWith("군")) {
-        return 'B';
-      }
-      if (clean.endsWith("어") || clean.endsWith("아") || clean.endsWith("해") || clean.endsWith("야") || clean.endsWith("겠어")) {
-        return 'A';
-      }
-    }
-    return null;
-  };
-  
-  let lastGroup: 'A' | 'B' | null = null;
-  
   for (let i = 0; i < sentences.length; i++) {
     const puncMatch = sentences[i].text.match(/[.?!]+$/);
     const punctuation = puncMatch ? puncMatch[0] : ".";
     let clean = sentences[i].text.trim().replace(/[.?!]+$/, "");
     
-    // 1. 사전 어미/호칭 필터 정제 (어조 일관성 가드)
+    // 1. 사전 어미/호칭 필터 정제 (어조 일관성 및 최소 맞춤법 검사)
     if (toneType === 'informal') {
-      // 어른 말투 -> 친구 말투
-      if (clean.endsWith("하렴")) {
-        clean = clean.slice(0, -2) + "해봐";
-      } else if (clean.endsWith("되렴")) {
-        clean = clean.slice(0, -2) + "돼";
-      } else if (clean.endsWith("려무나")) {
-        clean = clean.slice(0, -3) + "어";
-      } else if (clean.endsWith("렴")) {
-        clean = clean.slice(0, -1) + "어";
-      } else if (clean.endsWith("단다")) {
-        clean = clean.slice(0, -2) + "어";
-      } else if (clean.endsWith("란다")) {
-        clean = clean.slice(0, -2) + "야";
-      } else if (clean.endsWith("구나")) {
-        if (clean.endsWith("었구나") || clean.endsWith("았구나")) {
-          clean = clean.slice(0, -3) + "었네";
-        } else if (clean.endsWith("겠구나")) {
-          clean = clean.slice(0, -3) + "겠네";
-        } else if (clean.endsWith("이구나")) {
-          clean = clean.slice(0, -3) + "이네";
-        } else {
-          clean = clean.slice(0, -2) + "어";
-        }
-      }
+      clean = runSwap(clean, informalPre);
     } else {
-      // 혹시 유료 편지에 섞여 있을 수 있는 반말투/어른투 교정 -> 존댓말화
-      if (clean.endsWith("하렴") || clean.endsWith("려무나")) {
-        clean = clean.replace(/(하렴|려무나)$/, "해 보세요");
-      } else if (clean.endsWith("되렴")) {
-        clean = clean.slice(0, -2) + "되세요";
-      } else if (clean.endsWith("렴")) {
-        clean = clean.slice(0, -1) + "세요";
-      } else if (clean.endsWith("단다")) {
-        clean = clean.slice(0, -2) + "습니다";
-      } else if (clean.endsWith("란다")) {
-        clean = clean.slice(0, -2) + "입니다";
-      } else if (clean.endsWith("었구나") || clean.endsWith("았구나")) {
-        clean = clean.slice(0, -3) + "었겠네요";
-      } else if (clean.endsWith("겠구나")) {
-        clean = clean.slice(0, -3) + "겠네요";
-      } else if (clean.endsWith("이구나")) {
-        clean = clean.slice(0, -3) + "이군요";
-      } else if (clean.endsWith("구나")) {
-        clean = clean.slice(0, -2) + "군요";
-      } else if (clean.endsWith("다") && !clean.endsWith("니다") && !clean.endsWith("습니다") && !clean.endsWith("한다") && !clean.endsWith("이다") && !clean.endsWith("아니다")) {
-        if (clean.endsWith("있다") || clean.endsWith("없다") || clean.endsWith("같다")) {
-          clean = clean.slice(0, -1) + "습니다";
-        }
-      }
+      clean = runSwap(clean, formalPre);
     }
     
     sentences[i].text = clean + punctuation;
-    
-    const currentGroup = getEndingGroup(sentences[i].text);
-    if (currentGroup === null) continue;
-    
-    if (currentGroup === lastGroup) {
-      let cleanVar = sentences[i].text.trim().replace(/[.?!]+$/, "");
-      
-      if (toneType === 'formal') {
-        if (currentGroup === 'A') {
-          if (cleanVar.endsWith("하겠습니다")) {
-            cleanVar = cleanVar.slice(0, -4) + "겠어요";
-          } else if (cleanVar.endsWith("습니다")) {
-            if (cleanVar.endsWith("있습니다") || cleanVar.endsWith("없습니다") || cleanVar.endsWith("같습니다") || cleanVar.endsWith("않습니다") || cleanVar.endsWith("이었습니다") || cleanVar.endsWith("하였습니다") || cleanVar.endsWith("했습니다") || cleanVar.endsWith("하셨습니다") || cleanVar.endsWith("되었습니다") || cleanVar.endsWith("갔습니다") || cleanVar.endsWith("왔습니다")) {
-              cleanVar = cleanVar.slice(0, -3) + "어요";
-            } else if (cleanVar.endsWith("겠습니다")) {
-              cleanVar = cleanVar.slice(0, -3) + "어요";
-            } else {
-              cleanVar = cleanVar.slice(0, -3) + "해요";
-            }
-          } else if (cleanVar.endsWith("합니다")) {
-            cleanVar = cleanVar.slice(0, -3) + "해요";
-          } else if (cleanVar.endsWith("바랍니다")) {
-            cleanVar = cleanVar.slice(0, -4) + "바랄게요";
-          } else if (cleanVar.endsWith("입니다")) {
-            cleanVar = cleanVar.slice(0, -3) + "이지요";
-          } else if (cleanVar.endsWith("아닙니다")) {
-            cleanVar = cleanVar.slice(0, -4) + "아니지요";
-          } else if (cleanVar.endsWith("니다")) {
-            cleanVar = cleanVar.slice(0, -2) + "네요";
-          } else if (cleanVar.endsWith("다")) {
-            cleanVar = cleanVar.slice(0, -1) + "요";
-          } else {
-            cleanVar = cleanVar + "요";
-          }
-          lastGroup = 'B';
-        } else {
-          if (cleanVar.endsWith("해요")) {
-            cleanVar = cleanVar.slice(0, -2) + "합니다";
-          } else if (cleanVar.endsWith("지요")) {
-            cleanVar = cleanVar.slice(0, -2) + "습니다";
-          } else if (cleanVar.endsWith("바랄게요")) {
-            cleanVar = cleanVar.slice(0, -4) + "바랍니다";
-          } else if (cleanVar.endsWith("죠")) {
-            cleanVar = cleanVar.slice(0, -1) + "습니다";
-          } else if (cleanVar.endsWith("군요")) {
-            cleanVar = cleanVar.slice(0, -2) + "습니다";
-          } else if (cleanVar.endsWith("고요")) {
-            cleanVar = cleanVar.slice(0, -2) + "습니다";
-          } else if (cleanVar.endsWith("요")) {
-            cleanVar = cleanVar.slice(0, -1) + "습니다";
-          } else {
-            cleanVar = cleanVar + "습니다";
-          }
-          lastGroup = 'A';
-        }
-      } else {
-        if (currentGroup === 'A') {
-          if (cleanVar.endsWith("겠어")) {
-            cleanVar = cleanVar.slice(0, -2) + "겠지";
-          } else if (cleanVar.endsWith("해")) {
-            cleanVar = cleanVar.slice(0, -1) + "하길 바랄게";
-          } else if (cleanVar.endsWith("야")) {
-            cleanVar = cleanVar.slice(0, -1) + "잖아";
-          } else if (cleanVar.endsWith("어") || cleanVar.endsWith("아")) {
-            cleanVar = cleanVar.slice(0, -1) + "지";
-          } else {
-            cleanVar = cleanVar + "지";
-          }
-          lastGroup = 'B';
-        } else {
-          if (cleanVar.endsWith("좋겠어")) {
-            cleanVar = cleanVar.slice(0, -3) + "하겠어";
-          } else if (cleanVar.endsWith("아니잖아")) {
-            cleanVar = cleanVar.slice(0, -4) + "아니야";
-          } else if (cleanVar.endsWith("잖아")) {
-            cleanVar = cleanVar.slice(0, -2) + "어";
-          } else if (cleanVar.endsWith("바랄게")) {
-            cleanVar = cleanVar.slice(0, -3) + "어";
-          } else if (cleanVar.endsWith("바라")) {
-            cleanVar = cleanVar.slice(0, -2) + "어";
-          } else if (cleanVar.endsWith("겠지")) {
-            cleanVar = cleanVar.slice(0, -2) + "겠어";
-          } else if (cleanVar.endsWith("하지")) {
-            cleanVar = cleanVar.slice(0, -2) + "해";
-          } else if (cleanVar.endsWith("되지")) {
-            cleanVar = cleanVar.slice(0, -2) + "돼";
-          } else if (cleanVar.endsWith("지")) {
-            cleanVar = cleanVar.slice(0, -1) + "어";
-          } else if (cleanVar.endsWith("네")) {
-            cleanVar = cleanVar.slice(0, -1) + "어";
-          } else if (cleanVar.endsWith("군")) {
-            cleanVar = cleanVar.slice(0, -1) + "어";
-          } else {
-            cleanVar = cleanVar + "어";
-          }
-          lastGroup = 'A';
-        }
-      }
-      sentences[i].text = cleanVar + punctuation;
-    } else {
-      lastGroup = currentGroup;
-    }
   }
   
   return sentences.map(s => s.text + s.postSpace).join("");
@@ -880,4 +885,177 @@ function applyPostProcessFilters(responseObj: any, productType: string) {
       }
     });
   }
+}
+
+function splitIntoSentences(text: string): string[] {
+  const sentenceRegex = /[^.!?]+[.!?]+(?:\s+|$)/g;
+  return text.match(sentenceRegex) || [text];
+}
+
+function adjustFreeLetter(paragraphs: string[], isKo: boolean): string[] {
+  let text = paragraphs.join("\n\n").trim();
+  
+  const defaultKo = "많이 힘들었겠다. 괜찮다고 말하면서도 사실은 마음 한쪽에서 계속 무너지는 소리가 났을 것 같아. 사람들 앞에서는 웃고 아무렇지 않은 척 하루를 보내도 혼자가 되는 밤마다 네 마음은 오래 참아온 눈물을 가만히 삼켰겠지. 그런 너에게 더 힘을 내어 버티라고 말하고 싶지 않아. 너는 이미 오늘 하루도 충분히 많은 고단한 날들을 씩씩하게 버텨왔으니까. 오늘의 무거운 발걸음이 너를 자책하게 만들지 않았으면 좋겠어. 그 모든 아픔과 힘듦은 절대 네 잘못이 아니야.\n\n오늘은 너무 괜찮으려고 애쓰지 않았으면 좋겠어. 울고 싶다면 잠시 울어도 괜찮고, 아무것도 할 수 없는 무기력한 밤이라면 그저 숨만 고르는 가만히 누워 쉬는 하루여도 다 괜찮아. 봄이 오기 전의 메마른 나뭇가지들도 한동안은 멈춘 것처럼 보이지만, 그 안에서는 다시 꽃을 피워낼 소중한 시간들이 가만히 흐르고 있지. 네 마음도 그랬으면 좋겠어. 오늘의 너를 너무 미워하지 말고, 여기까지 오느라 참 많이 애썼다고 스스로에게 다정하게 말해주길 바랄게. 언제나 네 곁에서 가만히 응원하고 있어.";
+  const defaultEn = "It must have been so hard for you. Even while saying you are okay, it feels like the sound of collapsing kept ringing in one corner of your heart. Even if you smiled in front of other people and spent the day pretending to be fine, every night when you were left alone, your heart must have gently swallowed the tears you held back for so long. I don't want to tell you to endure more. You have already survived enough difficult days. I hope today's heavy steps do not make you blame yourself, because all this pain and hardship is never your fault.\n\nI hope you don't try too hard to be okay today. It's totally okay to cry for a while if you want to, and if it's a night when you can't do anything, it's fine to just catch your breath. Branches before spring comes look as if they have completely stopped for a while, but inside them, the time to bloom again is still silently flowing. I hope your heart behaves like that. Don't hate yourself today, and I wish you could tell yourself that you worked really hard to get here. I will always support you gently with all my heart.";
+
+  if (text.length < 150) {
+    text = isKo ? defaultKo : defaultEn;
+  }
+
+  let sentences = splitIntoSentences(text);
+  const paddingList = isKo ? [
+    "어두운 밤하늘에도 결국엔 별이 빛나는 것처럼, 너의 마음에 다정함이 닿기를 바랄게.",
+    "그동안 혼자 견디느라 얼마나 버겁고 아팠을지, 네 마음을 가만히 보듬어주고 싶어.",
+    "오늘 하루도 참 많이 고생했고 깊이 애썼어.",
+    "마음의 무거운 짐을 잠시 가만히 내려놓는 저녁이 되길 바란다.",
+    "너를 향한 따뜻한 바람과 안도감이 가만히 흘러들어오기를 기원할게.",
+    "스스로를 조금만 더 너그럽고 다정하게 대하는 시간을 가져봐."
+  ] : [
+    "Just as stars shine in the dark night sky, I hope comfort reaches your heart.",
+    "I want to gently soothe your heart, thinking how heavy and painful it must have been to endure alone.",
+    "You worked hard and did really well today.",
+    "I hope you have an evening where you lay down your heavy burden.",
+    "May warm support and peacefulness flow into your heart.",
+    "Please take some time to treat yourself with kindness."
+  ];
+
+  // Length adjust loop
+  let combined = sentences.join("").trim();
+  while (combined.length > 740 && sentences.length > 3) {
+    const removeIdx = Math.max(1, sentences.length - 2);
+    sentences.splice(removeIdx, 1);
+    combined = sentences.join("").trim();
+  }
+
+  let paddingIdx = 0;
+  while (combined.length < 510) {
+    const insertIdx = Math.max(0, sentences.length - 1);
+    sentences.splice(insertIdx, 0, paddingList[paddingIdx % paddingList.length] + " ");
+    combined = sentences.join("").trim();
+    paddingIdx++;
+  }
+
+  // Re-split into exactly 2 paragraphs
+  const mid = Math.ceil(sentences.length / 2);
+  const p1 = sentences.slice(0, mid).join("").trim();
+  const p2 = sentences.slice(mid).join("").trim() || (isKo ? "언제나 네 곁에서 가만히 응원하고 있을게." : "I will always be by your side supporting you.");
+  
+  return [p1, p2];
+}
+
+function adjustPaidLetter(paragraphs: string[], isKo: boolean, targetTier: "beta" | "deep"): string[] {
+  let text = paragraphs.join("\n\n").trim();
+  const targetParagraphs = targetTier === "beta" ? 3 : 5;
+  const minLen = targetTier === "beta" ? 950 : 1850;
+  const maxLen = targetTier === "beta" ? 1250 : 2450;
+
+  if (text.length < 150) {
+    text = isKo
+      ? "당신이 보내주신 사연을 가만히 읽으며 그동안 얼마나 무겁고 힘겨운 짐을 홀로 어깨에 짊어진 채 지내오셨을지 마음 깊이 헤아려 봅니다. 아무렇지 않은 척 억지로 미소를 지어 보였겠지만, 홀로 남겨진 밤마다 마음에 쌓인 눈물을 가만히 삼키셨을 것 같아요. 참 많이 애쓰셨고 힘드셨겠습니다. 이제는 더 이상 무리해서 괜찮은 척을 하거나 당신의 감정을 억지로 숨기지 않으셔도 괜찮아요. 마음속 깊은 곳에서 일어나는 슬픔과 외로움을 억누르려 하지 말고 자연스럽게 흘러가도록 내버려 두시기를 바랍니다."
+      : "Reading your story, I felt how heavy a burden you have been carrying alone. You probably put on a forced smile in front of others, whispering 'I am fine', but during those nights crying alone, your heart must have been bruised. You don't have to pretend to be okay. Don't suppress all the sadness and exhaustion in your heart, but let them flow as they are. Now is the time you need to pause and give yourself room to rest.";
+  }
+
+  let sentences = splitIntoSentences(text);
+  const paddingList = isKo ? [
+    "살아가다 보면 때로는 뜻대로 되지 않는 일들로 마음이 몹시 상하고 무거워지기도 합니다.",
+    "그럴 때마다 주저앉아 자신을 탓하기보다는, 상처받은 마음이 회복되는 소중한 시간이라고 생각해주십시오.",
+    "어두운 겨울이 지나면 반드시 따뜻한 봄바람과 함께 아름다운 꽃들이 다시 피어나기 마련입니다.",
+    "당신의 존재 자체만으로도 이미 너무나 충분하고 아름답다는 것을 잊지 마시기 바랍니다.",
+    "조급해하지 않고 천천히 한 걸음씩 내딛다 보면 어느덧 더 나아진 내일이 찾아올 것입니다.",
+    "스스로에게 주는 다정한 격려와 쉼표야말로 우리를 앞으로 나아가게 하는 가장 큰 힘이 됩니다.",
+    "마음의 소리에 가만히 귀를 기울이며, 힘든 감정들이 자연스레 흩어지기를 기다려 봅니다.",
+    "오늘 밤만큼은 어깨의 무거운 짐을 가만히 내려놓고 온전한 평온함을 누리셨으면 좋겠습니다.",
+    "지나온 시간들 속에서 당신이 견뎌낸 고단함이 따뜻한 위로의 씨앗이 되어줄 것입니다.",
+    "바쁘게 흘러가는 세상 속에서도 나 자신을 가장 귀하게 아끼는 태도를 잃지 마십시오."
+  ] : [
+    "In life, there are times when things do not go as planned, making our hearts heavy.",
+    "Instead of blaming yourself in those moments, think of it as a precious time for healing.",
+    "After the dark winter passes, warm spring winds and beautiful flowers always return.",
+    "Please do not forget that you are already enough and beautiful just as you are.",
+    "If you take steps slowly without rushing, a better tomorrow will surely find you.",
+    "Gentle encouragement and rest are the greatest forces that move us forward.",
+    "Listen quietly to the voice of your heart, and let the hard emotions gently disperse.",
+    "Tonight, I hope you lay down the heavy burden on your shoulders and enjoy complete peace.",
+    "The exhaustion you endured in the past will become the seeds of warm comfort.",
+    "Do not lose the attitude of valuing yourself most in this fast-running world."
+  ];
+
+  let combined = sentences.join("").trim();
+  while (combined.length > maxLen && sentences.length > targetParagraphs + 1) {
+    const removeIdx = Math.max(1, sentences.length - 2);
+    sentences.splice(removeIdx, 1);
+    combined = sentences.join("").trim();
+  }
+
+  let paddingIdx = 0;
+  while (combined.length < minLen) {
+    const insertIdx = Math.max(0, sentences.length - 1);
+    sentences.splice(insertIdx, 0, paddingList[paddingIdx % paddingList.length] + " ");
+    combined = sentences.join("").trim();
+    paddingIdx++;
+  }
+
+  // Re-split into exactly targetParagraphs
+  const result: string[] = [];
+  const sentencesPerParagraph = Math.ceil(sentences.length / targetParagraphs);
+  for (let i = 0; i < targetParagraphs; i++) {
+    const start = i * sentencesPerParagraph;
+    const end = start + sentencesPerParagraph;
+    const paraText = sentences.slice(start, end).join("").trim();
+    if (paraText) {
+      result.push(paraText);
+    }
+  }
+  
+  // Fill missing paragraphs if any
+  while (result.length < targetParagraphs) {
+    result.push(isKo 
+      ? "언제나 당신의 곁에서 가만히 안부를 묻고 응원하겠습니다." 
+      : "I will always stand by your side and support you gently.");
+  }
+
+  return result;
+}
+
+function adjustRecoveryDayLetter(letterText: string, isKo: boolean): string {
+  let text = (letterText || "").trim();
+  if (text.length < 150) {
+    text = isKo
+      ? "오늘 하루도 참 고생 많으셨습니다. 내면에 쌓인 긴장을 풀고 마음 편히 눈을 감아 보세요. 오늘의 무거웠던 마음을 가만히 보듬어 봅니다. 그 어떤 상황에서도 당신을 응원하는 마음이 여기에 닿기를 바랍니다."
+      : "You did really well today. Please let go of all the tension and close your eyes. We gently embrace the heavy mind of today. Under any circumstances, I hope this warm support reaches you.";
+  }
+
+  let sentences = splitIntoSentences(text);
+  const paddingList = isKo ? [
+    "오늘 하루도 참 많이 고생하셨고 깊이 애쓰셨습니다.",
+    "마음의 무거운 짐을 잠시 가만히 내려놓는 저녁이 되시길 바랍니다.",
+    "당신을 향한 따뜻한 바람과 안도감이 가만히 흘러들어오기를 기원합니다.",
+    "스스로를 조금만 더 너그럽고 다정하게 대하는 시간을 가져보세요.",
+    "복잡했던 생각들은 잠시 뒤로하고 지금 이 순간의 숨결에만 집중해 보십시오.",
+    "지친 마음이 천천히 회복되어 내일은 한결 가벼운 발걸음이 되기를 바랍니다."
+  ] : [
+    "You worked hard and did really well today.",
+    "I hope you have an evening where you lay down your heavy burden.",
+    "May warm support and peacefulness flow into your heart.",
+    "Please take some time to treat yourself with kindness.",
+    "Leave your complicated thoughts behind and focus only on your breath in this moment.",
+    "I hope your tired mind heals slowly and your steps tomorrow are much lighter."
+  ];
+
+  let combined = sentences.join("").trim();
+  while (combined.length > 740 && sentences.length > 3) {
+    const removeIdx = Math.max(1, sentences.length - 2);
+    sentences.splice(removeIdx, 1);
+    combined = sentences.join("").trim();
+  }
+
+  let paddingIdx = 0;
+  while (combined.length < 520) {
+    const insertIdx = Math.max(0, sentences.length - 1);
+    sentences.splice(insertIdx, 0, paddingList[paddingIdx % paddingList.length] + " ");
+    combined = sentences.join("").trim();
+    paddingIdx++;
+  }
+
+  return combined;
 }

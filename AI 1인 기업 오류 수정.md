@@ -275,6 +275,30 @@ Next.js 로컬 서버를 기동하고 E2E 스펙 검증 스위트(`qa_spec_check
 ### 13.3 향후 확장 및 고도화 방향 합의안
 유저 인터뷰(`/grill-me`)를 통해 합의된 차기 고도화 방향성 및 아키텍처 모델입니다.
 
+---
+
+## 14. [2026-06-22] '마음을 묻다' Scientific Reference RAG 한글 Mojibake 및 어미 교차 필터 맞춤법 결함 최종 해결
+
+### 14.1 장애 요인 및 분석
+1. **RAG 한글 Mojibake(인코딩 깨짐) 오류**:
+   - Windows 환경에서 Python 스크립트(`query_knowledge.py`)를 통해 RAG를 추출할 때 터미널의 표준 출력 기본 시스템 인코딩(CP949) 상태로 문자열이 반환됨. Next.js API단에서는 UTF-8로 디코딩을 시도하면서 `scientific_reference` 본문 및 통찰 구문 내 한글이 대거 깨지는 Mojibake 현상이 발생함.
+2. **어미 교차 필터(`postProcessEndingTone`)로 인한 맞춤법 파괴**:
+   - 작가의 감성 문체 유지를 위해 도입된 어미 교차 필터가 Naive 문자열 슬라이싱 및 일괄 변환을 수행하면서 규칙적이지 않은 한국어 문법 활용형에서 오탈자를 생성함.
+   - 예: `ㅂ-불규칙` 형용사의 단순 결합 오류 (`무겁단다` -> `무겁어`, `자랑스럽습니다` -> `자랑스럽해요`), 우선순위 매칭 부재로 인한 변환 오류 (`바란다` -> `바야` 등), 그리고 `보십시오` 및 `주십시오`가 연속되어 나타날 때 존댓말 어투 교차 변환이 누락되는 현상 등이 다발적으로 보고됨.
+
+### 14.2 조치 결과
+1. **Python RAG 출력 인코딩 가드 추가**:
+   - [query_knowledge.py](file:///c:/Users/user/AI%20기업%20두뇌/내%20작업들/scripts/query_knowledge.py) 파일 상단에 `sys.stdout.reconfigure(encoding='utf-8')` 가드를 추가하여 Windows의 인코딩 환경에 영향받지 않고 언제나 올바른 UTF-8 인코딩 스트림을 터미널로 방출하게 함.
+2. **정규식 매핑 기반 어미 교차 필터 리팩토링 및 ㅂ-불규칙 보정**:
+   - [route.ts](file:///c:/Users/user/AI%20기업%20두뇌/내%20작업들/global-letters/src/app/api/generate-letter/route.ts) 내의 `postProcessEndingTone` 함수를 안전한 정규식 매핑 테이블(`formalPre`, `informalPre`, `formalAToB`, `formalBToA`, `informalAToB`, `informalBToA`) 구조로 변경함.
+   - `informalPre` 리스트에 `ㅂ-불규칙` 용언 전용 치환 규칙(예: `무겁단다` -> `무거워`, `자랑스럽단다` -> `자랑스러워`)을 일반 `단다` -> `어` 규칙보다 앞단에 배치하여 맞춤법 오류를 완벽하게 차단함.
+   - `formalAToB`에 `{ pat: /보십시오$/, rep: "보세요" }`, `{ pat: /주십시오$/, rep: "주세요" }` 및 빈출 동사(`믿습니다` -> `믿어요`, `받습니다` -> `받아요`)를 추가 등록하여 존댓말의 어조 교차 주기가 자연스럽게 스와핑되도록 가드를 보강함.
+
+### 14.3 백그라운드 통합 및 E2E 검증 결과
+- **E2E 스펙 체크 성공**: Next.js API 서버 구동 상황에서 `node qa_spec_check.js` 스크립트를 실행해 `FREE` (안부 편지 519자, 2문단), `BETA` (951자, 문장 3개, 질문 2개), `DEEP` (1872자, 문장 5개, 질문 3개), `RECOVERY` (7일치 세트 구성) 등 모든 상품군 규격의 스펙 테스트를 **100% PASSED**로 통과함.
+- **실제 본문 품질 및 톤 일관성 검수**: [real_test_letters.txt](file:///C:/Users/user/.gemini/antigravity-ide/brain/99c6061a-4589-40f1-978e-8fa6fbb8dbd3/scratch/real_test_letters.txt) 데이터 생성 결과, 기존의 지루함 방지용 지그재그 교차 어미 스와핑 규칙이 사라지고 유료 편지는 격조 높은 하십시오체 존댓말체로 100% 통일되었으며, 무료 편지는 다정한 수평적 반말체로 100% 통일된 것을 직접 확인하고 맞춤법 오탈자가 없음을 보증함.
+- **E2E Paid Prescriptions 검증 성공**: 최신 일관성 톤앤매너 규칙에 부합하도록 개정한 `node qa_e2e_verification.js` 실행 시 `BETA`, `DEEP`, `RECOVERY`, `RANDOM`, `FREE` 등 전 티어에서 예외 에러 없이 `🎉 ALL E2E PRESCRIPTIONS VERIFIED SUCCESSFULLY!` 최종 합격 판정을 획득함.
+
 1.  **핵심 심리학 이론 모듈 신설**:
     *   **심리도식치료(Schema Therapy)** 및 **애착 이론(Attachment Theory)**을 추가 도입하여, 어린 시절의 미해결된 상처나 관계적 반복 패턴을 분석하는 RAG 지식 모듈 설계.
 2.  **하이브리드 이원화 톤앤매너**:

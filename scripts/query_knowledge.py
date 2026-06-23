@@ -3,6 +3,13 @@ import os
 import json
 import re
 
+# Windows cp949 UnicodeEncodeError 방지용
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
+
+
 def main():
     if len(sys.argv) < 2:
         # Default mock output
